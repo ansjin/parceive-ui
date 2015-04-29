@@ -1,0 +1,10 @@
+#dependencies
+node_modules
+app/bower_components
+
+#vim
+*.swp
+
+#build
+build
+dist
