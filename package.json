@@ -11,6 +11,10 @@
     "gulp-bower": "0.0.10",
     "gulp-csslint": "~0.1.5",
     "gulp-angular-templatecache": "~1.6.0",
-    "gulp-livereload": "~3.8.0"
+    "gulp-livereload": "~3.8.0",
+    "merge-stream": "~0.1.7",
+    "gulp-rename": "~1.2.2",
+    "gulp-sourcemaps": "~1.5.2",
+    "gulp-concat": "~2.5.2"
   }
 }
