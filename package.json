@@ -19,6 +19,8 @@
     "gulp-if": "~1.2.5",
     "gulp-util": "~3.0.4",
     "lodash": "~3.8.0",
-    "gulp-order": "~1.1.1"
+    "gulp-order": "~1.1.1",
+    "gulp-header": "~1.2.2",
+    "gulp-footer": "~1.0.5"
   }
 }

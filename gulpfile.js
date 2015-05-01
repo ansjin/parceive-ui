@@ -20,6 +20,8 @@ var concat = require('gulp-concat');
 var sourcemaps = require('gulp-sourcemaps');
 var gulpif = require('gulp-if');
 var order = require('gulp-order');
+var header = require('gulp-header');
+var footer = require('gulp-footer');
 
 //utilities
 
@@ -76,6 +78,9 @@ gulp.task('minify-css', function() {
 
 gulp.task('minify-js', function() {
   return gulp.src(['./app/scripts/**/*.js'])
+    .pipe(order(opts.code_order))
+    .pipe(header("(function(){ \"use strict\"\n"))
+    .pipe(footer("})()"))
     .pipe(gulpif(opts.sourcemaps, sourcemaps.init()))
       .pipe(gulpif(opts.minify, uglify()))
       .pipe(concat('code.js'))
