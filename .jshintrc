@@ -1,0 +1,9 @@
+{
+  "bitwise": true,
+  "eqeqeq": true,
+  "singleGroups": true,
+  "strict": false,
+  "undef": true,
+  "unused": true,
+  "predef": [ "angular", "_" ]
+}
