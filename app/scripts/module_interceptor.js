@@ -21,10 +21,10 @@ mod.value('views', function() {
   });
 });
 
-mod.service('view_properties', function() {
+mod.service('viewProperties', function() {
   return function(view) {
     var $injector = angular.injector([view]);
-    
+
     return {
       name: $injector.get('name'),
       render: $injector.get('render')

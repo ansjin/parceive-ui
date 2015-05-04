@@ -51,8 +51,9 @@ gulp.task('bower', function() {
 gulp.task('jshint', function() {
   return gulp.src(['./app/**/*.js', '!./app/bower_components/**'])
     .pipe(jshint())
-    //.pipe(jscs())
-    .pipe(jshint.reporter('default'))
+    .pipe(jscs())
+    .on('error', function(err) {console.log(err.message); this.emit('end');})
+    .pipe(jshint.reporter('default'));
 });
 
 gulp.task('csslint', function() {

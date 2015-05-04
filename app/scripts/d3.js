@@ -1,5 +1,5 @@
 angular.module('d3', ['module-interceptor'])
-  .directive('d3Visualization', ['view_properties', function(view_properties) {
+  .directive('d3Visualization', ['viewProperties', function(viewProperties) {
     return {
       restrict: 'E',
       scope: {
@@ -7,15 +7,14 @@ angular.module('d3', ['module-interceptor'])
       },
       link: function(scope, element, attrs) {
         var svg = d3.select(element[0])
-            .append("svg")
+            .append('svg')
             .style('width', '100%');
 
-        var prop = view_properties(attrs.view);
-        
+        var prop = viewProperties(attrs.view);
+
         prop.render(svg);
       }};
   }])
   .controller('viewsController', ['$scope', 'views', function($scope, views) {
     $scope.views = views();
   }]);
-  
