@@ -1,11 +1,16 @@
 <!doctype html>
-<html ng-app="myApp" ng-strict-di>
+<html ng-app="d3" ng-strict-di>
 	<head>
 		<link rel="stylesheet" href="style.css">
 	</head>
+	<body>
+	  <div ng-controller="viewsController">
+		  <div ng-repeat="view in views">
+		    <d3-visualization view="{{view}}" />
+		  </did>
+		</div>
+		
 		<script src="deps.js"></script>
 		<script src="code.js"></script>
-	<body ng-controller="valueController">
-		{{'Value:' + val}}
 	</body>
 </html>

@@ -21,6 +21,7 @@
     "lodash": "~3.8.0",
     "gulp-order": "~1.1.1",
     "gulp-header": "~1.2.2",
-    "gulp-footer": "~1.0.5"
+    "gulp-footer": "~1.0.5",
+    "gulp-jscs": "~1.6.0"
   }
 }
