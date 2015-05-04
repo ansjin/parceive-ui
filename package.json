@@ -1,5 +1,6 @@
 {
   "name": "visualisator",
+  "private": true,
   "dependencies": {
     "gulp": "~3.8.11",
     "gulp-clean": "~0.3.1",
