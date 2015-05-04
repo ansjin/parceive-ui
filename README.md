@@ -10,7 +10,9 @@ https://nodejs.org/
 https://chrome.google.com/webstore/detail/livereload/jnihajbhpnppcggbcgedagnkighmdlei?hl=en
 3. Install bower and gulp
 
+    ```
     npm install -g bower gulp
+    ```
 
 In the project folder
 ---------------------
@@ -20,12 +22,12 @@ In the project folder
 Running
 =======
 
-Starting server
----------------
+Starting the server
+-------------------
 
     gulp
 
-The server is available on port 8080. LiveReload is enabled so restart should never be required.
+The server is now available on port 8080. LiveReload is enabled so restart should never be required.
 
 Only building
 -------------
@@ -44,7 +46,7 @@ Dependencies
 ------------
 
 Add dependencies to `bower.json` and they will be automatically installed.
-`build.json` contains the ordered lists of javascript and css files that are added to the build.
+`build.json` contains the ordered lists of javascript and css files that are actually added to the build.
 
 Views
 -----
