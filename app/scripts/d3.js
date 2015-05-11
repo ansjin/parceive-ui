@@ -17,5 +17,11 @@ angular.module('d3', ['module-interceptor'])
       }};
   }])
   .controller('viewsController', ['$scope', 'views', function($scope, views) {
-    $scope.views = views();
+    $scope.views = _.map(views(), function(view) {
+      return {
+        name: view,
+        htmlHeader: 'views/' + view + '-header.html',
+        htmlfooter: 'views/' + view + '-footer.html'
+      };
+    });
   }]);

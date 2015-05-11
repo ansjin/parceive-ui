@@ -106,7 +106,7 @@ gulp.task('minify-css-deps', ['bower'], function() {
 
 gulp.task('minify-templates', function () {
   return gulp.src('./app/templates/**/*.html')
-    .pipe(templateCache())
+    .pipe(templateCache({module: "d3"}))
     .pipe(gulp.dest('./build'));
 });
 
@@ -124,7 +124,7 @@ gulp.task('server', ['build'], function () {
 
   gulp.watch(['./app/scripts/**/*.js'], ['minify-js', 'jshint']);
   gulp.watch(['./app/style/**/*.css'], ['minify-css', 'csshint']);
-  gulp.watch(['./app/templates/**/*.css'], ['minify-templates']);
+  gulp.watch(['./app/templates/**/*.html'], ['minify-templates']);
 
   gulp.watch(['./app/index.html'], ['html']);
 

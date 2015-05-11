@@ -4,13 +4,16 @@
 		<link rel="stylesheet" href="style.css">
 	</head>
 	<body>
-	  <div ng-controller="viewsController">
-		  <div ng-repeat="view in views">
-		    <d3-visualization view="{{view}}" />
-		  </did>
+		<div ng-controller="viewsController">
+			<div ng-repeat="view in views">
+				<div ng-include="view.htmlHeader"></div>
+				<d3-visualization view="{{view.name}}" />
+				<div ng-include="view.htmlFooter"></div>
+			</did>
 		</div>
 		
 		<script src="deps.js"></script>
 		<script src="code.js"></script>
+		<script src="templates.js"></script>
 	</body>
 </html>
