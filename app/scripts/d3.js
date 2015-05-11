@@ -1,4 +1,5 @@
 angular.module('d3', ['module-interceptor'])
+  .value('d3', d3)
   .directive('d3Visualization', ['viewProperties', function(viewProperties) {
     return {
       restrict: 'E',
