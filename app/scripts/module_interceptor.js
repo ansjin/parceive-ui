@@ -23,7 +23,7 @@ mod.value('views', function() {
 
 mod.service('viewProperties', function() {
   return function(view) {
-    var $injector = angular.injector([view]);
+    var $injector = angular.injector(['ng', view]);
 
     return {
       name: $injector.get('name'),
