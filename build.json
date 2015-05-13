@@ -11,8 +11,9 @@
   ],
   
   "code_order": [
-    "./app/scripts/module_interceptor.js",
-    "./app/scripts/**/*.js"
+    "app/scripts/module_interceptor.js",
+    "app/scripts/app.js",
+    "app/scripts/**/*.js"
   ],
   
   "opts": {
