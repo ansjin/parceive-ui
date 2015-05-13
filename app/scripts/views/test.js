@@ -42,8 +42,8 @@ angular.module('test2-view', ['app'])
   };
 }]);
 
-angular.module('test3-view', ['app'])
-.value('name', 'Test view 3')
+angular.module('test1-loader-view', ['app'])
+.value('name', 'Loader view 1')
 .service('render', ['loader', function(loader) {
   return function(svg) {
     svg.selectAll('*').remove();
@@ -70,8 +70,8 @@ angular.module('test3-view', ['app'])
   };
 }]);
 
-angular.module('test4-view', ['app'])
-.value('name', 'Test view 4')
+angular.module('tes2-loader-view', ['app'])
+.value('name', 'Loader view 2')
 .service('render', ['loader', function(loader) {
   return function(svg) {
     svg.selectAll('*').remove();
