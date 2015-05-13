@@ -106,7 +106,7 @@ gulp.task('minify-css-deps', ['bower'], function() {
 
 gulp.task('minify-templates', function () {
   return gulp.src('./app/templates/**/*.html')
-    .pipe(templateCache({module: "d3"}))
+    .pipe(templateCache({module: "app"}))
     .pipe(gulp.dest('./build'));
 });
 

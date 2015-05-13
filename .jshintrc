@@ -5,5 +5,5 @@
   "strict": false,
   "undef": true,
   "unused": true,
-  "predef": [ "angular", "_", "d3"]
+  "predef": [ "angular", "_"]
 }

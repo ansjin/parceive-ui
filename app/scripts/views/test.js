@@ -1,36 +1,48 @@
-angular.module('test1-view', [])
+angular.module('test1-view', ['app'])
 .value('name', 'Test view 1')
-.value('render', function(svg) {
-  svg.selectAll('*').remove();
+.service('render', ['d3', function(d3) {
+  return function(svg) {
+    svg.selectAll('*').remove();
 
-  svg
-    .append('circle')
-    .style('stroke', 'gray')
-    .style('fill', 'blue')
-    .attr('r', 40)
-    .attr('cx', 50)
-    .attr('cy', 50)
-    .on('mouseover', function() { d3.select(this).style('fill', 'aliceblue'); })
-    .on('mouseout', function() { d3.select(this).style('fill', 'blue'); });
-});
+    svg
+      .append('circle')
+      .style('stroke', 'gray')
+      .style('fill', 'blue')
+      .attr('r', 40)
+      .attr('cx', 50)
+      .attr('cy', 50)
+      .on('mouseover', function() {
+        d3.select(this).style('fill', 'aliceblue');
+      })
+      .on('mouseout', function() {
+        d3.select(this).style('fill', 'blue');
+      });
+  };
+}]);
 
-angular.module('test2-view', [])
+angular.module('test2-view', ['app'])
 .value('name', 'Test view 2')
-.value('render', function(svg) {
-  svg.selectAll('*').remove();
+.service('render', ['d3', function(d3) {
+  return function(svg) {
+    svg.selectAll('*').remove();
 
-  svg
-    .append('circle')
-    .style('stroke', 'gray')
-    .style('fill', 'red')
-    .attr('r', 40)
-    .attr('cx', 50)
-    .attr('cy', 50)
-    .on('mouseover', function() { d3.select(this).style('fill', 'aliceblue'); })
-    .on('mouseout', function() { d3.select(this).style('fill', 'red'); });
-});
+    svg
+      .append('circle')
+      .style('stroke', 'gray')
+      .style('fill', 'red')
+      .attr('r', 40)
+      .attr('cx', 50)
+      .attr('cy', 50)
+      .on('mouseover', function() {
+        d3.select(this).style('fill', 'aliceblue');
+      })
+      .on('mouseout', function() {
+        d3.select(this).style('fill', 'red');
+      });
+  };
+}]);
 
-angular.module('test3-view', ['d3'])
+angular.module('test3-view', ['app'])
 .value('name', 'Test view 3')
 .service('render', ['loader', function(loader) {
   return function(svg) {
@@ -58,7 +70,7 @@ angular.module('test3-view', ['d3'])
   };
 }]);
 
-angular.module('test4-view', ['d3'])
+angular.module('test4-view', ['app'])
 .value('name', 'Test view 4')
 .service('render', ['loader', function(loader) {
   return function(svg) {

@@ -105,7 +105,7 @@ var FIX = {
 };
 
 var retLater = function(data, type, mapper) {
-  if (_.isUndefined(data)) {debugger; }
+  if (_.isUndefined(data)) { throw 'Missing data in FIX'; }
 
   return $q(function(resolve) {
     window.setTimeout(function() {
@@ -118,7 +118,7 @@ var getAll = function(fct, ids) {
   return $q.all(_.map(ids, fct));
 };
 
-angular.module('d3')
+angular.module('app')
   .service('loader', ['$q', function(q) {
     $q = q;
 
