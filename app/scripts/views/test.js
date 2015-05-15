@@ -1,5 +1,8 @@
 angular.module('test1-view', ['app'])
 .value('name', 'Test view 1')
+.value('group', 'Simple test views')
+.value('markedChanged', function() {})
+.value('focus', function() {})
 .service('render', ['d3', function(d3) {
   return function(svg) {
     svg.selectAll('*').remove();
@@ -22,6 +25,9 @@ angular.module('test1-view', ['app'])
 
 angular.module('test2-view', ['app'])
 .value('name', 'Test view 2')
+.value('group', 'Simple test views')
+.value('markedChanged', function() {})
+.value('focus', function() {})
 .service('render', ['d3', function(d3) {
   return function(svg) {
     svg.selectAll('*').remove();
@@ -44,6 +50,9 @@ angular.module('test2-view', ['app'])
 
 angular.module('test1-loader-view', ['app'])
 .value('name', 'Loader view 1')
+.value('group', 'Loader test views')
+.value('markedChanged', function() {})
+.value('focus', function() {})
 .service('render', ['loader', function(loader) {
   return function(svg) {
     svg.selectAll('*').remove();
@@ -72,6 +81,9 @@ angular.module('test1-loader-view', ['app'])
 
 angular.module('tes2-loader-view', ['app'])
 .value('name', 'Loader view 2')
+.value('group', 'Loader test views')
+.value('markedChanged', function() {})
+.value('focus', function() {})
 .service('render', ['loader', function(loader) {
   return function(svg) {
     svg.selectAll('*').remove();

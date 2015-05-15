@@ -27,7 +27,10 @@ mod.service('viewProperties', function() {
 
     return {
       name: $injector.get('name'),
-      render: $injector.get('render')
+      group: $injector.get('group'),
+      render: $injector.get('render'),
+      markedChanged: $injector.get('markedChanged'),
+      focus: $injector.get('focus')
     };
   };
 });

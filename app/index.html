@@ -5,10 +5,16 @@
 	</head>
 	<body>
 		<div ng-controller="viewsController">
-			<div ng-repeat="view in views">
-				<div ng-include="view.htmlHeader"></div>
-				<d3-visualization view="{{view.name}}" />
-				<div ng-include="view.htmlFooter"></div>
+		  <select ng-model="selectedView" ng-options="view.name group by view.group for view in allviews"></select>
+		
+		  <button ng-click="addView()">
+        Add view
+      </button>
+		
+			<div ng-repeat="view in views track by view.id">
+				<div ng-include="view._views.unsaved.htmlHeader"></div>
+				<d3-visualization view="{{view.id}}" />
+				<div ng-include="view._views.unsaved.htmlFooter"></div>
 			</did>
 		</div>
 		
