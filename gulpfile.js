@@ -122,11 +122,11 @@ gulp.task('server', ['build'], function () {
   gulp.watch('bower.json', ['bower', 'minify-js-deps', 'minify-css-deps']);
   gulp.watch('build.json', ['build']);
 
-  gulp.watch(['./app/scripts/**/*.js'], ['minify-js', 'jshint']);
-  gulp.watch(['./app/style/**/*.css'], ['minify-css', 'csshint']);
-  gulp.watch(['./app/templates/**/*.html'], ['minify-templates']);
+  gulp.watch(['app/scripts/**/*.js'], ['minify-js', 'jshint']);
+  gulp.watch(['app/style/**/*.css'], ['minify-css', 'csshint']);
+  gulp.watch(['app/templates/**/*.html'], ['minify-templates']);
 
-  gulp.watch(['./app/index.html'], ['html']);
+  gulp.watch(['app/index.html'], ['html']);
 
   livereload.listen({basePath: 'build'});
 
