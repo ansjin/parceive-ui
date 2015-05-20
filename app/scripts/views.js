@@ -40,6 +40,10 @@ angular.module('app')
       $scope.allviews = views;
 
       $scope.addView = function() {
+        if (_.isUndefined($scope.selectedView)) {
+          return;
+        }
+
         var selected = $scope.selectedView;
         var newView = stateManager.create();
 
