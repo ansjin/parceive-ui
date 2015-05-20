@@ -24,6 +24,8 @@ var header = require('gulp-header');
 var footer = require('gulp-footer');
 var jscs = require('gulp-jscs');
 var map = require('map-stream');
+var sass = require('gulp-sass');
+var merge = require('merge-stream');
 
 //utilities
 
@@ -82,10 +84,17 @@ gulp.task('clean', function() {
 });
 
 gulp.task('minify-css', function() {
-  return gulp.src(['./app/style/**/*.css', '!./app/bower_components/**'])
+  var scss = gulp.src(['./app/style/**/*.scss'])
     .pipe(gulpif(opts.sourcemaps, sourcemaps.init()))
-      .pipe(gulpif(opts.minify, minifyCSS()))
+      .pipe(sass({
+        includePaths: ['./app/style/', './app/bower_components/', './app/bower_components/bootstrap-sass/assets/stylesheets']
+      }).on('error', sass.logError))
+    .pipe(gulpif(opts.sourcemaps, sourcemaps.write()));
+  
+  return merge(scss, gulp.src(['./app/style/**/*.css']))
+    .pipe(gulpif(opts.sourcemaps, sourcemaps.init()))
       .pipe(concat('style.css'))
+      .pipe(gulpif(opts.minify, minifyCSS()))
     .pipe(gulpif(opts.sourcemaps, sourcemaps.write()))
     .pipe(gulp.dest('./build/'));
 });
@@ -135,7 +144,7 @@ gulp.task('server', ['build'], function () {
   gulp.watch('build.json', ['build']);
 
   gulp.watch(['app/scripts/**/*.js'], ['minify-js', 'jshint']);
-  gulp.watch(['app/style/**/*.css'], ['minify-css', 'csshint']);
+  gulp.watch(['app/style/**/*.css', 'app/style/**/*.scss'], ['minify-css', 'csslint']);
   gulp.watch(['app/templates/**/*.html'], ['minify-templates']);
 
   gulp.watch(['app/index.html'], ['html']);
