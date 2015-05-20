@@ -23,6 +23,7 @@ var order = require('gulp-order');
 var header = require('gulp-header');
 var footer = require('gulp-footer');
 var jscs = require('gulp-jscs');
+var map = require('map-stream');
 
 //utilities
 
@@ -52,8 +53,19 @@ gulp.task('jshint', function() {
   return gulp.src(['./app/**/*.js', '!./app/bower_components/**'])
     .pipe(jshint())
     .pipe(jscs())
-    .on('error', function(err) {console.log(err.message); this.emit('end');})
-    .pipe(jshint.reporter('default'));
+    .on('error', function(err) {
+      if(opts.failonlint) throw err;
+      console.log(err.message); 
+      this.emit('end');
+    })
+    .pipe(jshint.reporter('default'))
+    .pipe(map(function(file, cb) {
+      if (!file.jshint.success && opts.failonlint) {
+        cb(file.jshint.results[0].reason, null);
+      }
+      
+      cb(null, file);
+    }));
 });
 
 gulp.task('csslint', function() {

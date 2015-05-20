@@ -18,6 +18,7 @@
   
   "opts": {
     "minify": false,
-    "sourcemaps": true
+    "sourcemaps": true,
+    "failonlint": false
   }
 }
