@@ -11,13 +11,11 @@ angular.module('app')
               .append('svg')
               .style('width', '100%');
 
-          var view = stateManager.getData(attrs.view);
+          var bound = stateManager.bindId(attrs.view);
+          var view = bound.getData();
 
-          view.type.unsaved.render(svg);
-
-          element.on('$destroy', function() {
-
-          });
+          view.unsaved = {svg: svg};
+          view.type.unsaved.render(svg, bound);
         }
       };
     }])
@@ -65,7 +63,8 @@ angular.module('app')
       stateManager.load();
 
       _.forEach(stateManager.getList(), function(id) {
-        var view = stateManager.getData(id);
+        var bound = stateManager.bindId(id);
+        var view = bound.getData();
 
         view._views = {
           unsaved: {
@@ -77,6 +76,9 @@ angular.module('app')
         var data = viewProperties(view.type.id);
 
         view.type.unsaved = _.pick(data, _.isFunction);
+
+        bound.setFocusCallback(data.focus);
+        bound.setMarkedCallback(data.markedChanged);
 
         $scope.views.push(view);
       });
