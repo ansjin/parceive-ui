@@ -83,7 +83,7 @@ gulp.task('clean', function() {
       .pipe(clean({force: true}));
 });
 
-gulp.task('minify-css', function() {
+gulp.task('minify-css', ['bower'], function() {
   var scss = gulp.src(['./app/style/**/*.scss'])
     .pipe(gulpif(opts.sourcemaps, sourcemaps.init()))
       .pipe(sass({
