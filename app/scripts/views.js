@@ -55,6 +55,9 @@ angular.module('app')
           }
         };
 
+        stateManager.setFocusCallback(newView.id, selected.data.focus);
+        stateManager.setMarkedCallback(newView.id, selected.data.markedChanged);
+
         stateManager.save();
 
         $scope.views.push(newView);
