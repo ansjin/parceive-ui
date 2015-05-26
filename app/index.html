@@ -26,20 +26,21 @@
 	      </button>
 			</div>
 
-			<div ng-repeat="view in views track by view.id" class="views">
-				<div class="view-header">
-					<span>{{view.type.name}}</span>
-					<select ng-model="view.group" ng-options="group for group in allgroups"></select>
-					<button ng-click="removeView(view.id)">
+			<div ng-repeat="view in views track by view.id" class="views" ng-class="{'view-container': true, 'view-container-half': view.halfSize}">
+		    <div class="view-header">
+		      <span>{{view.type.name}}</span>
+		      <select ng-model="view.group" ng-options="group for group in allgroups"></select>
+		      <button ng-click="removeView(view.id)">
 		        Remove view
 		      </button>
-				</div>
-				<div class="view">
-					<div ng-include="view._views.unsaved.htmlHeader"></div>
-					<d3-visualization view="{{view.id}}" />
-					<div ng-include="view._views.unsaved.htmlFooter"></div>
-				</div>
-			</did>
+		      <input type="checkbox" ng-model="view.halfSize">
+		    </div>
+		    <div class="view">
+		      <div ng-include="view._views.unsaved.htmlHeader"></div>
+		      <d3-visualization view="{{view.id}}" />
+		      <div ng-include="view._views.unsaved.htmlFooter"></div>
+		    </div>
+			</div>
 		</div>
 
 		<script src="deps.js"></script>

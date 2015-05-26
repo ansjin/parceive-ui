@@ -40,6 +40,10 @@ angular.module('app')
       $scope.allviews = views;
       $scope.allgroups = stateManager.getGroups();
 
+      $scope.$watch(function() {
+        stateManager.save();
+      });
+
       $scope.addGroup = function() {
         stateManager.addGroup($scope.addGroupInput);
         $scope.allgroups = stateManager.getGroups();

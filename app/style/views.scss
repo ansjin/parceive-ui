@@ -8,7 +8,23 @@
   background-color: grey;
 };
 
-.view-header > select {
+.view-header > select,input {
   display: inline;
   width: auto;
+}
+
+.view {
+  width: 100%;
+}
+
+.view-container {
+  width: 100%;
+  height: 80vh;
+  vertical-align: top;
+}
+
+.view-container-half {
+  width: 50%;
+  height: 40vh;
+  display: inline-block;
 }
