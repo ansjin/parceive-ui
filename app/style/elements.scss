@@ -2,8 +2,17 @@
 @import 'bootstrap/mixins';
 
 @import 'bootstrap/buttons';
+@import 'bootstrap/forms';
 
 button {
    @extend .btn;
    @extend .btn-default;
+}
+
+input {
+  @extend .form-control;
+}
+
+select {
+  @extend .form-control;
 }

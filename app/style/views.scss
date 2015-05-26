@@ -1,0 +1,14 @@
+@import 'bootstrap/variables';
+@import 'bootstrap/mixins';
+
+@import 'bootstrap/forms';
+
+.view-header {
+  width: 100%;
+  background-color: grey;
+};
+
+.view-header > select {
+  display: inline;
+  width: auto;
+}
