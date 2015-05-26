@@ -12,8 +12,6 @@
   Thread
 */
 
-var $q;
-
 var wrap = function(data, type, mapper) {
   var obj = Object.create(type);
 
@@ -107,7 +105,7 @@ var FIX = {
 var retLater = function(data, type, mapper) {
   if (_.isUndefined(data)) { throw 'Missing data in FIX'; }
 
-  return $q(function(resolve) {
+  return new RSVP.Promise(function(resolve) {
     window.setTimeout(function() {
       resolve(wrap(data, type, mapper));
     }, 1000);
@@ -115,13 +113,11 @@ var retLater = function(data, type, mapper) {
 };
 
 var getAll = function(fct, ids) {
-  return $q.all(_.map(ids, fct));
+  return RSVP.all(_.map(ids, fct));
 };
 
 angular.module('app')
-  .service('loader', ['$q', function(q) {
-    $q = q;
-
+  .service('loader', [function() {
     var Call = {
       properties: ['fct', 'instrs'],
 

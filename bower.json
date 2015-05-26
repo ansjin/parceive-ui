@@ -8,6 +8,7 @@
     "jquery": "~2.1.4",
     "d3": "~3.5.5",
     "lodash": "3.8.0",
-    "bootstrap-sass": "~3.3.4"
+    "bootstrap-sass": "~3.3.4",
+    "rsvp": "~3.0.18"
   }
 }
