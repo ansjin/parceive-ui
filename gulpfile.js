@@ -1,3 +1,7 @@
+/* global require */
+/* global console */
+/* global -_ */
+
 // gulp
 var gulp = require('gulp');
 
@@ -15,7 +19,6 @@ var bower = require('gulp-bower');
 var csslint = require('gulp-csslint');
 var livereload = require('gulp-livereload');
 var templateCache = require('gulp-angular-templatecache');
-var rename = require('gulp-rename');
 var concat = require('gulp-concat');
 var sourcemaps = require('gulp-sourcemaps');
 var gulpif = require('gulp-if');
@@ -30,8 +33,11 @@ var merge = require('merge-stream');
 //utilities
 
 var objectFieldsToBool = function(r, n, k) {
-  if(r[k] === "true") r[k] = true;
-  else if(r[k] === "false") r[k] = false;
+  if (r[k] === 'true') {
+    r[k] = true;
+  } else if (r[k] === 'false') {
+    r[k] = false;
+  }
 };
 
 //options
@@ -40,7 +46,7 @@ var env = require('./build.json');
 
 var opts = _.defaults(
   //gulp-if treats strings as glob patterns, force bools here
-  _.transform(util.env, objectFieldsToBool, util.env), 
+  _.transform(util.env, objectFieldsToBool, util.env),
   env.opts);
 
 //tasks
@@ -56,8 +62,10 @@ gulp.task('jshint', function() {
     .pipe(jshint())
     .pipe(jscs())
     .on('error', function(err) {
-      if(opts.failonlint) throw err;
-      console.log(err.message); 
+      if (opts.failonlint) {
+        throw err;
+      }
+      console.log(err.message);
       this.emit('end');
     })
     .pipe(jshint.reporter('default'))
@@ -65,7 +73,7 @@ gulp.task('jshint', function() {
       if (!file.jshint.success && opts.failonlint) {
         cb(file.jshint.results[0].reason, null);
       }
-      
+
       cb(null, file);
     }));
 });
@@ -79,18 +87,19 @@ gulp.task('csslint', function() {
 gulp.task('lint', ['jshint', 'csslint']);
 
 gulp.task('clean', function() {
-    return gulp.src(['./build/', './dist/*', './app/bower_components'])
-      .pipe(clean({force: true}));
+  return gulp.src(['./build/', './dist/*', './app/bower_components'])
+    .pipe(clean({force: true}));
 });
 
 gulp.task('minify-css', ['bower'], function() {
   var scss = gulp.src(['./app/style/**/*.scss'])
     .pipe(gulpif(opts.sourcemaps, sourcemaps.init()))
       .pipe(sass({
-        includePaths: ['./app/style/', './app/bower_components/', './app/bower_components/bootstrap-sass/assets/stylesheets']
+        includePaths: ['./app/style/', './app/bower_components/',
+          './app/bower_components/bootstrap-sass/assets/stylesheets']
       }).on('error', sass.logError))
     .pipe(gulpif(opts.sourcemaps, sourcemaps.write()));
-  
+
   return merge(scss, gulp.src(['./app/style/**/*.css']))
     .pipe(gulpif(opts.sourcemaps, sourcemaps.init()))
       .pipe(concat('style.css'))
@@ -101,9 +110,9 @@ gulp.task('minify-css', ['bower'], function() {
 
 gulp.task('minify-js', function() {
   return gulp.src(['./app/scripts/**/*.js'])
-    .pipe(order(opts.code_order))
-    .pipe(header("(function(){ \"use strict\"\n"))
-    .pipe(footer("})();"))
+    .pipe(order(opts.codeOrder))
+    .pipe(header('(function(){ "use strict"\n'))
+    .pipe(footer('})();'))
     .pipe(gulpif(opts.sourcemaps, sourcemaps.init()))
       .pipe(gulpif(opts.minify, uglify()))
       .pipe(concat('code.js'))
@@ -112,39 +121,41 @@ gulp.task('minify-js', function() {
 });
 
 gulp.task('minify-js-deps', ['bower'], function() {
-  return gulp.src(env.js_deps)
+  return gulp.src(env.jsDeps)
     .pipe(gulpif(opts.minify, uglify()))
     .pipe(concat('deps.js'))
     .pipe(gulp.dest('./build'));
 });
 
 gulp.task('minify-css-deps', ['bower'], function() {
-  return gulp.src(env.css_deps)
+  return gulp.src(env.cssDeps)
     .pipe(gulpif(opts.minify, minifyCSS()))
     .pipe(concat('deps.css'))
     .pipe(gulp.dest('./build'));
 });
 
-gulp.task('minify-templates', function () {
+gulp.task('minify-templates', function() {
   return gulp.src('./app/templates/**/*.html')
-    .pipe(templateCache({module: "app"}))
+    .pipe(templateCache({module: 'app'}))
     .pipe(gulp.dest('./build'));
 });
 
-gulp.task('html', function () {
+gulp.task('html', function() {
   return gulp.src('./app/index.html')
     .pipe(gulp.dest('./build'));
 });
 
+gulp.task('build', ['bower', 'lint', 'minify-js', 'minify-js-deps',
+                    'minify-css-deps', 'minify-css', 'minify-templates',
+                    'html']);
 
-gulp.task('build', ['bower', 'lint', 'minify-js', 'minify-js-deps', 'minify-css-deps', 'minify-css', 'minify-templates', 'html']);
-
-gulp.task('server', ['build'], function () {
+gulp.task('server', ['build'], function() {
   gulp.watch('bower.json', ['bower', 'minify-js-deps', 'minify-css-deps']);
   gulp.watch('build.json', ['build']);
 
   gulp.watch(['app/scripts/**/*.js'], ['minify-js', 'jshint']);
-  gulp.watch(['app/style/**/*.css', 'app/style/**/*.scss'], ['minify-css', 'csslint']);
+  gulp.watch(['app/style/**/*.css', 'app/style/**/*.scss'], ['minify-css',
+                                                             'csslint']);
   gulp.watch(['app/templates/**/*.html'], ['minify-templates']);
 
   gulp.watch(['app/index.html'], ['html']);
