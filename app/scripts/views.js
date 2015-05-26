@@ -8,8 +8,7 @@ angular.module('app')
         },
         link: function(scope, element, attrs) {
           var svg = d3.select(element[0])
-              .append('svg')
-              .style('width', '100%');
+              .append('svg');
 
           var bound = stateManager.bindId(attrs.view);
           var view = bound.getData();
