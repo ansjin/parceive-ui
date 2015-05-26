@@ -141,15 +141,32 @@ var manager = {
   },
 
   addGroup: function(group) {
-    marked[group] = {};
+    marked[group] = [];
 
     saveMarked();
   },
 
   removeGroup: function(group) {
+    if (group === 'Default') {
+      return;
+    }
+
     delete marked[group];
 
+    _.forEach(state, function(view) {
+      if (view.group === group) {
+        view.group = 'Default';
+      }
+    });
+
+    saveState();
     saveMarked();
+  },
+
+  getGroups: function() {
+    return _.map(marked, function(val, key) {
+      return key;
+    });
   },
 
   getData: function(id) {

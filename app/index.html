@@ -5,19 +5,43 @@
 	</head>
 	<body>
 		<div ng-controller="viewsController">
-		  <select ng-model="selectedView" ng-options="view.name group by view.group for view in allviews"></select>
-		
-		  <button ng-click="addView()">
-        Add view
-      </button>
-		
-			<div ng-repeat="view in views track by view.id">
-				<div ng-include="view._views.unsaved.htmlHeader"></div>
-				<d3-visualization view="{{view.id}}" />
-				<div ng-include="view._views.unsaved.htmlFooter"></div>
+		  <div class="add-view">
+				<select ng-model="selectedView" ng-options="view.name group by view.group for view in allviews"></select>
+			  <button ng-click="addView()">
+	        Add view
+	      </button>
+			</div>
+
+			<div class="add-group">
+				<input type="text" name="group" ng-model="addGroupInput" required>
+				<button ng-click="addGroup()">
+	        Add group
+	      </button>
+			</div>
+
+			<div class="remove-group">
+				<select ng-model="removeGroupInput" ng-options="group for group in allgroups"></select>
+			  <button ng-click="removeGroup()">
+	        Remove group
+	      </button>
+			</div>
+
+			<div ng-repeat="view in views track by view.id" class="views">
+				<div class="view-header">
+					<span>{{view.type.name}}</span>
+					<select ng-model="view.group" ng-options="group for group in allgroups"></select>
+					<button ng-click="removeView(view.id)">
+		        Remove view
+		      </button>
+				</div>
+				<div class="view">
+					<div ng-include="view._views.unsaved.htmlHeader"></div>
+					<d3-visualization view="{{view.id}}" />
+					<div ng-include="view._views.unsaved.htmlFooter"></div>
+				</div>
 			</did>
 		</div>
-		
+
 		<script src="deps.js"></script>
 		<script src="code.js"></script>
 		<script src="templates.js"></script>

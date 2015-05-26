@@ -22,6 +22,8 @@ angular.module('app')
   .controller('viewsController', ['$scope', 'views', 'viewProperties',
                                   'stateManager',
     function($scope, getViews, viewProperties, stateManager) {
+      stateManager.load();
+
       var views = _.map(getViews(), function(view) {
 
         var data = viewProperties(view);
@@ -36,6 +38,21 @@ angular.module('app')
 
       $scope.views = [];
       $scope.allviews = views;
+      $scope.allgroups = stateManager.getGroups();
+
+      $scope.addGroup = function() {
+        stateManager.addGroup($scope.addGroupInput);
+        $scope.allgroups = stateManager.getGroups();
+      };
+
+      $scope.removeGroup = function() {
+        if (_.isUndefined($scope.removeGroupInput)) {
+          return;
+        }
+
+        stateManager.removeGroup($scope.removeGroupInput);
+        $scope.allgroups = stateManager.getGroups();
+      };
 
       $scope.addView = function() {
         if (_.isUndefined($scope.selectedView)) {
@@ -63,7 +80,12 @@ angular.module('app')
         $scope.views.push(newView);
       };
 
-      stateManager.load();
+      $scope.removeView = function(id) {
+        stateManager.remove(id);
+        $scope.views = _.filter($scope.views, function(view) {
+          return view.id !== id;
+        });
+      };
 
       _.forEach(stateManager.getList(), function(id) {
         var bound = stateManager.bindId(id);
