@@ -97,7 +97,10 @@ gulp.task('minify-css', ['bower'], function() {
       .pipe(sass({
         includePaths: ['./app/style/', './app/bower_components/',
           './app/bower_components/bootstrap-sass/assets/stylesheets']
-      }).on('error', sass.logError))
+      }).on('error', function() {
+        sass.logError.apply(this, arguments);
+        this.emit('end');
+      }))
     .pipe(gulpif(opts.sourcemaps, sourcemaps.write()));
 
   return merge(scss, gulp.src(['./app/style/**/*.css']))
