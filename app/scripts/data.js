@@ -75,7 +75,7 @@ var Call = {
     return this.getSegments().then(function(segments) {
       return RSVP.all(
         _.map(segments, function(segment) {
-          segment.getInstructions();
+          return segment.getInstructions();
         })
       ).then(function(instructions) {
         return _.flatten(instructions);
