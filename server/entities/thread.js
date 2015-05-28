@@ -3,6 +3,8 @@ var router = express.Router();
 
 var util = require('./util');
 
+var calls = require('./call');
+
 var mapping = {
   'ID': 'id',
   'INSTRUCTION_ID': 'instruction',
@@ -21,6 +23,14 @@ router.get('/:id', function(req, res) {
   stmt.bind(req.params.id);
 
   util.sendOne(stmt, mapping, res);
+});
+
+router.get('/:id/calls', function(req, res) {
+  var stmt = req.db.prepare('SELECT * FROM CALL_TABLE WHERE THREAD_ID=?');
+
+  stmt.bind(req.params.id);
+
+  util.sendAll(stmt, calls.mapping, res);
 });
 
 module.exports = {

@@ -2,6 +2,9 @@ var express = require('express');
 var router = express.Router();
 
 var util = require('./util');
+
+var segments = require('./segment');
+
 var mapping = {
   'ID': 'id',
   'PROCESS_ID': 'process',
@@ -23,6 +26,14 @@ router.get('/:id', function(req, res) {
   stmt.bind(req.params.id);
 
   util.sendOne(stmt, mapping, res);
+});
+
+router.get('/:id/segments', function(req, res) {
+  var stmt = req.db.prepare('SELECT * FROM SEGMENT_TABLE WHERE CALL_ID=?');
+
+  stmt.bind(req.params.id);
+
+  util.sendAll(stmt, segments.mapping, res);
 });
 
 module.exports = {

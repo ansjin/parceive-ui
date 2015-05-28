@@ -3,6 +3,8 @@ var router = express.Router();
 
 var util = require('./util');
 
+var accesses = require('./access');
+
 var mapping = {
   'ID': 'id',
   'REFERENCE_ID': 'reference',
@@ -23,6 +25,14 @@ router.get('/:id', function(req, res) {
   stmt.bind(req.params.id);
 
   util.sendOne(stmt, mapping, res);
+});
+
+router.get('/:id/accesses', function(req, res) {
+  var stmt = req.db.prepare('SELECT * FROM ACCESS_TABLE WHERE REFERENCE_ID=?');
+
+  stmt.bind(req.params.id);
+
+  util.sendAll(stmt, accesses.mapping, res);
 });
 
 module.exports = {

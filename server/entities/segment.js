@@ -3,6 +3,8 @@ var router = express.Router();
 
 var util = require('./util');
 
+var instructions = require('./instruction');
+
 var mapping = {
   'ID': 'id',
   'CALL_ID': 'call',
@@ -22,6 +24,14 @@ router.get('/:id', function(req, res) {
   stmt.bind(req.params.id);
 
   util.sendOne(stmt, mapping, res);
+});
+
+router.get('/:id/instructions', function(req, res) {
+  var stmt = req.db.prepare('SELECT * FROM INSTRUCTION_TABLE WHERE SEGMENT_ID=?');
+
+  stmt.bind(req.params.id);
+
+  util.sendAll(stmt, instructions.mapping, res);
 });
 
 module.exports = {
