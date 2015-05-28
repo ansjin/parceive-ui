@@ -29,6 +29,14 @@ var jscs = require('gulp-jscs');
 var map = require('map-stream');
 var sass = require('gulp-sass');
 var merge = require('merge-stream');
+var express = require('express');
+
+//server
+var entities = require('./server/entities');
+
+var dbRoute = express();
+
+dbRoute.use(entities);
 
 //utilities
 
@@ -169,6 +177,9 @@ gulp.task('server', ['build'], function() {
 
   connect.server({
     root: 'build/',
-    port: 8080
+    port: 8080,
+    middleware: function() {
+      return [dbRoute];
+    }
   });
 });

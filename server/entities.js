@@ -55,4 +55,6 @@ dbRouter.use('/run/:db/', function(req, res, next) {
 
 dbRouter.use('/run/:db/', router);
 
+dbRouter.use(express.static('build'));
+
 module.exports = dbRouter;

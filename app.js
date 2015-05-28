@@ -7,7 +7,6 @@ var entities = require('./server/entities');
 
 var app = express();
 
-app.use(express.static('build'));
 app.use(entities);
 
 var server = app.listen(3000, function() {
