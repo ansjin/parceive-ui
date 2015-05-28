@@ -4,7 +4,7 @@ var router = express.Router();
 var dbManager = require('./db');
 
 var fs = require('fs');
-var _ = require('lodash')
+var _ = require('lodash');
 
 var accesses = require('./entities/access');
 var calls = require('./entities/call');

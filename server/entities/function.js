@@ -3,7 +3,7 @@ var router = express.Router();
 
 var util = require('./util');
 
-var calls = require('./call')
+var calls = require('./call');
 
 var mapping = {
   'ID': 'id',
