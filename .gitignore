@@ -8,3 +8,6 @@ app/bower_components
 #build
 build
 dist
+
+#data
+data
