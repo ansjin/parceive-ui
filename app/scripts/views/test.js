@@ -112,7 +112,7 @@ angular.module('test1-loader-view', ['app'])
             .append('text')
             .attr('x', 15)
             .attr('y', y)
-            .text(fct.name)
+            .text(fct.signature)
             .style('stroke', 'blue');
 
           fctE.on('click', function() {
@@ -140,7 +140,11 @@ angular.module('tes2-loader-view', ['app'])
   return function(svg) {
     svg.selectAll('*').remove();
 
-    loader.getCall('1').then(function(call) {
+    loader.getFunctionBySignature('main').then(function(fct) {
+      return fct.getCalls();
+    }).then(function(calls) {
+      return calls[0];
+    }).then(function(call) {
       svg
         .append('text')
         .attr('x', 10)
@@ -165,7 +169,7 @@ angular.module('tes2-loader-view', ['app'])
                 .append('text')
                 .attr('x', x)
                 .attr('y', yc)
-                .text(ref.accessType + '-' + ref.address);
+                .text(ref.id + '-' + ref.type);
               x += 40;
             });
           });
