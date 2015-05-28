@@ -19,9 +19,65 @@ angular.module('app')
       };
     }])
   .controller('viewsController', ['$scope', 'views', 'viewProperties',
-                                  'stateManager',
-    function($scope, getViews, viewProperties, stateManager) {
-      stateManager.load();
+                                  'stateManager', 'loader',
+    function($scope, getViews, viewProperties, stateManager, loader) {
+      function initViews() {
+        $scope.views = [];
+        _.forEach(stateManager.getList(), function(id) {
+          var bound = stateManager.bindId(id);
+          var view = bound.getData();
+
+          view._views = {
+            unsaved: {
+              htmlHeader: 'views/' + view.type.id + '-header.html',
+              htmlFooter: 'views/' + view.type.id + '-footer.html'
+            }
+          };
+
+          var data = viewProperties(view.type.id);
+
+          view.type.unsaved = _.pick(data, _.isFunction);
+
+          bound.setFocusCallback(data.focus);
+          bound.setMarkedCallback(data.markedChanged);
+
+          $scope.views.push(view);
+        });
+      }
+
+      loader.getRuns().then(function(runs) {
+        stateManager.loadRun();
+        $scope.allruns = runs;
+        $scope.$apply();
+      });
+
+      function runsUpdate(newVal, oldVal) {
+        if (newVal === oldVal) {
+          return;
+        }
+
+        if (loader.getRun()) {
+          $scope.selectedRun = loader.getRun();
+        }
+
+        var ok = _.includes($scope.allruns, $scope.selectedRun);
+
+        if (ok) {
+          loader.setRun($scope.selectedRun);
+          stateManager.saveRun();
+          stateManager.load();
+          initViews();
+        }
+
+        $scope.hasRun = ok;
+      }
+
+      $scope.$watch('allruns', runsUpdate);
+      $scope.$watch('selectedRun', runsUpdate);
+
+      $scope.$watch(function() {
+        stateManager.save();
+      });
 
       var views = _.map(getViews(), function(view) {
 
@@ -38,10 +94,6 @@ angular.module('app')
       $scope.views = [];
       $scope.allviews = views;
       $scope.allgroups = stateManager.getGroups();
-
-      $scope.$watch(function() {
-        stateManager.save();
-      });
 
       $scope.addGroup = function() {
         stateManager.addGroup($scope.addGroupInput);
@@ -89,25 +141,4 @@ angular.module('app')
           return view.id !== id;
         });
       };
-
-      _.forEach(stateManager.getList(), function(id) {
-        var bound = stateManager.bindId(id);
-        var view = bound.getData();
-
-        view._views = {
-          unsaved: {
-            htmlHeader: 'views/' + view.type.id + '-header.html',
-            htmlFooter: 'views/' + view.type.id + '-footer.html'
-          }
-        };
-
-        var data = viewProperties(view.type.id);
-
-        view.type.unsaved = _.pick(data, _.isFunction);
-
-        bound.setFocusCallback(data.focus);
-        bound.setMarkedCallback(data.markedChanged);
-
-        $scope.views.push(view);
-      });
     }]);

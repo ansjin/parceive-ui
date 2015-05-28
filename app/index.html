@@ -3,8 +3,10 @@
 	<head>
 		<link rel="stylesheet" href="style.css">
 	</head>
-	<body>
-		<div ng-controller="viewsController">
+	<body ng-controller="viewsController">
+		<select ng-model="selectedRun" ng-options="run for run in allruns"></select>
+
+		<div ng-show="hasRun">
 		  <div class="add-view">
 				<select ng-model="selectedView" ng-options="view.name group by view.group for view in allviews"></select>
 			  <button ng-click="addView()">

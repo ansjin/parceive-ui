@@ -5,6 +5,9 @@ var marked = {
   'Default': []
 };
 
+var getRun;
+var setRun;
+
 var removeUnsaved = function(key, val) {
   if (key === 'unsaved') {
     return {};
@@ -13,12 +16,21 @@ var removeUnsaved = function(key, val) {
   return val;
 };
 
+function saveRun() {
+  localStorage.setItem('run', getRun());
+}
+
+function loadRun() {
+  setRun(localStorage.getItem('run'));
+}
+
 function saveState() {
-  localStorage.setItem('state', JSON.stringify(state, removeUnsaved));
+  localStorage.setItem(getRun() + '/state',
+                        JSON.stringify(state, removeUnsaved));
 }
 
 function loadState() {
-  state = JSON.parse(localStorage.getItem('state'));
+  state = JSON.parse(localStorage.getItem(getRun() + '/state'));
 
   if (_.isNull(state)) {
     state = {};
@@ -26,11 +38,11 @@ function loadState() {
 }
 
 function saveMarked() {
-  localStorage.setItem('marked', JSON.stringify(marked));
+  localStorage.setItem(getRun() + '/marked', JSON.stringify(marked));
 }
 
 function loadMarked() {
-  marked = JSON.parse(localStorage.getItem('marked'));
+  marked = JSON.parse(localStorage.getItem(getRun() + '/marked'));
 
   if (_.isNull(marked)) {
     marked = {
@@ -112,6 +124,9 @@ function mark(id, type, oid, isMarked, doCb, doSave) {
   }
 
 var manager = {
+  loadRun: loadRun,
+  saveRun: saveRun,
+
   load: function() {
     loadState();
     loadMarked();
@@ -258,6 +273,9 @@ manager.bindId = function(id) {
 };
 
 angular.module('app')
-  .service('stateManager', [function() {
+  .service('stateManager', ['loader', function(loader) {
+    getRun = loader.getRun;
+    setRun = loader.setRun;
+
     return manager;
   }]);
