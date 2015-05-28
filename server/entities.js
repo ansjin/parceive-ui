@@ -26,7 +26,7 @@ router.use('/threads', threads.router);
 
 var dbRouter = express.Router();
 
-dbRouter.get('/', function(req, res) {
+dbRouter.get('/run/', function(req, res) {
   res.type('application/json');
 
   fs.readdir('./data', function(err, files) {
@@ -38,7 +38,7 @@ dbRouter.get('/', function(req, res) {
   });
 });
 
-dbRouter.use('/:db/', function(req, res, next) {
+dbRouter.use('/run/:db/', function(req, res, next) {
   var db = dbManager(req.params.db, function(err) {
     if (err) {
       res.status(404);
@@ -53,6 +53,6 @@ dbRouter.use('/:db/', function(req, res, next) {
   });
 });
 
-dbRouter.use('/:db/', router);
+dbRouter.use('/run/:db/', router);
 
 module.exports = dbRouter;
