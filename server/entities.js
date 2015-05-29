@@ -47,8 +47,6 @@ dbRouter.use('/run/:db/', function(req, res, next) {
       req.db = db;
 
       next();
-
-      db.close();
     }
   });
 });

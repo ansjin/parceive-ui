@@ -27,7 +27,8 @@ router.get('/:id', function(req, res) {
 });
 
 router.get('/:id/accesses', function(req, res) {
-  var stmt = req.db.prepare('SELECT * FROM ACCESS_TABLE WHERE INSTRUCTION_ID=?');
+  var stmt =
+    req.db.prepare('SELECT * FROM ACCESS_TABLE WHERE INSTRUCTION_ID=?');
 
   stmt.bind(req.params.id);
 
