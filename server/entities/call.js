@@ -4,6 +4,7 @@ var router = express.Router();
 var util = require('./util');
 
 var segments = require('./segment');
+var instructions = require('./instruction');
 
 var mapping = {
   'ID': 'id',
@@ -47,6 +48,16 @@ router.get('/:id/segments', function(req, res) {
   stmt.bind(req.params.id);
 
   util.sendAll(stmt, segments.mapping, res);
+});
+
+router.get('/:id/instructions', function(req, res) {
+  var stmt =
+    req.db.prepare('SELECT * FROM INSTRUCTION_TABLE WHERE SEGMENT_ID IN' +
+                      '(SELECT ID FROM SEGMENT_TABLE WHERE CALL_ID=?)');
+
+  stmt.bind(req.params.id);
+
+  util.sendAll(stmt, instructions.mapping, res);
 });
 
 module.exports = {
