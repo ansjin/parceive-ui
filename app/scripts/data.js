@@ -1,6 +1,42 @@
 var run;
 
+var cache = {};
+
+function setCache(type, id, value) {
+  if (!cache[type]) {
+    cache[type] = {};
+  }
+
+  cache[type][id] = value;
+}
+
+function getCache(type, id) {
+  if (!cache[type]) {
+    cache[type] = {};
+  }
+
+  return cache[type][id];
+}
+
+var running = {};
+
+function addRunning(url, promise) {
+  running[url] = promise;
+
+  promise.finally(function() {
+    delete running[url];
+  });
+}
+
+function getRunning(url) {
+  return running[url];
+}
+
 function wrap(data, type, mapper) {
+  if (getCache(type.typeName, data.id)) {
+    return getCache(type.typeName, data.id);
+  }
+
   var obj = Object.create(type);
 
   obj._mapper = mapper;
@@ -13,6 +49,8 @@ function wrap(data, type, mapper) {
   }
 
   _.bindAll(obj);
+
+  setCache(type.typeName, data.id, obj);
 
   return obj;
 }
@@ -28,20 +66,39 @@ function httpGet(http, url) {
 }
 
 function getOne(http, mapper, url, type) {
-  return httpGet(http, url).then(function(data) {
-    return wrap(data, type, mapper);
-  });
+  if (getRunning(url)) {
+    return getRunning(url);
+  }
+
+  var promise = httpGet(http, url)
+    .then(function(data) {
+      return wrap(data, type, mapper);
+    });
+
+  addRunning(url, promise);
+
+  return promise;
 }
 
 function getMany(http, mapper, url, type) {
-  return httpGet(http, url).then(function(datas) {
-    return _.map(datas, function(data) {
-      return wrap(data, type, mapper);
+  if (getRunning(url)) {
+    return getRunning(url);
+  }
+
+  var promise =  httpGet(http, url)
+    .then(function(datas) {
+      return _.map(datas, function(data) {
+        return wrap(data, type, mapper);
+      });
     });
-  });
+
+  addRunning(url, promise);
+
+  return promise;
 }
 
 var Access = {
+  typeName: 'Access',
   properties: ['instruction', 'position', 'reference', 'type', 'state'],
 
   getInstruction: function() {
@@ -54,6 +111,7 @@ var Access = {
 };
 
 var Call = {
+  typeName: 'Call',
   properties: ['process', 'thread', 'function', 'instruction', 'start', 'end'],
 
   getFunction: function() {
@@ -65,26 +123,42 @@ var Call = {
   },
 
   getSegments: function() {
+    var self = this;
+
+    if (self.segments) {
+      return RSVP.Promise.resolve(self.segments);
+    }
+
     return this._mapper.getMany(
       'calls/' + this.id + '/segments',
       this._mapper.types.Segment
-    );
+    ).then(function(data) {
+      self.segments = data;
+
+      return data;
+    });
   },
 
   getInstructions: function() {
-    return this.getSegments().then(function(segments) {
-      return RSVP.all(
-        _.map(segments, function(segment) {
-          return segment.getInstructions();
-        })
-      ).then(function(instructions) {
-        return _.flatten(instructions);
-      });
+    var self = this;
+
+    if (this.instructions) {
+      return RSVP.Promise.resolve(self.instructions);
+    }
+
+    return this._mapper.getMany(
+      'calls/' + this.id + '/instructions',
+      this._mapper.types.Instruction
+    ).then(function(data) {
+      self.instructions = data;
+
+      return data;
     });
   }
 };
 
 var File = {
+  typeName: 'File',
   properties: ['name', 'path'],
 
   getFunctions: function() {
@@ -96,6 +170,7 @@ var File = {
 };
 
 var FunctionType = {
+  typeName: 'Function',
   properties: ['signature', 'type', 'file', 'startLine'],
 
   getFile: function() {
@@ -111,6 +186,7 @@ var FunctionType = {
 };
 
 var Instruction = {
+  typeName: 'Instruction',
   properties: ['segment', 'type', 'lineNumber'],
 
   getSegment: function() {
@@ -118,10 +194,20 @@ var Instruction = {
   },
 
   getAccesses: function() {
+    var self = this;
+
+    if (this.accesses) {
+      return RSVP.Promise.resolve(this.accesses);
+    }
+
     return this._mapper.getMany(
       'instructions/' + this.id + '/accesses',
       this._mapper.types.Access
-    );
+    ).then(function(data) {
+      self.accesses = data;
+
+      return data;
+    });
   },
 
   getCall: function() {
@@ -131,17 +217,27 @@ var Instruction = {
   },
 
   getReferences: function() {
+    if (this.references) {
+      return RSVP.Promise.resolve(this.references);
+    }
+
+    var self = this;
     return this.getAccesses().then(function(accesses) {
       return RSVP.all(
         _.map(accesses, function(access) {
           return access.getReference();
         })
       );
+    }).then(function(data) {
+      self.references = data;
+
+      return data;
     });
   }
 };
 
 var Reference = {
+  typeName: 'Reference',
   properties: ['reference', 'size', 'type', 'name', 'allocator'],
 
   getAllocator: function() {
@@ -157,6 +253,7 @@ var Reference = {
 };
 
 var Segment = {
+  typeName: 'Segment',
   properties: ['call', 'segmentNumber', 'type', 'loopPointer'],
 
   getCall: function() {
@@ -172,6 +269,7 @@ var Segment = {
 };
 
 var Thread = {
+  typeName: 'Thread',
   properties: ['instruction', 'parent', 'child'],
 
   getInstruction: function() {
@@ -208,14 +306,32 @@ var mapper = {
 };
 
 mapper.getAccess = function(id) {
+  var cached = getCache('Access', id);
+
+  if (cached) {
+    return RSVP.Promise.resolve(cached);
+  }
+
   return this.getOne('accesses/' + id, Access);
 };
 
 mapper.getCall = function(id) {
+  var cached = getCache('Call', id);
+
+  if (cached) {
+    return RSVP.Promise.resolve(cached);
+  }
+
   return this.getOne('calls/' + id, Call);
 };
 
 mapper.getFile = function(id) {
+  var cached = getCache('File', id);
+
+  if (cached) {
+    return RSVP.Promise.resolve(cached);
+  }
+
   return this.getOne('files/' + id, File);
 };
 
@@ -224,6 +340,12 @@ mapper.getFiles = function() {
 };
 
 mapper.getFunction = function(id) {
+  var cached = getCache('Function', id);
+
+  if (cached) {
+    return RSVP.Promise.resolve(cached);
+  }
+
   return this.getOne('functions/' + id, FunctionType);
 };
 
@@ -236,18 +358,42 @@ mapper.getFunctions = function() {
 };
 
 mapper.getInstruction = function(id) {
+  var cached = getCache('Instruction', id);
+
+  if (cached) {
+    return RSVP.Promise.resolve(cached);
+  }
+
   return this.getOne('instructions/' + id, Instruction);
 };
 
 mapper.getReference = function(id) {
+  var cached = getCache('Reference', id);
+
+  if (cached) {
+    return RSVP.Promise.resolve(cached);
+  }
+
   return this.getOne('references/' + id, Reference);
 };
 
 mapper.getSegment = function(id) {
+  var cached = getCache('Segment', id);
+
+  if (cached) {
+    return RSVP.Promise.resolve(cached);
+  }
+
   return this.getOne('segments/' + id, Segment);
 };
 
 mapper.getThread = function(id) {
+  var cached = getCache('Thread', id);
+
+  if (cached) {
+    return RSVP.Promise.resolve(cached);
+  }
+
   return this.getOne('threads/' + id, Thread);
 };
 
@@ -255,13 +401,39 @@ mapper.getThreads = function() {
   return this.getMany('threads', File);
 };
 
+// query optimizations
+mapper.getAccessesForInstructions = function(instructions) {
+  var ids = _.pluck(instructions, 'id');
+
+  return this.getMany('instructions/many/' +
+                      JSON.stringify(ids) + '/accesses', Access)
+    .then(function(accesses) {
+      _.forEach(instructions, function(instruction) {
+        instruction.accesses = [];
+      });
+
+      _.forEach(accesses, function(access) {
+        var instruction = getCache('Instruction', access.instruction);
+
+        instruction.accesses.push(access);
+      });
+
+      return accesses;
+    });
+};
+
 mapper.getRun = function() {
   return run;
 };
 
 mapper.setRun = function(nrun) {
+  //clear the cache and running when changing runs to avoid data leaking
+  cache = {};
+  running = {};
+
   run = nrun;
 };
+
 _.bindAll(mapper);
 
 angular.module('app')
