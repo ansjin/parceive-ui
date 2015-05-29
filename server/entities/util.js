@@ -51,5 +51,33 @@ module.exports = {
     });
 
     stmt.finalize();
+  },
+
+  makeIN: function(str) {
+    var data = JSON.parse(str);
+
+    if (!_.isArray(data)) {
+      return '()';
+    }
+
+    var args = [];
+
+    data = _.map(data, function(el) {
+      if (_.isNumber(el)) {
+        return el;
+      } else if (_.isString(el)) {
+        args.push(el);
+        return '?';
+      } else {
+        return;
+      }
+    });
+
+    data = _.reject(data, _.isUndefined);
+
+    return {
+      str: '(' + data.join()  + ')',
+      args: args
+    };
   }
 };

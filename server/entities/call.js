@@ -20,6 +20,19 @@ router.get('/', function(req, res) {
   util.sendAll(stmt, mapping, res);
 });
 
+router.get('/many/:ids', function(req, res) {
+  var prep = util.makeIN(req.params.ids);
+
+  var stmt =
+    req.db.prepare('SELECT * FROM CALL_TABLE WHERE ID in' + prep.str);
+
+  if (prep.args.length > 0) {
+    stmt.bind.call(stmt, prep.args);
+  }
+
+  util.sendAll(stmt, mapping, res);
+});
+
 router.get('/:id', function(req, res) {
   var stmt = req.db.prepare('SELECT * FROM CALL_TABLE WHERE ID=?');
 
