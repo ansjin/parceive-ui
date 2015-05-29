@@ -17,6 +17,20 @@ router.get('/', function(req, res) {
   util.sendAll(stmt, mapping, res);
 });
 
+router.get('/many/:ids/accesses', function(req, res) {
+  var prep = util.makeIN(req.params.ids);
+
+  var stmt =
+    req.db.prepare('SELECT * FROM ACCESS_TABLE WHERE INSTRUCTION_ID in' +
+                      prep.str);
+
+  if (prep.args.length > 0) {
+    stmt.bind.call(stmt, prep.args);
+  }
+
+  util.sendAll(stmt, accesses.mapping, res);
+});
+
 router.get('/many/:ids', function(req, res) {
   var prep = util.makeIN(req.params.ids);
 
