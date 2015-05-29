@@ -30,7 +30,7 @@ router.get('/many/:ids', function(req, res) {
   var prep = util.makeIN(req.params.ids);
 
   var stmt =
-    req.db.prepare('SELECT * FROM SEGMENT_TABLE WHERE ID in' + prep.str);
+    req.db.prepare('SELECT * FROM SEGMENT_TABLE WHERE ID IN' + prep.str);
 
   if (prep.args.length > 0) {
     stmt.bind.call(stmt, prep.args);

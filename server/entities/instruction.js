@@ -21,7 +21,7 @@ router.get('/many/:ids/accesses', function(req, res) {
   var prep = util.makeIN(req.params.ids);
 
   var stmt =
-    req.db.prepare('SELECT * FROM ACCESS_TABLE WHERE INSTRUCTION_ID in' +
+    req.db.prepare('SELECT * FROM ACCESS_TABLE WHERE INSTRUCTION_ID IN' +
                       prep.str);
 
   if (prep.args.length > 0) {
@@ -35,7 +35,7 @@ router.get('/many/:ids', function(req, res) {
   var prep = util.makeIN(req.params.ids);
 
   var stmt =
-    req.db.prepare('SELECT * FROM INSTRUCTION_TABLE WHERE ID in' + prep.str);
+    req.db.prepare('SELECT * FROM INSTRUCTION_TABLE WHERE ID IN' + prep.str);
 
   if (prep.args.length > 0) {
     stmt.bind.call(stmt, prep.args);
