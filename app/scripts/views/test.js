@@ -154,19 +154,19 @@ angular.module('tes2-loader-view', ['app'])
       call.getInstructions().then(function(instrs) {
         var y = 30;
 
-        loader.getAccessesForInstructions(instrs).then(function() {
-          _.forEach(instrs, function(instr) {
-            var yc = y;
-            svg
-              .append('text')
-              .attr('x', 15)
-              .attr('y', y)
-              .text(instr.type);
+        _.forEach(instrs, function(instr) {
+          var yc = y;
+          svg
+            .append('text')
+            .attr('x', 15)
+            .attr('y', y)
+            .text(instr.type);
 
-            instr.getReferences().then(function(refs) {
-              var x = 80;
+          instr.getAccesses().then(function(accesses) {
+            var x = 80;
 
-              _.forEach(refs, function(ref) {
+            _.forEach(accesses, function(access) {
+              access.getReference().then(function(ref) {
                 svg
                   .append('text')
                   .attr('x', x)
@@ -175,9 +175,9 @@ angular.module('tes2-loader-view', ['app'])
                 x += 40;
               });
             });
-
-            y += 20;
           });
+
+          y += 20;
         });
       });
     });
