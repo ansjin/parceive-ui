@@ -10,7 +10,7 @@ function mapper(mapping, row) {
   return ret;
 }
 
-module.exports = {
+var util = {
   mapper: mapper,
 
   sendAll: function(stmt, mapping, res) {
@@ -79,5 +79,19 @@ module.exports = {
       str: '(' + data.join()  + ')',
       args: args
     };
+  },
+
+  buildINStatement: function(db, mapping, res, ids, table) {
+    var prep = util.makeIN(ids);
+
+    var stmt = db.prepare('SELECT * FROM ' + table + ' IN' + prep.str);
+
+    if (prep.args.length > 0) {
+      stmt.bind.call(stmt, prep.args);
+    }
+
+    util.sendAll(stmt, mapping, res);
   }
 };
+
+module.exports = util;

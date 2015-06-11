@@ -9,6 +9,8 @@ var getManyTemplate = _.template('<%= type %>/many/<%= ids %>');
 var getAllTemplate = _.template('<%= type %>');
 var getRelationshipTemplate =
   _.template('<%= type %>/<%= id %>/<%= relationship %>');
+var getManyRelationshipTemplate =
+  _.template('<%= type %>/many/<%= ids %>/<%= relationship %>');
 
 function setCache(type, id, value) {
   if (!cache[type]) {
@@ -99,49 +101,142 @@ function getSpecificReal(http, manager, type, id, many) {
   }
 }
 
-function timeoutFct(http, manager, type) {
-  var name = type.typeName;
+function getManySpecific(http, manager, expecting, type) {
+  var ids = _.map(expecting, function(val, key) {
+    return key;
+  });
 
-  pipelineRestart = false;
+  return getSpecificReal(http, manager, type, JSON.stringify(ids), true)
+    .then(function(data) {
+      _.forEach(expecting, function(deffered, id) {
+        var result = _.find(data, function(elem) {
+          /* jshint -W116 */
+          /* id is always a string, but elem.id may be a number */
+          return elem.id == id;
+          /* jshint +W116 */
+        });
 
-  _.forEach(pipeline, function(todos, typeName) {
-    var type = mapper.types[typeName];
-    var ids = _.map(todos, function(val, key) {
+        if (result) {
+          delete pipeline[type.typeName].specific[id];
+
+          deffered.resolve(result);
+        }
+      });
+    }).catch(function(err) {
+      _.forEach(expecting, function(deffered) {
+        deffered.reject(err);
+      });
+    });
+}
+
+function getManyManyRelationship(http, manager, expecting, type) {
+  return _.map(expecting, function(waiting, relationship) {
+    var ids = _.map(waiting, function(val, key) {
       return key;
     });
 
-    if (ids.length === 0) {
-      return;
-    }
+    var relationMeta = type.relationships[relationship];
+    var relationType = mapper.types[relationMeta.type];
+    var inverse = relationMeta.inverse;
 
-    getSpecificReal(http, manager, type, JSON.stringify(ids), true)
+    _.forEach(ids, function(id) {
+      var instance = getCache(type.typeName, id);
+
+      instance[relationship] = [];
+    });
+
+    return getManyURL(http, manager, getManyRelationshipTemplate(
+      {type: type.plural, ids: JSON.stringify(ids),
+      relationship: relationship}), relationType)
+
       .then(function(data) {
-        _.forEach(todos, function(deffered, id) {
-          var result = _.find(data, function(elem) {
-            /* jshint -W116 */
-            /* id is always a string, but elem.id may be a number */
-            return elem.id == id;
-            /* jshint +W116 */
-          });
+        _.forEach(data, function(element) {
+          var instance = getCache(type.typeName, element[inverse]);
 
-          if (result) {
-            delete pipeline[name][id];
+          instance[relationship].push(element);
+        });
 
-            deffered.resolve(result);
-          }
+        _.forEach(waiting, function(deffered, id) {
+          var instance = getCache(type.typeName, id);
+
+          delete pipeline[type.typeName].relationship[id];
+
+          deffered.resolve(instance[relationship]);
         });
       }).catch(function(err) {
-        _.forEach(todos, function(deffered) {
+        _.forEach(waiting, function(deffered) {
           deffered.reject(err);
         });
-      }).finally(function() {
-        pipelineTimeout = false;
-
-        if (pipelineRestart) {
-          timeoutFct(http, manager, type);
-        }
       });
   });
+}
+
+function timeoutFct(http, manager) {
+  pipelineRestart = false;
+
+  var arr = _.map(pipeline, function(val, key) {
+      return {
+        type: mapper.types[key],
+        specific: val.specific,
+        relationship: val.relationship
+      };
+    });
+
+  var specific = _.filter(arr, function(expected) {
+    return expected.specific && _.size(expected.specific) > 0;
+  });
+
+  var relationships = _.filter(arr, function(expected) {
+    return expected.relationship && _.size(expected.relationship) > 0;
+  });
+
+  var specificPA = RSVP.all(_.map(specific, function(expected) {
+    return getManySpecific(http, manager, expected.specific, expected.type);
+  }));
+
+  var relationshipPA = RSVP.all(_.map(relationships,
+    function(expected) {
+      return getManyManyRelationship(http, manager, expected.relationship,
+        expected.type);
+    }));
+
+  RSVP.hash({
+    specific: specificPA,
+    relationship: relationshipPA
+  }).finally(function() {
+    pipelineTimeout = false;
+
+    if (pipelineRestart) {
+      timeoutFct(http, manager);
+    }
+  });
+}
+
+function startPipelineTimeout(http, manager) {
+  pipelineRestart = true;
+  if (pipelineTimeout === false) {
+    pipelineTimeout =
+      setTimeout(_.partial(timeoutFct, http, manager), 10);
+  }
+}
+
+function addToPipeline(type, id, deferred, relationship) {
+  if (!pipeline[type.typeName]) {
+    pipeline[type.typeName] = {
+      specific: {},
+      relationship: {}
+    };
+  }
+
+  if (relationship) {
+    if (!pipeline[type.typeName].relationship[relationship]) {
+      pipeline[type.typeName].relationship[relationship] = {};
+    }
+
+    pipeline[type.typeName].relationship[relationship][id] = deferred;
+  } else {
+    pipeline[type.typeName].specific[id] = deferred;
+  }
 }
 
 function getSpecific(http, manager, type, id) {
@@ -151,39 +246,36 @@ function getSpecific(http, manager, type, id) {
     return RSVP.Promise.resolve(cached);
   }
 
-  var name = type.typeName;
-
-  if (!pipeline[name]) {
-    pipeline[name] = {};
-  }
-
   var deferred = RSVP.defer();
 
-  pipeline[name][id] = deferred;
-
-  pipelineRestart = true;
-  if (pipelineTimeout === false) {
-    pipelineTimeout =
-      setTimeout(_.partial(timeoutFct, http, manager, type), 10);
-  }
+  addToPipeline(type, id, deferred);
+  startPipelineTimeout(http, manager);
 
   setCache(type, id, deferred.promise);
   return deferred.promise;
 }
 
-function getRelationship(http, mapper, instance, type, relationship, many) {
+function getRelationship(http, manager, instance, relationship) {
   if (_.isObject(instance[relationship])) {
     return RSVP.Promise.resolve(instance[relationship]);
   }
 
+  var type = instance._type;
+
   var promise;
 
-  if (many) {
-    promise = getManyURL(http, mapper, getRelationshipTemplate(
-      {type: instance.plural, id: instance.id, relationship: relationship}),
-      type);
+  var relationMeta = type.relationships[relationship];
+  if (relationMeta.many) {
+    var deferred = RSVP.defer();
+
+    addToPipeline(type, instance.id, deferred, relationship);
+    startPipelineTimeout(http, manager);
+
+    promise = deferred.promise;
   } else {
-    promise = getSpecific(http, mapper, type, instance[relationship]);
+    var relationType = manager.types[relationMeta.type];
+
+    promise = getSpecific(http, manager, relationType, instance[relationship]);
   }
 
   return promise.then(function(data) {
@@ -203,15 +295,21 @@ var Access = {
   singular: 'access',
   plural: 'accesses',
   properties: ['instruction', 'position', 'reference', 'type', 'state'],
+  relationships: {
+    'reference': {
+      type: 'Reference'
+    },
+    'instruction': {
+      type: 'Instruction'
+    }
+  },
 
   getInstruction: function() {
-    return this._mapper.getRelationship(this,
-      this._mapper.types.Instruction, 'instruction');
+    return this._mapper.getRelationship(this, 'instruction');
   },
 
   getReference: function() {
-    return this._mapper.getRelationship(this,
-      this._mapper.types.Reference, 'reference');
+    return this._mapper.getRelationship(this, 'reference');
   }
 };
 
@@ -220,25 +318,42 @@ var Call = {
   singular: 'call',
   plural: 'calls',
   properties: ['process', 'thread', 'function', 'instruction', 'start', 'end'],
+  relationships: {
+    'thread': {
+      type: 'Thread'
+    },
+    'function': {
+      type: 'Function'
+    },
+    'segments': {
+      type: 'Segment',
+      many: true,
+      inverse: 'call'
+    }
+  },
 
   getFunction: function() {
-    return this._mapper.getRelationship(this,
-      this._mapper.types.Function, 'function');
+    return this._mapper.getRelationship(this, 'function');
   },
 
   getThread: function() {
-    return this._mapper.getRelationship(this,
-      this._mapper.types.Thread, 'thread');
+    return this._mapper.getRelationship(this, 'thread');
   },
 
   getSegments: function() {
-    return this._mapper.getRelationship(this,
-      this._mapper.types.Segments, 'segments', true);
+    return this._mapper.getRelationship(this, 'segments');
   },
 
   getInstructions: function() {
-    return this._mapper.getRelationship(this,
-      this._mapper.types.Instruction, 'instructions', true);
+    var mapper = this._mapper;
+    return mapper.getRelationship(this, 'segments')
+      .then(function(segments) {
+        return RSVP.all(_.map(segments, function(segment) {
+          return segment.getInstructions();
+        })).then(function(data) {
+          return _.flatten(data);
+        });
+      });
   }
 };
 
@@ -247,10 +362,16 @@ var File = {
   singular: 'file',
   plural: 'files',
   properties: ['name', 'path'],
+  relationships: {
+    'functions': {
+      type: 'Function',
+      many: true,
+      inverse: 'file'
+    }
+  },
 
   getFunctions: function() {
-    return this._mapper.getRelationship(this,
-      this._mapper.types.Function, 'functions', true);
+    return this._mapper.getRelationship(this, 'functions');
   }
 };
 
@@ -259,15 +380,23 @@ var FunctionType = {
   singular: 'function',
   plural: 'functions',
   properties: ['signature', 'type', 'file', 'startLine'],
+  relationships: {
+    'file': {
+      type: 'File'
+    },
+    'calls': {
+      type: 'Call',
+      many: true,
+      inverse: 'function'
+    }
+  },
 
   getFile: function() {
-    return this._mapper.getRelationship(this,
-      this._mapper.types.File, 'file');
+    return this._mapper.getRelationship(this, 'file');
   },
 
   getCalls: function() {
-    return this._mapper.getRelationship(this,
-      this._mapper.types.Call, 'calls', true);
+    return this._mapper.getRelationship(this, 'calls');
   }
 };
 
@@ -276,15 +405,23 @@ var Instruction = {
   singular: 'instruction',
   plural: 'instructions',
   properties: ['segment', 'type', 'lineNumber'],
+  relationships: {
+    'segment': {
+      type: 'Segment'
+    },
+    'accesses': {
+      type: 'Access',
+      many: true,
+      inverse: 'instruction'
+    }
+  },
 
   getSegment: function() {
-    return this._mapper.getRelationship(this,
-      this._mapper.types.Segment, 'segment');
+    return this._mapper.getRelationship(this, 'segment');
   },
 
   getAccesses: function() {
-    return this._mapper.getRelationship(this,
-      this._mapper.types.Access, 'accesses', true);
+    return this._mapper.getRelationship(this, 'accesses');
   },
 
   getCall: function() {
@@ -294,8 +431,9 @@ var Instruction = {
   },
 
   getReferences: function() {
-    return this._mapper.getRelationship(this,
-      this._mapper.types.Reference, 'references', true);
+    return this.getAccesses().then(function(access) {
+      return access.getReference();
+    });
   }
 };
 
@@ -304,6 +442,16 @@ var Reference = {
   singular: 'reference',
   plural: 'references',
   properties: ['reference', 'size', 'type', 'name', 'allocator'],
+  relationships: {
+    'allocator': {
+      type: 'Instruction'
+    },
+    'accesses': {
+      type: 'Access',
+      many: true,
+      inverse: 'reference'
+    }
+  },
 
   getAllocator: function() {
     return this._mapper.getRelationship(this,
@@ -311,8 +459,7 @@ var Reference = {
   },
 
   getAccesses: function() {
-    return this._mapper.getRelationship(this,
-      this._mapper.types.Access, 'accesses', true);
+    return this._mapper.getRelationship(this, 'accesses');
   }
 };
 
@@ -321,15 +468,23 @@ var Segment = {
   singular: 'segment',
   plural: 'segments',
   properties: ['call', 'segmentNumber', 'type', 'loopPointer'],
+  relationships: {
+    'call': {
+      type: 'Call'
+    },
+    'instructions': {
+      type: 'Instruction',
+      many: true,
+      inverse: 'segment'
+    }
+  },
 
   getCall: function() {
-    return this._mapper.getRelationship(this,
-      this._mapper.types.Call, 'call');
+    return this._mapper.getRelationship(this, 'call');
   },
 
   getInstructions: function() {
-    return this._mapper.getRelationship(this,
-      this._mapper.types.Instruction, 'instructions');
+    return this._mapper.getRelationship(this, 'instructions');
   }
 };
 
@@ -338,25 +493,37 @@ var Thread = {
   singular: 'thread',
   plural: 'threads',
   properties: ['instruction', 'parent', 'child'],
+  relationships: {
+    'instruction': {
+      type: 'Instruction'
+    },
+    'parent': {
+      type: 'Thread'
+    },
+    'child': {
+      type: 'Thread'
+    },
+    'calls': {
+      type: 'Call',
+      many: true,
+      inverse: 'thread'
+    }
+  },
 
   getInstruction: function() {
-    return this._mapper.getRelationship(this,
-      this._mapper.types.Instruction, 'instruction');
+    return this._mapper.getRelationship(this, 'instruction');
   },
 
   getParent: function() {
-    return this._mapper.getRelationship(this,
-      this._mapper.types.Thread, 'parent');
+    return this._mapper.getRelationship(this, 'parent');
   },
 
   getChild: function() {
-    return this._mapper.getRelationship(this,
-      this._mapper.types.Thread, 'child');
+    return this._mapper.getRelationship(this, 'child');
   },
 
   getCalls: function() {
-    return this._mapper.getRelationship(this,
-      this._mapper.types.Call, 'calls');
+    return this._mapper.getRelationship(this, 'calls');
   }
 };
 
@@ -377,8 +544,16 @@ mapper.getAccess = function(id) {
   return mapper.getSpecific(Access, id);
 };
 
+mapper.getAccesss = function() {
+  return mapper.getAll(Access);
+};
+
 mapper.getCall = function(id) {
   return mapper.getSpecific(Call, id);
+};
+
+mapper.getCalls = function() {
+  return mapper.getAll(Call);
 };
 
 mapper.getFile = function(id) {
@@ -405,12 +580,24 @@ mapper.getInstruction = function(id) {
   return mapper.getSpecific(Instruction, id);
 };
 
+mapper.getInstructions = function() {
+  return mapper.getAll(Instruction);
+};
+
 mapper.getReference = function(id) {
   return mapper.getSpecific(Reference, id);
 };
 
+mapper.getReferences = function() {
+  return mapper.getAll(Reference);
+};
+
 mapper.getSegment = function(id) {
   return mapper.getSpecific(Segment, id);
+};
+
+mapper.getSegments = function() {
+  return mapper.getAll(Segment);
 };
 
 mapper.getThread = function(id) {

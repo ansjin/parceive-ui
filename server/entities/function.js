@@ -26,6 +26,16 @@ router.get('/signature/:sig', function(req, res) {
   util.sendOne(stmt, mapping, res);
 });
 
+router.get('/many/:ids/calls', function(req, res) {
+  util.buildINStatement(req.db, calls.mapping, res, req.params.ids,
+    'CALL_TABLE WHERE FUNCTION_ID');
+});
+
+router.get('/many/:ids', function(req, res) {
+  util.buildINStatement(req.db, mapping, res, req.params.ids,
+    'FUNCTION_TABLE  WHERE ID');
+});
+
 router.get('/:id', function(req, res) {
   var stmt = req.db.prepare('SELECT * FROM FUNCTION_TABLE WHERE ID=?');
 

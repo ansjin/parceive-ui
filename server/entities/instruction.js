@@ -18,30 +18,13 @@ router.get('/', function(req, res) {
 });
 
 router.get('/many/:ids/accesses', function(req, res) {
-  var prep = util.makeIN(req.params.ids);
-
-  var stmt =
-    req.db.prepare('SELECT * FROM ACCESS_TABLE WHERE INSTRUCTION_ID IN' +
-                      prep.str);
-
-  if (prep.args.length > 0) {
-    stmt.bind.call(stmt, prep.args);
-  }
-
-  util.sendAll(stmt, accesses.mapping, res);
+  util.buildINStatement(req.db, accesses.mapping, res, req.params.ids,
+    'ACCESS_TABLE WHERE INSTRUCTION_ID');
 });
 
 router.get('/many/:ids', function(req, res) {
-  var prep = util.makeIN(req.params.ids);
-
-  var stmt =
-    req.db.prepare('SELECT * FROM INSTRUCTION_TABLE WHERE ID IN' + prep.str);
-
-  if (prep.args.length > 0) {
-    stmt.bind.call(stmt, prep.args);
-  }
-
-  util.sendAll(stmt, mapping, res);
+  util.buildINStatement(req.db, mapping, res, req.params.ids,
+    'INSTRUCTION_TABLE WHERE ID');
 });
 
 router.get('/:id', function(req, res) {

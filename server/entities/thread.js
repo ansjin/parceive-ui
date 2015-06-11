@@ -17,6 +17,16 @@ router.get('/', function(req, res) {
   util.sendAll(stmt, mapping, res);
 });
 
+router.get('/many/:ids/calls', function(req, res) {
+  util.buildINStatement(req.db, calls.mapping, res, req.params.ids,
+    'CALL_TABLE WHERE THREAD_ID');
+});
+
+router.get('/many/:ids', function(req, res) {
+  util.buildINStatement(req.db, mapping, res, req.params.ids,
+    'THREAD_TABLE WHERE ID');
+});
+
 router.get('/:id', function(req, res) {
   var stmt = req.db.prepare('SELECT * FROM THREAD_TABLE WHERE ID=?');
 

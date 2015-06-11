@@ -17,6 +17,11 @@ router.get('/', function(req, res) {
   util.sendAll(stmt, mapping, res);
 });
 
+router.get('/many/:ids', function(req, res) {
+  util.buildINStatement(req.db, mapping, res, req.params.ids,
+    'ACCESS_TABLE WHERE ID');
+});
+
 router.get('/:id', function(req, res) {
   var stmt = req.db.prepare('SELECT * FROM ACCESS_TABLE WHERE ID=?');
 

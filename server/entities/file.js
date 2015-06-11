@@ -16,17 +16,14 @@ router.get('/', function(req, res) {
   util.sendAll(stmt, mapping, res);
 });
 
+router.get('/many/:ids/functions', function(req, res) {
+  util.buildINStatement(req.db, functions.mapping, res, req.params.ids,
+    'FUNCTION_TABLE WHERE FILE_ID');
+});
+
 router.get('/many/:ids', function(req, res) {
-  var prep = util.makeIN(req.params.ids);
-
-  var stmt =
-    req.db.prepare('SELECT * FROM FILE_TABLE WHERE ID IN' + prep.str);
-
-  if (prep.args.length > 0) {
-    stmt.bind.call(stmt, prep.args);
-  }
-
-  util.sendAll(stmt, mapping, res);
+  util.buildINStatement(req.db, mapping, res, req.params.ids,
+    'FILE_TABLE WHERE ID');
 });
 
 router.get('/:id', function(req, res) {
