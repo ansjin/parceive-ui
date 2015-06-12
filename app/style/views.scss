@@ -3,9 +3,11 @@
 
 @import 'bootstrap/forms';
 
+@import 'colors';
+
 .view-header {
   width: 100%;
-  background-color: grey;
+  background-color: $base2;
 };
 
 .view-header > select,input {
