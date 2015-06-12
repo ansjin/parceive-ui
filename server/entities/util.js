@@ -81,10 +81,14 @@ var util = {
     };
   },
 
-  buildINStatement: function(db, mapping, res, ids, table) {
+  buildINStatement: function(db, mapping, res, ids, table, ending) {
+    if (!ending) {
+      ending = '';
+    }
+
     var prep = util.makeIN(ids);
 
-    var stmt = db.prepare('SELECT * FROM ' + table + ' IN' + prep.str);
+    var stmt = db.prepare('SELECT * FROM ' + table + ' IN' + prep.str + ending);
 
     if (prep.args.length > 0) {
       stmt.bind.call(stmt, prep.args);

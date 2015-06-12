@@ -143,7 +143,9 @@ angular.module('tes2-loader-view', ['app'])
     loader.getFunctionBySignature('main').then(function(fct) {
       return fct.getCalls();
     }).then(function(calls) {
-      return calls[0];
+      return calls[0].getCalls();
+    }).then(function(calls) {
+      return calls[1];
     }).then(function(call) {
       svg
         .append('text')

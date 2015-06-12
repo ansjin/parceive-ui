@@ -265,7 +265,11 @@ function getRelationship(http, manager, instance, relationship) {
   var promise;
 
   var relationMeta = type.relationships[relationship];
-  if (relationMeta.many) {
+  if (relationMeta.manyToMany) {
+    promise =  getManyURL(http, manager, getRelationshipTemplate(
+      {type: type.plural, id: instance.id,
+      relationship: relationship}), manager.types[relationMeta.type]);
+  } else if (relationMeta.many) {
     var deferred = RSVP.defer();
 
     addToPipeline(type, instance.id, deferred, relationship);
@@ -277,6 +281,8 @@ function getRelationship(http, manager, instance, relationship) {
 
     promise = getSpecific(http, manager, relationType, instance[relationship]);
   }
+
+  instance[relationship] = promise;
 
   return promise.then(function(data) {
     instance[relationship] = data;
@@ -329,6 +335,10 @@ var Call = {
       type: 'Segment',
       many: true,
       inverse: 'call'
+    },
+    'calls': {
+      type: 'Call',
+      manyToMany: true
     }
   },
 
@@ -344,9 +354,12 @@ var Call = {
     return this._mapper.getRelationship(this, 'segments');
   },
 
+  getCalls: function() {
+    return this._mapper.getRelationship(this, 'calls');
+  },
+
   getInstructions: function() {
-    var mapper = this._mapper;
-    return mapper.getRelationship(this, 'segments')
+    return this.getSegments()
       .then(function(segments) {
         return RSVP.all(_.map(segments, function(segment) {
           return segment.getInstructions();
@@ -413,6 +426,11 @@ var Instruction = {
       type: 'Access',
       many: true,
       inverse: 'instruction'
+    },
+    'calls': {
+      type: 'Call',
+      many: true,
+      inverse: 'instruction'
     }
   },
 
@@ -422,6 +440,10 @@ var Instruction = {
 
   getAccesses: function() {
     return this._mapper.getRelationship(this, 'accesses');
+  },
+
+  getCalls: function() {
+    return this._mapper.getRelationship(this, 'calls');
   },
 
   getCall: function() {
