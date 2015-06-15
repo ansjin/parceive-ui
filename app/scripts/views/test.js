@@ -185,3 +185,136 @@ angular.module('tes2-loader-view', ['app'])
     });
   };
 }]);
+
+angular.module('test5-view', ['app'])
+.value('name', 'Test view 5')
+.value('group', 'Dagre test views')
+.value('markedChanged', function() {})
+.value('focus', function() {})
+.service('render', ['loader', 'dagre', function(loader, dagre) {
+  return function doRender(svg, stateManager) {
+    svg.selectAll('*').remove();
+
+    var state = stateManager.getData();
+
+    if (!state.expanded) {
+      state.expanded = [];
+      stateManager.save();
+    }
+
+    function hasNode(node) {
+      return _.includes(state.expanded, node);
+    }
+
+    function toggleNode(node) {
+      var index = state.expanded.indexOf(node);
+
+      if (index > -1) {
+        state.expanded.splice(index, 1);
+      } else {
+        state.expanded.push(node);
+      }
+
+      stateManager.save();
+    }
+
+    var g = new dagre.graphlib.Graph();
+    g.setGraph({});
+
+    function textDims(text) {
+      var textE = svg
+        .append('text')
+        .text(text);
+
+      var size = textE.node().getBBox();
+
+      textE.remove();
+
+      return size;
+    }
+
+    function addCall(previous, depth, call) {
+      return call.getFunction().then(function(fct) {
+        var size = textDims(fct.signature);
+
+        g.setNode(call.id, {
+          label: fct.signature,
+          width: size.width,
+          height: size.height
+        });
+
+        if (previous) {
+          g.setEdge(previous.id, call.id, {});
+        }
+
+        if (depth > 0 && hasNode(call.id)) {
+          return call.getCalls();
+        }
+      }).then(function(calls) {
+        if (calls) {
+          return RSVP.all(_.map(calls, function(ncall) {
+            return addCall(call, depth - 1, ncall);
+          }));
+        } else {
+          return;
+        }
+      });
+    }
+
+    loader.getFunctionBySignature('main').then(function(fct) {
+      return fct.getCalls();
+    }).then(function(calls) {
+      return addCall(null, 3, calls[0]);
+    }).then(function() {
+      dagre.layout(g);
+
+      _.forEach(g.nodes(), function(nodeID) {
+        var node = g.node(nodeID);
+        var rx = node.x - node.width / 2;
+        var ry = node.y - node.height / 2;
+
+        svg
+          .append('rect')
+          .style('stroke', 'gray')
+          .style('fill', 'white')
+          .attr('width', node.width)
+          .attr('height', node.height)
+          .attr('x', rx)
+          .attr('y', ry)
+          .on('click', function() {
+            toggleNode(nodeID);
+            doRender(svg, stateManager);
+          });
+
+        svg
+          .append('text')
+          .attr('x', rx)
+          .attr('y', node.y + 4)
+          .text(node.label)
+          .on('click', function() {
+            toggleNode(nodeID);
+            doRender(svg, stateManager)
+          });
+      });
+
+      _.forEach(g.edges(), function(edgeObj) {
+        var edge = g.edge(edgeObj.v, edgeObj.w);
+
+        var pct1 = edge.points[0];
+        var pct2 = edge.points[2];
+
+        svg.append('line')
+          .attr('x1', pct1.x)
+          .attr('y1', pct1.y)
+          .attr('x2', pct2.x)
+          .attr('y2', pct2.y)
+          .style('stroke', 'red');
+      });
+
+      svg
+        .style('overflow', 'auto');
+    }).catch(function(err) {
+      alert(err);
+    });
+  };
+}]);
