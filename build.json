@@ -5,7 +5,9 @@
       "./app/bower_components/angular/angular-route.js",
       "./app/bower_components/d3/d3.js",
       "./app/bower_components/lodash/lodash.js",
-      "./app/bower_components/rsvp/rsvp.js"
+      "./app/bower_components/rsvp/rsvp.js",
+      "./app/bower_components/graphlib/dist/graphlib.core.js",
+      "./app/bower_components/dagre/dist/dagre.core.js"
     ],
 
   "cssDeps": [

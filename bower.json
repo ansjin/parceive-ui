@@ -9,6 +9,10 @@
     "d3": "~3.5.5",
     "lodash": "3.8.0",
     "bootstrap-sass": "~3.3.4",
-    "rsvp": "~3.0.18"
+    "rsvp": "~3.0.18",
+    "dagre": "~0.7.2"
+  },
+  "resolutions": {
+    "lodash": "3.8.0"
   }
 }
