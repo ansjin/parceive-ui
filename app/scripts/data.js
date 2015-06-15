@@ -29,7 +29,8 @@ function getCache(type, id) {
 }
 
 function wrap(data, type, mapper) {
-  if (getCache(type.typeName, data.id)) {
+  var cached = getCache(type.typeName, data.id)
+  if (cached && !(cached instanceof RSVP.Promise)) {
     return getCache(type.typeName, data.id);
   }
 
@@ -42,6 +43,14 @@ function wrap(data, type, mapper) {
 
   for (var i = 0; i < type.properties.length; i++) {
     obj[type.properties[i]] = data[type.properties[i]];
+  }
+
+  for (var relationshipName in type.relationships) {
+    var relationshipMeta = type.relationships[relationshipName];
+
+    if (!relationshipMeta.many && !relationshipMeta.manyToMany) {
+      obj[relationshipName + 'ID'] = data[relationshipName];
+    }
   }
 
   _.bindAll(obj);
@@ -86,12 +95,6 @@ var pipelineTimeout = false;
 var pipelineRestart = false;
 
 function getSpecificReal(http, manager, type, id, many) {
-  var cached = getCache(type.typeName, id);
-
-  if (cached) {
-    return RSVP.Promise.resolve(cached);
-  }
-
   if (many) {
     return getManyURL(http, manager, getManyTemplate(
       {type: type.plural, ids: id}), type);
@@ -151,7 +154,7 @@ function getManyManyRelationship(http, manager, expecting, type) {
 
       .then(function(data) {
         _.forEach(data, function(element) {
-          var instance = getCache(type.typeName, element[inverse]);
+          var instance = getCache(type.typeName, element[inverse  + 'ID']);
 
           instance[relationship].push(element);
         });
@@ -251,7 +254,7 @@ function getSpecific(http, manager, type, id) {
   addToPipeline(type, id, deferred);
   startPipelineTimeout(http, manager);
 
-  setCache(type, id, deferred.promise);
+  setCache(type.typeName, id, deferred.promise);
   return deferred.promise;
 }
 
