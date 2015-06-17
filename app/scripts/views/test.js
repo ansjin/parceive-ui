@@ -143,9 +143,7 @@ angular.module('tes2-loader-view', ['app'])
     loader.getFunctionBySignature('main').then(function(fct) {
       return fct.getCalls();
     }).then(function(calls) {
-      return calls[0].getCalls();
-    }).then(function(calls) {
-      return calls[1];
+      return calls[0];
     }).then(function(call) {
       svg
         .append('text')
@@ -293,7 +291,7 @@ angular.module('test5-view', ['app'])
           .text(node.label)
           .on('click', function() {
             toggleNode(nodeID);
-            doRender(svg, stateManager)
+            doRender(svg, stateManager);
           });
       });
 
@@ -313,8 +311,6 @@ angular.module('test5-view', ['app'])
 
       svg
         .style('overflow', 'auto');
-    }).catch(function(err) {
-      alert(err);
     });
   };
 }]);
