@@ -593,10 +593,6 @@ mapper.getFunction = function(id) {
   return mapper.getSpecific(FunctionType, id);
 };
 
-mapper.getFunctionBySignature = function(sig) {
-  return this.getOneURL('functions/signature/' + sig, FunctionType);
-};
-
 mapper.getFunctions = function() {
   return mapper.getAll(FunctionType);
 };
@@ -633,6 +629,26 @@ mapper.getThreads = function() {
   return mapper.getAll(Thread);
 };
 
+// fiter functions
+
+var functionSignatureCache = {};
+
+mapper.getFunctionBySignature = function(sig) {
+  if (functionSignatureCache[sig]) {
+    return RSVP.Promise.resolve(functionSignatureCache[sig]);
+  }
+
+  var promise = this.getOneURL('functions/signature/' + sig, FunctionType);
+
+  functionSignatureCache[sig] = promise;
+
+  promise.then(function(fct) {
+    functionSignatureCache[sig] = fct;
+  });
+
+  return promise;
+};
+
 // run management
 
 mapper.getRun = function() {
@@ -642,6 +658,7 @@ mapper.getRun = function() {
 mapper.setRun = function(nrun) {
   //clear the cache when changing runs to avoid data leaking
   cache = {};
+  functionSignatureCache = {};
 
   run = nrun;
 };
