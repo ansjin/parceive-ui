@@ -314,3 +314,31 @@ angular.module('test5-view', ['app'])
     });
   };
 }]);
+
+angular.module('test6-view', ['app'])
+.value('name', 'Test view 6')
+.value('group', 'Stress tests')
+.value('markedChanged', function() {})
+.value('focus', function() {})
+.service('render', ['loader', function(loader) {
+  return function doRender(svg) {
+    RSVP.all([
+      //loader.getAccesses(),
+      loader.getCalls(),
+      loader.getFiles(),
+      loader.getFunctions(),
+      //loader.getInstructions(),
+      loader.getReferences(),
+      //loader.getSegments(),
+      loader.getThreads()
+    ]).then(function() {
+      svg.selectAll('*').remove();
+      svg.append('text')
+        .text('done');
+    }).catch(function(err) {
+      svg.selectAll('*').remove();
+      svg.append('text')
+        .text(err);
+    });
+  };
+}]);
