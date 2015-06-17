@@ -30,13 +30,7 @@ var map = require('map-stream');
 var sass = require('gulp-sass');
 var merge = require('merge-stream');
 var express = require('express');
-
-//server
-var entities = require('./server/entities');
-
-var dbRoute = express();
-
-dbRoute.use(entities);
+var jsdoc = require("gulp-jsdoc");
 
 //utilities
 
@@ -156,15 +150,27 @@ gulp.task('html', function() {
     .pipe(gulp.dest('./build'));
 });
 
+gulp.task('doc', function() {
+  return gulp.src("app/scripts/**/*.js")
+  .pipe(jsdoc('build/doc'));
+});
+
 gulp.task('build', ['bower', 'lint', 'minify-js', 'minify-js-deps',
                     'minify-css-deps', 'minify-css', 'minify-templates',
                     'html']);
 
 gulp.task('server', ['build'], function() {
+  //server
+  var entities = require('./server/entities');
+
+  var dbRoute = express();
+
+  dbRoute.use(entities);
+
   gulp.watch('bower.json', ['bower', 'minify-js-deps', 'minify-css-deps']);
   gulp.watch('build.json', ['build']);
 
-  gulp.watch(['app/scripts/**/*.js'], ['minify-js', 'jshint']);
+  gulp.watch(['app/scripts/**/*.js'], ['minify-js', 'jshint', 'doc']);
   gulp.watch(['app/style/**/*.css', 'app/style/**/*.scss'], ['minify-css',
                                                              'csslint']);
   gulp.watch(['app/templates/**/*.html'], ['minify-templates']);

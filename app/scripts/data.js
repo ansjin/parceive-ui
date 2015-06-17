@@ -1,5 +1,10 @@
 /* global setTimeout */
 
+/**
+ * Module responsible with loading the data from the server
+ * @module loader
+ */
+
 var run;
 
 var cache = {};
@@ -137,7 +142,7 @@ function getManyManyRelationship(http, manager, expecting, type) {
     });
 
     var relationMeta = type.relationships[relationship];
-    var relationType = mapper.types[relationMeta.type];
+    var relationType = manager.types[relationMeta.type];
     var inverse = relationMeta.inverse;
 
     _.forEach(ids, function(id) {
@@ -175,7 +180,7 @@ function timeoutFct(http, manager) {
 
   var arr = _.map(pipeline, function(val, key) {
       return {
-        type: mapper.types[key],
+        type: manager.types[key],
         specific: val.specific,
         relationship: val.relationship
       };
@@ -297,6 +302,7 @@ function getAll(http, manager, type) {
     {type: type.plural}), type);
 }
 
+/** @class */
 var Access = {
   typeName: 'Access',
   singular: 'access',
@@ -311,15 +317,18 @@ var Access = {
     }
   },
 
+  /** Get the instruction that this instance belongs to */
   getInstruction: function() {
     return this._mapper.getRelationship(this, 'instruction');
   },
 
+  /** Get the reference that this intance uses */
   getReference: function() {
     return this._mapper.getRelationship(this, 'reference');
   }
 };
 
+/** @class */
 var Call = {
   typeName: 'Call',
   singular: 'call',
@@ -343,22 +352,28 @@ var Call = {
     }
   },
 
+  /** Get the function that this instance belongs to */
   getFunction: function() {
     return this._mapper.getRelationship(this, 'function');
   },
 
+  /** Get the function that this instance belongs to */
   getThread: function() {
     return this._mapper.getRelationship(this, 'thread');
   },
 
+  /** Get the segments that are part of this instance */
   getSegments: function() {
     return this._mapper.getRelationship(this, 'segments');
   },
 
+  /** Get the calls that are made by this instance. This method is optimized */
   getCalls: function() {
     return this._mapper.getRelationship(this, 'calls');
   },
 
+  /** Get the instructions that are part of this instance.
+   * Internally loads through segments */
   getInstructions: function() {
     return this.getSegments()
       .then(function(segments) {
@@ -550,7 +565,8 @@ var Thread = {
   }
 };
 
-var mapper = {
+/** @class */
+var loader = {
   types: {
     Access: Access,
     Call: Call,
@@ -563,75 +579,78 @@ var mapper = {
   }
 };
 
-mapper.getAccess = function(id) {
-  return mapper.getSpecific(Access, id);
+/** load one Access */
+loader.getAccess = function(id) {
+  return loader.getSpecific(Access, id);
 };
 
-mapper.getAccesss = function() {
-  return mapper.getAll(Access);
+/** load all Accesses */
+loader.getAccesss = function() {
+  return loader.getAll(Access);
 };
 
-mapper.getCall = function(id) {
-  return mapper.getSpecific(Call, id);
+/** load one Call */
+loader.getCall = function(id) {
+  return loader.getSpecific(Call, id);
 };
 
-mapper.getCalls = function() {
-  return mapper.getAll(Call);
+loader.getCalls = function() {
+  return loader.getAll(Call);
 };
 
-mapper.getFile = function(id) {
-  return mapper.getSpecific(File, id);
+loader.getFile = function(id) {
+  return loader.getSpecific(File, id);
 };
 
-mapper.getFiles = function() {
-  return mapper.getAll(File);
+loader.getFiles = function() {
+  return loader.getAll(File);
 };
 
-mapper.getFunction = function(id) {
-  return mapper.getSpecific(FunctionType, id);
+loader.getFunction = function(id) {
+  return loader.getSpecific(FunctionType, id);
 };
 
-mapper.getFunctions = function() {
-  return mapper.getAll(FunctionType);
+loader.getFunctions = function() {
+  return loader.getAll(FunctionType);
 };
 
-mapper.getInstruction = function(id) {
-  return mapper.getSpecific(Instruction, id);
+loader.getInstruction = function(id) {
+  return loader.getSpecific(Instruction, id);
 };
 
-mapper.getInstructions = function() {
-  return mapper.getAll(Instruction);
+loader.getInstructions = function() {
+  return loader.getAll(Instruction);
 };
 
-mapper.getReference = function(id) {
-  return mapper.getSpecific(Reference, id);
+loader.getReference = function(id) {
+  return loader.getSpecific(Reference, id);
 };
 
-mapper.getReferences = function() {
-  return mapper.getAll(Reference);
+loader.getReferences = function() {
+  return loader.getAll(Reference);
 };
 
-mapper.getSegment = function(id) {
-  return mapper.getSpecific(Segment, id);
+loader.getSegment = function(id) {
+  return loader.getSpecific(Segment, id);
 };
 
-mapper.getSegments = function() {
-  return mapper.getAll(Segment);
+loader.getSegments = function() {
+  return loader.getAll(Segment);
 };
 
-mapper.getThread = function(id) {
-  return mapper.getSpecific(Thread, id);
+loader.getThread = function(id) {
+  return loader.getSpecific(Thread, id);
 };
 
-mapper.getThreads = function() {
-  return mapper.getAll(Thread);
+loader.getThreads = function() {
+  return loader.getAll(Thread);
 };
 
 // fiter functions
 
 var functionSignatureCache = {};
 
-mapper.getFunctionBySignature = function(sig) {
+loader.getFunctionBySignature = function(sig) {
   if (functionSignatureCache[sig]) {
     return RSVP.Promise.resolve(functionSignatureCache[sig]);
   }
@@ -649,11 +668,11 @@ mapper.getFunctionBySignature = function(sig) {
 
 // run management
 
-mapper.getRun = function() {
+loader.getRun = function() {
   return run;
 };
 
-mapper.setRun = function(nrun) {
+loader.setRun = function(nrun) {
   //clear the cache when changing runs to avoid data leaking
   cache = {};
   functionSignatureCache = {};
@@ -661,12 +680,12 @@ mapper.setRun = function(nrun) {
   run = nrun;
 };
 
-_.bindAll(mapper);
+_.bindAll(loader);
 
 angular.module('app')
   .service('loader', ['$http', function(http) {
 
-    mapper.getRuns = function() {
+    loader.getRuns = function() {
       return new RSVP.Promise(function(resolve, reject) {
         http.get('/run')
           .success(resolve)
@@ -674,11 +693,11 @@ angular.module('app')
       });
     };
 
-    mapper.getOneURL = _.partial(getOneURL, http, mapper);
-    mapper.getManyURL = _.partial(getManyURL, http, mapper);
-    mapper.getSpecific = _.partial(getSpecific, http, mapper);
-    mapper.getAll = _.partial(getAll, http, mapper);
-    mapper.getRelationship = _.partial(getRelationship, http, mapper);
+    loader.getOneURL = _.partial(getOneURL, http, loader);
+    loader.getManyURL = _.partial(getManyURL, http, loader);
+    loader.getSpecific = _.partial(getSpecific, http, loader);
+    loader.getAll = _.partial(getAll, http, loader);
+    loader.getRelationship = _.partial(getRelationship, http, loader);
 
-    return mapper;
+    return loader;
   }]);
