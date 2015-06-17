@@ -585,7 +585,7 @@ loader.getAccess = function(id) {
 };
 
 /** load all Accesses */
-loader.getAccesss = function() {
+loader.getAccesses = function() {
   return loader.getAll(Access);
 };
 
