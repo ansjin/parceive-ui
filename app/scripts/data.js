@@ -29,7 +29,7 @@ function getCache(type, id) {
 }
 
 function wrap(data, type, mapper) {
-  var cached = getCache(type.typeName, data.id)
+  var cached = getCache(type.typeName, data.id);
   if (cached && !(cached instanceof RSVP.Promise)) {
     return getCache(type.typeName, data.id);
   }
@@ -120,8 +120,6 @@ function getManySpecific(http, manager, expecting, type) {
         });
 
         if (result) {
-          delete pipeline[type.typeName].specific[id];
-
           deffered.resolve(result);
         }
       });
@@ -162,8 +160,6 @@ function getManyManyRelationship(http, manager, expecting, type) {
         _.forEach(waiting, function(deffered, id) {
           var instance = getCache(type.typeName, id);
 
-          delete pipeline[type.typeName].relationship[id];
-
           deffered.resolve(instance[relationship]);
         });
       }).catch(function(err) {
@@ -184,6 +180,8 @@ function timeoutFct(http, manager) {
         relationship: val.relationship
       };
     });
+
+  pipeline = {};
 
   var specific = _.filter(arr, function(expected) {
     return expected.specific && _.size(expected.specific) > 0;
