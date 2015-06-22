@@ -30,7 +30,7 @@ var map = require('map-stream');
 var sass = require('gulp-sass');
 var merge = require('merge-stream');
 var express = require('express');
-var jsdoc = require("gulp-jsdoc");
+var jsdoc = require('gulp-jsdoc');
 
 var processDB = require('./process');
 
@@ -153,7 +153,7 @@ gulp.task('html', function() {
 });
 
 gulp.task('doc', function() {
-  return gulp.src("app/scripts/**/*.js")
+  return gulp.src('app/scripts/**/*.js')
   .pipe(jsdoc('build/doc'));
 });
 
