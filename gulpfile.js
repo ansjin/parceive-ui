@@ -163,7 +163,7 @@ gulp.task('db', function(cb) {
 
 gulp.task('build', ['bower', 'lint', 'minify-js', 'minify-js-deps',
                     'minify-css-deps', 'minify-css', 'minify-templates',
-                    'html']);
+                    'html', 'db']);
 
 gulp.task('server', ['build'], function() {
   //server
@@ -182,6 +182,8 @@ gulp.task('server', ['build'], function() {
   gulp.watch(['app/templates/**/*.html'], ['minify-templates']);
 
   gulp.watch(['app/index.html'], ['html']);
+
+  gulp.watch(['import/*.db'], ['db']);
 
   livereload.listen({basePath: 'build'});
 
