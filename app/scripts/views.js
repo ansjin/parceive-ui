@@ -56,10 +56,6 @@ angular.module('app')
           return;
         }
 
-        if (loader.getRun()) {
-          $scope.selectedRun = loader.getRun();
-        }
-
         var ok = _.includes($scope.allruns, $scope.selectedRun);
 
         if (ok) {
