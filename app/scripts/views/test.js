@@ -323,21 +323,25 @@ angular.module('test6-view', ['app'])
 .service('render', ['loader', function(loader) {
   return function doRender(svg) {
     RSVP.all([
-      //loader.getAccesses(),
+      loader.getAccesses(),
       loader.getCalls(),
       loader.getFiles(),
       loader.getFunctions(),
-      //loader.getInstructions(),
+      loader.getInstructions(),
       loader.getReferences(),
-      //loader.getSegments(),
+      loader.getSegments(),
       loader.getThreads()
     ]).then(function() {
       svg.selectAll('*').remove();
       svg.append('text')
+        .attr('x', 100)
+        .attr('y', 100)
         .text('done');
     }).catch(function(err) {
       svg.selectAll('*').remove();
       svg.append('text')
+        .attr('x', 100)
+        .attr('y', 100)
         .text(err);
     });
   };
