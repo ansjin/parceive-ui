@@ -48,6 +48,11 @@ angular.module('app')
       loader.getRuns().then(function(runs) {
         stateManager.loadRun();
         $scope.allruns = runs;
+
+        if (loader.getRun()) {
+          $scope.selectedRun = loader.getRun();
+        }
+
         $scope.$apply();
       });
 
