@@ -217,7 +217,9 @@ angular.module('test5-view', ['app'])
     }
 
     var g = new dagre.graphlib.Graph();
-    g.setGraph({});
+    g.setGraph({
+      rankdir: 'LR'
+    });
 
     function textDims(text) {
       var textE = svg
