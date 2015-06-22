@@ -58,8 +58,6 @@ function wrap(data, type, mapper) {
     }
   }
 
-  _.bindAll(obj);
-
   setCache(type.typeName, data.id, obj);
 
   return obj;
