@@ -32,6 +32,8 @@ var merge = require('merge-stream');
 var express = require('express');
 var jsdoc = require("gulp-jsdoc");
 
+var processDB = require('./process');
+
 //utilities
 
 var objectFieldsToBool = function(r, n, k) {
@@ -153,6 +155,10 @@ gulp.task('html', function() {
 gulp.task('doc', function() {
   return gulp.src("app/scripts/**/*.js")
   .pipe(jsdoc('build/doc'));
+});
+
+gulp.task('db', function(cb) {
+  processDB.all('./import/', './data/', cb);
 });
 
 gulp.task('build', ['bower', 'lint', 'minify-js', 'minify-js-deps',
