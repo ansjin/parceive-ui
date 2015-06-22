@@ -333,13 +333,17 @@ var Call = {
   typeName: 'Call',
   singular: 'call',
   plural: 'calls',
-  properties: ['process', 'thread', 'function', 'instruction', 'start', 'end'],
+  properties: ['process', 'thread', 'function', 'instruction',
+                'start', 'end', 'caller'],
   relationships: {
     'thread': {
       type: 'Thread'
     },
     'function': {
       type: 'Function'
+    },
+    'caller': {
+      type: 'Call'
     },
     'segments': {
       type: 'Segment',
@@ -348,7 +352,8 @@ var Call = {
     },
     'calls': {
       type: 'Call',
-      manyToMany: true
+      many: true,
+      inverse: 'caller'
     }
   },
 

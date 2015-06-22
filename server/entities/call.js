@@ -13,7 +13,8 @@ var mapping = {
   'FUNCTION_ID': 'function',
   'INSTRUCTION_ID': 'instruction',
   'START_TIME': 'start',
-  'END_TIME': 'end'
+  'END_TIME': 'end',
+  'CALLER': 'caller'
 };
 
 router.get('/', function(req, res) {
@@ -28,9 +29,7 @@ router.get('/many/:ids/segments', function(req, res) {
 
 router.get('/many/:ids/calls', function(req, res) {
   util.buildINStatement(req.db, mapping, res, req.params.ids,
-    'CALL_TABLE WHERE INSTRUCTION_ID IN ' +
-    '(SELECT ID FROM INSTRUCTION_TABLE WHERE SEGMENT_ID IN ' +
-    '(SELECT ID FROM SEGMENT_TABLE WHERE CALL_ID', '))');
+    'CALL_TABLE WHERE CALLER');
 });
 
 router.get('/many/:ids', function(req, res) {
@@ -47,11 +46,7 @@ router.get('/:id/segments', function(req, res) {
 });
 
 router.get('/:id/calls', function(req, res) {
-  var stmt = req.db.prepare(
-    'SELECT * FROM CALL_TABLE WHERE INSTRUCTION_ID IN ' +
-    '(SELECT ID FROM INSTRUCTION_TABLE WHERE SEGMENT_ID IN ' +
-    '(SELECT ID FROM SEGMENT_TABLE WHERE CALL_ID=?))'
-  );
+  var stmt = req.db.prepare('SELECT * FROM CALL_TABLE WHERE CALLER=?');
 
   stmt.bind(req.params.id);
 
