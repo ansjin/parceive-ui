@@ -231,7 +231,11 @@ angular.module('test5-view', ['app'])
       return size;
     }
 
-    function addCall(previous, depth, call) {
+    function addCall(previous, call) {
+      if (g.hasNode(call.id)) {
+        return RSVP.Promise.resolve();
+      }
+
       return call.getFunction().then(function(fct) {
         var size = textDims(fct.signature);
 
@@ -245,13 +249,13 @@ angular.module('test5-view', ['app'])
           g.setEdge(previous.id, call.id, {});
         }
 
-        if (depth > 0 && hasNode(call.id)) {
+        if (hasNode(call.id)) {
           return call.getCalls();
         }
       }).then(function(calls) {
         if (calls) {
           return RSVP.all(_.map(calls, function(ncall) {
-            return addCall(call, depth - 1, ncall);
+            return addCall(call, ncall);
           }));
         } else {
           return;
@@ -262,7 +266,7 @@ angular.module('test5-view', ['app'])
     loader.getFunctionBySignature('main').then(function(fct) {
       return fct.getCalls();
     }).then(function(calls) {
-      return addCall(null, 3, calls[0]);
+      return addCall(null, calls[0]);
     }).then(function() {
       dagre.layout(g);
 
