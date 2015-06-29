@@ -1,12 +1,69 @@
 /* global setTimeout */
 
-/**
- * Module responsible with loading the data from the server
- * @module loader
- */
+/** @interface Type
+  * @tutorial browser-loading */
 
+/** @member {string} typeName
+  * @memberof Type
+  * @abstract
+  * @summary Name used for lookups */
+
+/** @member {string} singular
+  * @memberof Type
+  * @private
+  * @summary Name in singular (used for generating URLs)
+  * @abstract */
+
+/** @member {string} plural
+  * @memberof Type
+  * @private
+  * @summary Name in plural (used for generating URLs)
+  * @abstract */
+
+/** @member {string[]} properties
+  * @memberof Type
+  * @private
+  * @summary List of properties that get loaded from the server
+  * @abstract */
+
+/** @member {Object} relationships
+  * @memberof Type
+  * @private
+  * @summary All relationships of an object. It has the form
+  *          <`relationshipName`>: 'properties', where properties contains
+  *          'type', 'inverse' and 'many'.
+  * @abstract */
+
+/** @interface Instance
+  * @tutorial browser-loading
+  * @augments Type
+  * @augments SpecificType */
+
+/** @member {int|string} id
+  * @memberof Instance
+  * @summary the id of the instance
+  * @instance */
+
+/** @member {Service} _mapper
+  * @memberof Instance
+  * @summary Reference to the Service.
+  * @instance
+  * @private */
+
+/** @external Promise
+  * @see https://github.com/tildeio/rsvp.js/ */
+
+  /** @external http
+    * @see https://docs.angularjs.org/api/ng/service/$http */
+
+/** @private
+  * @type {string}
+  * @summary The currently used database */
 var run;
 
+/** @private
+  * @type {Object}
+  * @summary The cache */
 var cache = {};
 
 var getOneTemplate = _.template('<%= type %>/<%= id %>');
@@ -17,6 +74,11 @@ var getRelationshipTemplate =
 var getManyRelationshipTemplate =
   _.template('<%= type %>/many/<%= ids %>/<%= relationship %>');
 
+/** @private
+  * @summary Add element to cache
+  * @param {string} type The name of the type
+  * @param {int|string} id The id
+  * @param {external:Promise|Instance} value The cached value */
 function setCache(type, id, value) {
   if (!cache[type]) {
     cache[type] = {};
@@ -25,6 +87,11 @@ function setCache(type, id, value) {
   cache[type][id] = value;
 }
 
+/** @private
+  * @summary Get element from cache
+  * @param {string} type The name of the type
+  * @param {int|string} id The id
+  * @return {external:Promise|Instance} value The cached value */
 function getCache(type, id) {
   if (!cache[type]) {
     cache[type] = {};
@@ -33,6 +100,13 @@ function getCache(type, id) {
   return cache[type][id];
 }
 
+/** @private
+  * @summary Create a Instance from data coming from the server.
+  *           Also eliminates duplicate instances.
+  * @param {Object} data The data coming from the server
+  * @param {Type} type The expected type of the object
+  * @param {loader} mapper
+  * @return {Instance} The created instance */
 function wrap(data, type, mapper) {
   var cached = getCache(type.typeName, data.id);
   if (cached && !(cached instanceof RSVP.Promise)) {
@@ -42,7 +116,6 @@ function wrap(data, type, mapper) {
   var obj = Object.create(type);
 
   obj._mapper = mapper;
-  obj._type = type;
 
   obj.id = data.id;
 
@@ -63,6 +136,11 @@ function wrap(data, type, mapper) {
   return obj;
 }
 
+/** @private
+  * @summary HTTP request that returns a promise
+  * @param {string} url The url to call. The run is prepended here.
+  * @param {external:http} http
+  * @return {external:Promise} The result */
 function httpGet(http, url) {
   url = '/run/' + run + '/' + url;
 
@@ -73,6 +151,9 @@ function httpGet(http, url) {
   });
 }
 
+/** @private
+  * @see loader#getOneURL
+*/
 function getOneURL(http, mapper, url, type) {
   var promise = httpGet(http, url)
     .then(function(data) {
@@ -82,6 +163,9 @@ function getOneURL(http, mapper, url, type) {
   return promise;
 }
 
+/** @private
+  * @see loader#getManyURL
+*/
 function getManyURL(http, mapper, url, type) {
   var promise =  httpGet(http, url)
     .then(function(datas) {
@@ -93,10 +177,31 @@ function getManyURL(http, mapper, url, type) {
   return promise;
 }
 
+/** @private
+  * @type {Object}
+  * @summary Requests are stored here until they are sent to the server */
 var pipeline = {};
+
+/** @private
+  * @type {int|false}
+  * @summary Stores the value got from setTimeout or false if no requests are
+  *           pending*/
 var pipelineTimeout = false;
+
+/** @private
+  * @type {bool}
+  * @summary Were any requests made during the execution of the current
+              requests */
 var pipelineRestart = false;
 
+/** @private
+  * @summary Request one or many instances by id
+  * @param {external:http} http
+  * @param {loader} manager
+  * @param {Type} type the type of the instances
+  * @param {int|string|int[]|string[]} The id or ids of the instances
+  * @param {bool} many Request one or many
+  * @return {Instance|Instance[]} */
 function getSpecificReal(http, manager, type, id, many) {
   if (many) {
     return getManyURL(http, manager, getManyTemplate(
@@ -107,6 +212,14 @@ function getSpecificReal(http, manager, type, id, many) {
   }
 }
 
+/** @private
+  * @summary Request from the server all requested instances of a specific type.
+              Promises pending for requests are resolved here.
+  * @param {external:http} http
+  * @param {loader} manager
+  * @param {Object} expecting The postponed requests
+  * @param {Type} type the type of the instances
+  * @return {external:Promise} */
 function getManySpecific(http, manager, expecting, type) {
   var ids = _.map(expecting, function(val, key) {
     return key;
@@ -133,6 +246,14 @@ function getManySpecific(http, manager, expecting, type) {
     });
 }
 
+/** @private
+  * @summary Request from the server all requested relationships
+              of a specific type. There can be multiple requests per type
+  * @param {external:http} http
+  * @param {loader} manager
+  * @param {Object} expecting The postponed requests for one relationship.
+  * @param {Type} type the type of the instance
+  * @return {external:Promise} */
 function getManyManyRelationship(http, manager, expecting, type) {
   return _.map(expecting, function(waiting, relationship) {
     var ids = _.map(waiting, function(val, key) {
@@ -173,6 +294,13 @@ function getManyManyRelationship(http, manager, expecting, type) {
   });
 }
 
+/** @private
+  * @summary This function gets all posponed requests. Offloads much of the
+              work to {@link getManyManyRelationship} and
+              {@link getManySpecific}. If {@link timeoutRestart} is true
+              then the function calls itself again.
+  * @param {external:http} http
+  * @param {loader} manager */
 function timeoutFct(http, manager) {
   pipelineRestart = false;
 
@@ -208,14 +336,18 @@ function timeoutFct(http, manager) {
     specific: specificPA,
     relationship: relationshipPA
   }).finally(function() {
-    pipelineTimeout = false;
-
     if (pipelineRestart) {
       timeoutFct(http, manager);
+    } else {
+      pipelineTimeout = false;
     }
   });
 }
 
+/** @private
+  * @summary This function starts {@link timeoutFct} after 10ms.
+  * @param {external:http} http
+  * @param {loader} manager */
 function startPipelineTimeout(http, manager) {
   pipelineRestart = true;
   if (pipelineTimeout === false) {
@@ -224,6 +356,15 @@ function startPipelineTimeout(http, manager) {
   }
 }
 
+/** @private
+  * @summary Postpones a request
+  * @param {Type} type The type of the instance
+  * @param {int|string} it the id of the instance
+  * @param {Deffered} deffered The functions to call when the request
+                      completes
+  * @param {string|undefined} relationship If undefined this postpones a request
+                              to get the specific instance, otherwise gets the
+                              relationship for this instance */
 function addToPipeline(type, id, deferred, relationship) {
   if (!pipeline[type.typeName]) {
     pipeline[type.typeName] = {
@@ -243,6 +384,8 @@ function addToPipeline(type, id, deferred, relationship) {
   }
 }
 
+/** @private
+  * @see loader#getSpecific */
 function getSpecific(http, manager, type, id) {
   var cached = getCache(type.typeName, id);
 
@@ -259,12 +402,14 @@ function getSpecific(http, manager, type, id) {
   return deferred.promise;
 }
 
+/** @private
+  * @see loader#getRelationship */
 function getRelationship(http, manager, instance, relationship) {
   if (_.isObject(instance[relationship])) {
     return RSVP.Promise.resolve(instance[relationship]);
   }
 
-  var type = instance._type;
+  var type = Object.getPrototypeOf(instance);
 
   var promise;
 
@@ -295,12 +440,15 @@ function getRelationship(http, manager, instance, relationship) {
   });
 }
 
+/** @private
+  * @see loader#getAll */
 function getAll(http, manager, type) {
   return getManyURL(http, manager, getAllTemplate(
     {type: type.plural}), type);
 }
 
-/** @class */
+/** @class
+  * @implements Type */
 var Access = {
   typeName: 'Access',
   singular: 'access',
@@ -315,18 +463,22 @@ var Access = {
     }
   },
 
-  /** Get the instruction that this instance belongs to */
+  /** @instance
+    * @return {external:Promise.<Instruction>} The instruction that executes the
+    *                                           access */
   getInstruction: function() {
     return this._mapper.getRelationship(this, 'instruction');
   },
 
-  /** Get the reference that this intance uses */
+  /** @instance
+    * @return {external:Promise.<Reference>} The accessed reference */
   getReference: function() {
     return this._mapper.getRelationship(this, 'reference');
   }
 };
 
-/** @class */
+/** @class
+  * @implements Type */
 var Call = {
   typeName: 'Call',
   singular: 'call',
@@ -355,28 +507,38 @@ var Call = {
     }
   },
 
-  /** Get the function that this instance belongs to */
+  /** @instance
+    * @return {external:Promise.<Function>} The function that this call calls */
   getFunction: function() {
     return this._mapper.getRelationship(this, 'function');
   },
 
-  /** Get the function that this instance belongs to */
+  /** @instance
+    * @return {external:Promise.<Thread>} The thread that this call belongs to
+    */
   getThread: function() {
     return this._mapper.getRelationship(this, 'thread');
   },
 
-  /** Get the segments that are part of this instance */
+  /** @instance
+    * @return {external:Promise.<Segment[]>} The list of segments that
+    *                                         this call executes */
   getSegments: function() {
     return this._mapper.getRelationship(this, 'segments');
   },
 
-  /** Get the calls that are made by this instance. This method is optimized */
+  /** @instance
+    * This is faster than going through segments and instructions
+    * @return {external:Promise.<Call[]>} the list of calls that this call makes
+    */
   getCalls: function() {
     return this._mapper.getRelationship(this, 'calls');
   },
 
-  /** Get the instructions that are part of this instance.
-   * Internally loads through segments */
+  /** @instance
+    * @summary Internally this goes trough segments
+    * @return {external:Promise.<Instruction[]>} the list of instructions that
+    *                                             the call executes */
   getInstructions: function() {
     return this.getSegments()
       .then(function(segments) {
@@ -389,6 +551,8 @@ var Call = {
   }
 };
 
+/** @class
+  * @implements Type */
 var File = {
   typeName: 'File',
   singular: 'file',
@@ -402,11 +566,16 @@ var File = {
     }
   },
 
+  /** @instance
+    * @return {external:Promise.<Function[]>} the list of functions that this
+    *                                          file contains */
   getFunctions: function() {
     return this._mapper.getRelationship(this, 'functions');
   }
 };
 
+/** @class
+  * @implements Type */
 var FunctionType = {
   typeName: 'Function',
   singular: 'function',
@@ -423,15 +592,22 @@ var FunctionType = {
     }
   },
 
+  /** @instance
+    * @return {external:Promise.<File>} the file that this function is a part
+    *                                   of */
   getFile: function() {
     return this._mapper.getRelationship(this, 'file');
   },
 
+  /** @instance
+    * @return {external:Promise.<Call[]>} The calls made to this function */
   getCalls: function() {
     return this._mapper.getRelationship(this, 'calls');
   }
 };
 
+/** @class
+  * @implements Type */
 var Instruction = {
   typeName: 'Instruction',
   singular: 'instruction',
@@ -453,24 +629,41 @@ var Instruction = {
     }
   },
 
+  /** @instance
+    * @return {external:Promise.<Segment>} The segment that this instruction is
+    *                                       a part of */
   getSegment: function() {
     return this._mapper.getRelationship(this, 'segment');
   },
 
+  /** @instance
+    * @return {external:Promise.<Access[]>} The list of accesses done by this
+    *                                        instruction */
   getAccesses: function() {
     return this._mapper.getRelationship(this, 'accesses');
   },
 
+  /** @instance
+    * @return {external:Promise.<Call[]>} The list of calls made by this
+    *                                      instruction */
   getCalls: function() {
     return this._mapper.getRelationship(this, 'calls');
   },
 
+  /** @instance
+    * @summary Internally goes trough Segment
+    * @return {external:Promise.<Call>} The call that this instruction is a part
+    *                                    of. */
   getCall: function() {
     return this.getSegment().then(function(segment) {
       return segment.getCall();
     });
   },
 
+  /** @instance
+    * @summary Internally goes trough accesses
+    * @return {external:Promise.<Reference[]>} The list of references accessed
+    *                       by this instruction */
   getReferences: function() {
     return this.getAccesses().then(function(access) {
       return access.getReference();
@@ -478,6 +671,8 @@ var Instruction = {
   }
 };
 
+/** @class
+  * @implements Type */
 var Reference = {
   typeName: 'Reference',
   singular: 'reference',
@@ -494,16 +689,24 @@ var Reference = {
     }
   },
 
+  /** @instance
+    * @return {external:Promise.<Instruction>} The instruction that allocates
+    *                                           this reference */
   getAllocator: function() {
     return this._mapper.getRelationship(this,
       this._mapper.types.Instruction, 'allocator');
   },
 
+  /** @instance
+    * @return {external:Promise.<Access[]>} The accesses done on this reference
+    */
   getAccesses: function() {
     return this._mapper.getRelationship(this, 'accesses');
   }
 };
 
+/** @class
+  * @implements Type */
 var Segment = {
   typeName: 'Segment',
   singular: 'segment',
@@ -520,15 +723,22 @@ var Segment = {
     }
   },
 
+  /** @return {external:Promise.<Call>} The call that this segment is a part of
+    * @instance */
   getCall: function() {
     return this._mapper.getRelationship(this, 'call');
   },
 
+  /** @return {external:Promise.<Instruction[]>} The instructions that are part
+    *                                            of this segment
+    * @instance */
   getInstructions: function() {
     return this._mapper.getRelationship(this, 'instructions');
   }
 };
 
+/** @class
+  * @implements Type */
 var Thread = {
   typeName: 'Thread',
   singular: 'thread',
@@ -551,25 +761,38 @@ var Thread = {
     }
   },
 
+  /** @return {external:Promise.<Instruction>} The instruction that started this
+    *                                          thread
+    * @instance */
   getInstruction: function() {
     return this._mapper.getRelationship(this, 'instruction');
   },
 
-  getParent: function() {
+  /** @return {external:Promise.<Thread>} The parent thread
+    * @instance */
+  getParent: function ThreadGetParent() {
     return this._mapper.getRelationship(this, 'parent');
   },
 
+  /** @return {external:Promise.<Thread>} The child thread
+    * @instance */
   getChild: function() {
     return this._mapper.getRelationship(this, 'child');
   },
 
+  /** @return {external:Promise.<Call[]>} Calls made by this thread
+    * @instance */
   getCalls: function() {
     return this._mapper.getRelationship(this, 'calls');
   }
 };
 
-/** @class */
+/** @class
+  * @summary Angular service
+  * @tutorial browser-loading */
 var loader = {
+  /** Contains all defined types
+  * @instance */
   types: {
     Access: Access,
     Call: Call,
@@ -582,69 +805,106 @@ var loader = {
   }
 };
 
-/** load one Access */
+/** @return {external:Promise.<Access>}
+  * @param {int|string} id The id of the element
+  * @instance */
 loader.getAccess = function(id) {
   return loader.getSpecific(Access, id);
 };
 
-/** load all Accesses */
+/** @return {external:Promise.<Access[]>}
+  * @instance */
 loader.getAccesses = function() {
   return loader.getAll(Access);
 };
 
-/** load one Call */
+/** @return {external:Promise.<Call>}
+  * @param {int|string} id The id of the element
+  * @instance */
 loader.getCall = function(id) {
   return loader.getSpecific(Call, id);
 };
 
+/** @return {external:Promise.<Call[]>}
+  * @instance */
 loader.getCalls = function() {
   return loader.getAll(Call);
 };
 
+/** @return {external:Promise.<File>}
+  * @param {int|string} id The id of the element
+  * @instance */
 loader.getFile = function(id) {
   return loader.getSpecific(File, id);
 };
 
+/** @return {external:Promise.<File[]>}
+  * @instance */
 loader.getFiles = function() {
   return loader.getAll(File);
 };
 
+/** @return {external:Promise.<Function>}
+  * @param {int|string} id The id of the element
+  * @instance */
 loader.getFunction = function(id) {
   return loader.getSpecific(FunctionType, id);
 };
 
+/** @return {external:Promise.<Function[]>}
+  * @instance */
 loader.getFunctions = function() {
   return loader.getAll(FunctionType);
 };
 
+/** @return {external:Promise.<Instruction>}
+  * @param {int|string} id The id of the element
+  * @instance */
 loader.getInstruction = function(id) {
   return loader.getSpecific(Instruction, id);
 };
 
+/** @return {external:Promise.<Instruction[]>}
+  * @instance */
 loader.getInstructions = function() {
   return loader.getAll(Instruction);
 };
 
+/** @return {external:Promise.<Reference>}
+  * @param {int|string} id The id of the element
+  * @instance */
 loader.getReference = function(id) {
   return loader.getSpecific(Reference, id);
 };
 
+/** @return {external:Promise.<Reference[]>}
+  * @instance */
 loader.getReferences = function() {
   return loader.getAll(Reference);
 };
 
+/** @return {external:Promise.<Segment>}
+  * @instance
+  * @param {int|string} id The id of the element */
 loader.getSegment = function(id) {
   return loader.getSpecific(Segment, id);
 };
 
+/** @return {external:Promise.<Segment[]>}
+  * @instance */
 loader.getSegments = function() {
   return loader.getAll(Segment);
 };
 
+/** @return {external:Promise.<Thread>}
+  * @instance
+  * @param {int|string} id The id of the element */
 loader.getThread = function(id) {
   return loader.getSpecific(Thread, id);
 };
 
+/** @return {external:Promise.<Thread[]>}
+  * @instance */
 loader.getThreads = function() {
   return loader.getAll(Thread);
 };
@@ -653,6 +913,9 @@ loader.getThreads = function() {
 
 var functionSignatureCache = {};
 
+/** @param {string} sig The signature
+  * @return {external:Promise.<Function>} The function with the specified signature
+  * @instance*/
 loader.getFunctionBySignature = function(sig) {
   if (functionSignatureCache[sig]) {
     return RSVP.Promise.resolve(functionSignatureCache[sig]);
@@ -671,10 +934,16 @@ loader.getFunctionBySignature = function(sig) {
 
 // run management
 
+/** Get name of the currently used database
+  * @return {string} the name of the database
+  * @instance */
 loader.getRun = function() {
   return run;
 };
 
+/** Set the name of the currently used database
+  * @param {string} nrun the name of the database
+  * @instance */
 loader.setRun = function(nrun) {
   //clear the cache when changing runs to avoid data leaking
   cache = {};
@@ -688,6 +957,8 @@ _.bindAll(loader);
 angular.module('app')
   .service('loader', ['$http', function(http) {
 
+    /** @return {external:Promise.<string[]>} All available databases
+      * @instance */
     loader.getRuns = function() {
       return new RSVP.Promise(function(resolve, reject) {
         http.get('/run')
@@ -696,10 +967,54 @@ angular.module('app')
       });
     };
 
+    /** @method getOneURL
+      * @memberof loader
+      * @instance
+      * @private
+      * @summary Load an instance from an URL. This bypasses the cache,
+      *          but the run is still prepended.
+      * @param {strng} url the url to use
+      * @param {Type} type The type to use
+      * @return {external:Promise.<Instance>} the instance */
     loader.getOneURL = _.partial(getOneURL, http, loader);
+
+    /** @method getManyURL
+      * @memberof loader
+      * @instance
+      * @private
+      * @summary Load many instances from an URL. This bypasses the cache,
+      *          but the run is still prepended.
+      * @param {strng} url the url to use
+      * @param {Type} type The type to use
+      * @return {external:Promise.<Instance[]>} the instances */
     loader.getManyURL = _.partial(getManyURL, http, loader);
+
+    /** @method getSpecific
+      * @memberof loader
+      * @instance
+      * @summary Load a specific instance with a specified type
+      * @param {Type} type The type to use
+      * @param {int|string} id the id of the instance
+      * @return {external:Promise.<Instance>} the instance */
     loader.getSpecific = _.partial(getSpecific, http, loader);
+
+    /** @method getAll
+      * @memberof loader
+      * @instance
+      * @summary Load all instances with a specified type
+      * @param {Type} type The type to use
+      * @return {external:Promise.<Instance[]>} the instances */
     loader.getAll = _.partial(getAll, http, loader);
+
+    /** @method getRelationship
+      * @memberof loader
+      * @instance
+      * @summary Load a relationship
+      * @param {Instance} instance The instance for which the relationship
+      *                            is loaded
+      * @param {string} relationship The relationship to load
+      * @return {external:Promise.<Instance>|external:Promise.<Instance[]>}
+                The relationship */
     loader.getRelationship = _.partial(getRelationship, http, loader);
 
     return loader;

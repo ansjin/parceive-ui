@@ -30,7 +30,7 @@ var map = require('map-stream');
 var sass = require('gulp-sass');
 var merge = require('merge-stream');
 var express = require('express');
-var jsdoc = require('gulp-jsdoc');
+var shell = require('gulp-shell');
 
 var processDB = require('./process');
 
@@ -152,10 +152,10 @@ gulp.task('html', function() {
     .pipe(gulp.dest('./build'));
 });
 
-gulp.task('doc', function() {
-  return gulp.src('app/scripts/**/*.js')
-  .pipe(jsdoc('build/doc'));
-});
+gulp.task('doc', shell.task([
+  'rm -rf build/doc',
+  'node_modules/jsdoc/jsdoc.js -c docconf.json'
+]));
 
 gulp.task('db', function(cb) {
   processDB.all('./import/', './data/', cb);
@@ -180,6 +180,8 @@ gulp.task('server', ['build'], function() {
   gulp.watch(['app/style/**/*.css', 'app/style/**/*.scss'], ['minify-css',
                                                              'csslint']);
   gulp.watch(['app/templates/**/*.html'], ['minify-templates']);
+
+  gulp.watch(['tutorials/*.md'], ['doc']);
 
   gulp.watch(['app/index.html'], ['html']);
 

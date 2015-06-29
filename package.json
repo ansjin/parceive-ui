@@ -27,6 +27,7 @@
     "gulp-sass": "~2.0.1",
     "express": "~4.12.4",
     "sqlite3": "~3.0.8",
-    "gulp-jsdoc": "~0.1.4"
+    "gulp-shell": "~0.4.2",
+    "jsdoc": "~3.3.2"
   }
 }

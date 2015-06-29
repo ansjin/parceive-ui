@@ -1,0 +1,28 @@
+{
+    "tags": {
+        "allowUnknownTags": true,
+        "dictionaries": ["jsdoc","closure"]
+    },
+    "source": {
+        "include": ["app/scripts", "server"],
+        "includePattern": ".+\\.js(doc)?$",
+        "excludePattern": "(^|\\/|\\\\)_"
+    },
+    "plugins": [
+      "plugins/markdown"
+    ],
+    "markdown": {
+        "tags": ["summary"]
+    },
+    "templates": {
+        "cleverLinks": false,
+        "monospaceLinks": false
+    },
+    "opts": {
+      "tutorials": "tutorials",
+      "recurse": true,
+      "encoding": "utf8",
+      "destination": "build/doc",
+      "private": "true"
+    }
+}
