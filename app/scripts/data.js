@@ -548,6 +548,34 @@ var Call = {
           return _.flatten(data);
         });
       });
+  },
+
+  /** @instance
+    * @summary Internally this goes trough segments, instructions
+    * @return {external:Promise.<Access[]>} the list of accesses performed
+    *                                       by this call */
+  getAccesses: function() {
+    return this.getInstructions()
+      .then(function(instrs) {
+        return RSVP.all(_.map(instrs, function(instr) {
+          return instr.getAccesses();
+        })).then(function(data) {
+          return _.flatten(data);
+        });
+      });
+  },
+
+  /** @instance
+    * @summary Internally this goes trough segments, instructions, accesses
+    * @return {external:Promise.<Reference[]>} the list of references that
+    *                                          the call accesses */
+  getReferences: function() {
+    return this.getAccesses()
+      .then(function(accesses) {
+        return RSVP.all(_.map(accesses, function(access) {
+          return access.getReference();
+        }));
+      });
   }
 };
 
