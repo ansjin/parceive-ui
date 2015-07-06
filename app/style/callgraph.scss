@@ -1,0 +1,17 @@
+g.callgraph {
+  text.collapsed-call {
+    fill: blue;
+  }
+
+  text.expanded-call {
+    fill:green;
+  }
+
+  text.ref {
+    fill: red;
+  }
+
+  line.edge {
+    stroke: red;
+  }
+}

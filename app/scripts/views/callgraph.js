@@ -34,11 +34,14 @@ function(loader, callgraph, d3) {
     var calls = nodes[0];
     var refs = nodes[1];
 
-    g.selectAll('text.call')
-      .data(calls)
-      .enter()
-      .append('text')
-      .attr('class', 'call')
+    var callNodes = g.selectAll('text.call')
+      .data(calls);
+    callNodes.exit().remove();
+    callNodes.enter()
+      .append('text');
+    callNodes.attr('class', function(d) {
+        return 'call ' + (d.isExpanded ? 'expanded-call' : 'collapsed-call');
+      })
       .text(function(d) {
         return d.label;
       })
@@ -65,12 +68,14 @@ function(loader, callgraph, d3) {
         });
       });
 
-    g.selectAll('text.ref')
-      .data(refs)
-      .enter()
+    var refNodes = g.selectAll('text.ref')
+      .data(refs);
+    refNodes.exit().remove();
+    refNodes.enter()
       .append('text')
-      .attr('class', 'ref')
-      .attr('x', function(d) {
+      .attr('class', 'ref');
+
+    refNodes.attr('x', function(d) {
         return d.x;
       })
       .attr('y', function(d) {
@@ -78,6 +83,35 @@ function(loader, callgraph, d3) {
       })
       .text(function(d) {
         return d.label;
+      });
+
+    var edges = _.map(graph.edges(), function(e) {
+      return _.merge(graph.edge(e), {
+        from: e.v,
+        to: e.w
+      });
+    });
+
+    var edgesNodes = g.selectAll('line')
+      .data(edges);
+
+    edgesNodes.enter()
+      .append('line')
+      .attr('class', 'edge');
+    edgesNodes.exit().remove();
+
+    edgesNodes
+      .attr('x1', function(d) {
+        return d.points[0].x;
+      })
+      .attr('x2', function(d) {
+        return d.points[2].x;
+      })
+      .attr('y1', function(d) {
+        return d.points[0].y;
+      })
+      .attr('y2', function(d) {
+        return d.points[2].y;
       });
   }
 

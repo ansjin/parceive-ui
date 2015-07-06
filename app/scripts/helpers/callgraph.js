@@ -2,7 +2,7 @@ angular.module('app')
   .service('CallGraphDataService', ['loader', 'dagre', function(loader, dagre) {
     function setNodeSize(data) {
       data.width = 50;
-      data.height = 50;
+      data.height = 10;
     }
 
     function addReferences(graph, call) {
@@ -64,8 +64,7 @@ angular.module('app')
         }).then(function(calls) {
           _.forEach(calls, function(call) {
             if (self.id !== call.id) {
-              graph.setEdge('call:' + self.id, 'call:' + call.id);
-              graph.setParent('call:' + call.id, 'call:' + self.id);
+              graph.setEdge('call:' + self.id, 'call:' + call.id, {});
             }
           });
         });
@@ -109,7 +108,6 @@ angular.module('app')
     return {
       createGraph: function(root, expanded, includeMemoryNodes) {
         var g = new dagre.graphlib.Graph({
-          compound: true,
           directed: true
         });
         g.setGraph({
