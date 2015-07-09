@@ -53,8 +53,8 @@
 /** @external Promise
   * @see https://github.com/tildeio/rsvp.js/ */
 
-  /** @external http
-    * @see https://docs.angularjs.org/api/ng/service/$http */
+/** @external http
+  * @see https://docs.angularjs.org/api/ng/service/$http */
 
 /** @private
   * @type {string}
