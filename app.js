@@ -5,6 +5,10 @@ var express = require('express');
 
 var entities = require('./server/entities');
 
+var watch = require('./server/watch');
+
+watch();
+
 var app = express();
 
 app.use(entities);
