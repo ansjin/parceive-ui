@@ -14,35 +14,27 @@ var mapping = {
 };
 
 router.get('/', function(req, res) {
-  var stmt = req.db.prepare('SELECT * FROM REFERENCE_TABLE');
-  util.sendAll(stmt, mapping, res);
+  util.handleAllQuery(req.db, mapping, res, 'SELECT * FROM REFERENCE_TABLE');
 });
 
 router.get('/many/:ids/accesses', function(req, res) {
-  util.buildINStatement(req.db, accesses.mapping, res, req.params.ids,
+  util.handleManyQuery(req.db, accesses.mapping, res, req.params.ids,
     'ACCESS_TABLE WHERE REFERENCE_ID');
 });
 
 router.get('/many/:ids', function(req, res) {
-  util.buildINStatement(req.db, mapping, res, req.params.ids,
+  util.handleManyQuery(req.db, mapping, res, req.params.ids,
     'REFERENCE_TABLE WHERE REFERENCE_ID');
 });
 
 router.get('/:id', function(req, res) {
-  var stmt =
-    req.db.prepare('SELECT * FROM REFERENCE_TABLE WHERE REFERENCE_ID=?');
-
-  stmt.bind(req.params.id);
-
-  util.sendOne(stmt, mapping, res);
+  util.handleOneQuery(req.db, mapping, res,
+    'SELECT * FROM REFERENCE_TABLE WHERE REFERENCE_ID=?', req.params.id);
 });
 
 router.get('/:id/accesses', function(req, res) {
-  var stmt = req.db.prepare('SELECT * FROM ACCESS_TABLE WHERE REFERENCE_ID=?');
-
-  stmt.bind(req.params.id);
-
-  util.sendAll(stmt, accesses.mapping, res);
+  util.handleRelationshipQuery(req.db, accesses.mapping, res,
+    'SELECT * FROM ACCESS_TABLE WHERE REFERENCE_ID=?', req.params.id);
 });
 
 module.exports = {

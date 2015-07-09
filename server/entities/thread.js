@@ -13,34 +13,27 @@ var mapping = {
 };
 
 router.get('/', function(req, res) {
-  var stmt = req.db.prepare('SELECT * FROM THREAD_TABLE');
-  util.sendAll(stmt, mapping, res);
+  util.handleAllQuery(req.db, mapping, res, 'SELECT * FROM THREAD_TABLE');
 });
 
 router.get('/many/:ids/calls', function(req, res) {
-  util.buildINStatement(req.db, calls.mapping, res, req.params.ids,
+  util.handleManyQuery(req.db, calls.mapping, res, req.params.ids,
     'CALL_TABLE WHERE THREAD_ID');
 });
 
 router.get('/many/:ids', function(req, res) {
-  util.buildINStatement(req.db, mapping, res, req.params.ids,
+  util.handleManyQuery(req.db, mapping, res, req.params.ids,
     'THREAD_TABLE WHERE ID');
 });
 
 router.get('/:id', function(req, res) {
-  var stmt = req.db.prepare('SELECT * FROM THREAD_TABLE WHERE ID=?');
-
-  stmt.bind(req.params.id);
-
-  util.sendOne(stmt, mapping, res);
+  util.handleOneQuery(req.db, mapping, res,
+    'SELECT * FROM THREAD_TABLE WHERE ID=?', req.params.id);
 });
 
 router.get('/:id/calls', function(req, res) {
-  var stmt = req.db.prepare('SELECT * FROM CALL_TABLE WHERE THREAD_ID=?');
-
-  stmt.bind(req.params.id);
-
-  util.sendAll(stmt, calls.mapping, res);
+  util.handleRelationshipQuery(req.db, calls.mapping, res,
+    'SELECT * FROM CALL_TABLE WHERE THREAD_ID=?', req.params.id);
 });
 
 module.exports = {

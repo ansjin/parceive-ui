@@ -12,34 +12,27 @@ var mapping = {
 };
 
 router.get('/', function(req, res) {
-  var stmt = req.db.prepare('SELECT * FROM FILE_TABLE');
-  util.sendAll(stmt, mapping, res);
+  util.handleAllQuery(req.db, mapping, res, 'SELECT * FROM FILE_TABLE');
 });
 
 router.get('/many/:ids/functions', function(req, res) {
-  util.buildINStatement(req.db, functions.mapping, res, req.params.ids,
+  util.handleManyQuery(req.db, functions.mapping, res, req.params.ids,
     'FUNCTION_TABLE WHERE FILE_ID');
 });
 
 router.get('/many/:ids', function(req, res) {
-  util.buildINStatement(req.db, mapping, res, req.params.ids,
+  util.handleManyQuery(req.db, mapping, res, req.params.ids,
     'FILE_TABLE WHERE ID');
 });
 
 router.get('/:id', function(req, res) {
-  var stmt = req.db.prepare('SELECT * FROM FILE_TABLE WHERE ID=?');
-
-  stmt.bind(req.params.id);
-
-  util.sendOne(stmt, mapping, res);
+  util.handleOneQuery(req.db, mapping, res,
+    'SELECT * FROM FILE_TABLE WHERE ID=?', req.params.id);
 });
 
 router.get('/:id/functions', function(req, res) {
-  var stmt = req.db.prepare('SELECT * FROM FUNCTION_TABLE WHERE FILE_ID=?');
-
-  stmt.bind(req.params.id);
-
-  util.sendAll(stmt, functions.mapping, res);
+  util.handleRelationshipQuery(req.db, functions.mapping, res,
+    'SELECT * FROM FUNCTION_TABLE WHERE FILE_ID=?', req.params.id);
 });
 
 module.exports = {
