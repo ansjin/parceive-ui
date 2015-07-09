@@ -153,7 +153,6 @@ gulp.task('html', function() {
 });
 
 gulp.task('doc', shell.task([
-  'rm -rf build/doc',
   'node_modules/jsdoc/jsdoc.js -c docconf.json'
 ]));
 
@@ -163,7 +162,7 @@ gulp.task('db', function(cb) {
 
 gulp.task('build', ['bower', 'lint', 'minify-js', 'minify-js-deps',
                     'minify-css-deps', 'minify-css', 'minify-templates',
-                    'html', 'db']);
+                    'html', 'db', 'doc']);
 
 gulp.task('server', ['build'], function() {
   //server
@@ -181,7 +180,7 @@ gulp.task('server', ['build'], function() {
                                                              'csslint']);
   gulp.watch(['app/templates/**/*.html'], ['minify-templates']);
 
-  gulp.watch(['tutorials/*.md'], ['doc']);
+  gulp.watch(['server/**/*.js', 'tutorials/*.md'], ['doc']);
 
   gulp.watch(['app/index.html'], ['html']);
 
