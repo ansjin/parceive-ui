@@ -1,9 +1,16 @@
 /* global setInterval */
 
+/** @namespace server.watch
+  * @tutorial database */
+
 var fs = require('fs');
 
-var processDB = require('../process');
+var processDB = require('./process');
 
+/** @private
+  * @summary Check if we are already processing. If not then start to import all
+              databases.
+  * @memberof server.watch */
 function processIfNotProcessing() {
   if (processDB.isProcessing() === false) {
     console.log('Starting import');
@@ -17,8 +24,13 @@ function processIfNotProcessing() {
   }
 }
 
-module.exports = function() {
+/** @summary Start watching.
+  * @description Processing will be done every 10s or on file change.
+  * @memberof server.watch */
+function watch() {
   processIfNotProcessing();
   fs.watch('./import/', processIfNotProcessing);
   setInterval(processIfNotProcessing, 10000);
-};
+}
+
+module.exports = watch;

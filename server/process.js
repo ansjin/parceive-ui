@@ -3,20 +3,38 @@
 /* global console */
 /* global -_ */
 
+/** @namespace server.process
+  * @tutorial database */
+
 var _ = require('lodash');
 
 var sqlite3 = require('sqlite3').verbose();
 
 var fs = require('fs');
 
+/** @private
+  * @type {Array.<String>}
+  * @summary The databases that are curently beeing processed
+  * @memberof server.process */
 var runningList = [];
-var isProcessing = false;
 
+/** @private
+  * @type {Boolean}
+  * @summary Are databases being processed?
+  * @memberof server.process */
+var isProcessingNow = false;
+
+/** @private
+  * @summary Used for instrumentation
+  * @memberof server.process */
 function startProcessing(file) {
   console.log('Processing ' + file);
   runningList.push(file);
 }
 
+/** @private
+  * @summary Used for instrumentation
+  * @memberof server.process */
 function stopProcessing(file, err) {
   console.log('Finished processing ' + file);
   if (err) {
@@ -30,6 +48,12 @@ function stopProcessing(file, err) {
   }
 }
 
+/** @summary Execute the script in sql on the database. The database is closed
+              before calling the callback
+  * @param {String} path The path to the database
+  * @param {String} sql The script
+  * @param {server.db.DBCallback}
+  * @memberof server.process */
 function process(path, sql, cb) {
   var db = new sqlite3.Database(path, function(err) {
     if (err) {
@@ -42,19 +66,29 @@ function process(path, sql, cb) {
       }
 
       db.close(function(err) {
-        cb(err);
+        cb(err, db);
       });
     });
   });
 
 }
 
+/** @callback ProcessCallback
+  * @memberof server.process
+  * @param {String} err */
+
+/** @summary Process all databases in the source folder and store them in the
+              destination folder.
+  * @param {String} path The source folder
+  * @param {String} dest The destination folder
+  * @param {server.process.ProcessCallback}
+  * @memberof server.process */
 function processAll(path, dest, cb) {
-  if (isProcessing) {
+  if (isProcessingNow) {
     cb('Already processing files');
   }
 
-  isProcessing = true;
+  isProcessingNow = true;
 
   fs.readFile('./mod.sql', 'utf8', function(err, sql) {
     if (err) {
@@ -62,7 +96,7 @@ function processAll(path, dest, cb) {
     }
     fs.readdir(path, function(err, files) {
       if (files.length === 0) {
-        isProcessing = false;
+        isProcessingNow = false;
         return cb();
       }
 
@@ -81,7 +115,7 @@ function processAll(path, dest, cb) {
       }
 
       var afterMove = _.after(files.length, function() {
-        isProcessing = false;
+        isProcessingNow = false;
         cb();
       });
 
@@ -115,13 +149,21 @@ function processAll(path, dest, cb) {
   });
 }
 
+/** @return {Array.<String>} What databases are beeing processed?
+  * @memberof server.process */
+function getRunning() {
+  return runningList;
+}
+
+/** @return {Boolean} Are there any databases being processed?
+  * @memberof server.process */
+function isProcessing() {
+  return isProcessingNow;
+}
+
 module.exports = {
   all: processAll,
   one: process,
-  getRunngin: function() {
-    return runningList;
-  },
-  isProcessing: function() {
-    return isProcessing;
-  }
+  isProcessing: isProcessing,
+  getRunning: getRunning
 };

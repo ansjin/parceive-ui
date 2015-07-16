@@ -32,7 +32,7 @@ var merge = require('merge-stream');
 var express = require('express');
 var shell = require('gulp-shell');
 
-var processDB = require('./process');
+var processDB = require('./server/process');
 
 //utilities
 

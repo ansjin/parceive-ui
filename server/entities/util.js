@@ -1,6 +1,7 @@
 var _ = require('lodash');
 
-/** @namespace server.util */
+/** @namespace server.util
+  * @tutorial server */
 
 /** @function
     @memberof server.util

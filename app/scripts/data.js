@@ -56,14 +56,18 @@
 /** @external http
   * @see https://docs.angularjs.org/api/ng/service/$http */
 
+/** @namespace client.data */
+
 /** @private
   * @type {string}
-  * @summary The currently used database */
+  * @summary The currently used database
+  * @memberof client.data */
 var run;
 
 /** @private
   * @type {Object}
-  * @summary The cache */
+  * @summary The cache
+  * @memberof client.data */
 var cache = {};
 
 var getOneTemplate = _.template('<%= type %>/<%= id %>');
@@ -78,7 +82,8 @@ var getManyRelationshipTemplate =
   * @summary Add element to cache
   * @param {string} type The name of the type
   * @param {int|string} id The id
-  * @param {external:Promise|Instance} value The cached value */
+  * @param {external:Promise|Instance} value The cached value
+  * @memberof client.data */
 function setCache(type, id, value) {
   if (!cache[type]) {
     cache[type] = {};
@@ -91,7 +96,8 @@ function setCache(type, id, value) {
   * @summary Get element from cache
   * @param {string} type The name of the type
   * @param {int|string} id The id
-  * @return {external:Promise|Instance} value The cached value */
+  * @return {external:Promise|Instance} value The cached value
+  * @memberof client.data */
 function getCache(type, id) {
   if (!cache[type]) {
     cache[type] = {};
@@ -106,7 +112,8 @@ function getCache(type, id) {
   * @param {Object} data The data coming from the server
   * @param {Type} type The expected type of the object
   * @param {loader} mapper
-  * @return {Instance} The created instance */
+  * @return {Instance} The created instance
+  * @memberof client.data */
 function wrap(data, type, mapper) {
   var cached = getCache(type.typeName, data.id);
   if (cached && !(cached instanceof RSVP.Promise)) {
@@ -140,7 +147,8 @@ function wrap(data, type, mapper) {
   * @summary HTTP request that returns a promise
   * @param {string} url The url to call. The run is prepended here.
   * @param {external:http} http
-  * @return {external:Promise} The result */
+  * @return {external:Promise} The result
+  * @memberof client.data */
 function httpGet(http, url) {
   url = '/run/' + run + '/' + url;
 
@@ -153,7 +161,7 @@ function httpGet(http, url) {
 
 /** @private
   * @see loader#getOneURL
-*/
+  * @memberof client.data */
 function getOneURL(http, mapper, url, type) {
   var promise = httpGet(http, url)
     .then(function(data) {
@@ -165,7 +173,7 @@ function getOneURL(http, mapper, url, type) {
 
 /** @private
   * @see loader#getManyURL
-*/
+  * @memberof client.data */
 function getManyURL(http, mapper, url, type) {
   var promise =  httpGet(http, url)
     .then(function(datas) {
@@ -179,19 +187,22 @@ function getManyURL(http, mapper, url, type) {
 
 /** @private
   * @type {Object}
-  * @summary Requests are stored here until they are sent to the server */
+  * @summary Requests are stored here until they are sent to the server
+  * @memberof client.data */
 var pipeline = {};
 
 /** @private
   * @type {int|false}
   * @summary Stores the value got from setTimeout or false if no requests are
-  *           pending*/
+  *           pending
+  * @memberof client.data */
 var pipelineTimeout = false;
 
 /** @private
   * @type {bool}
   * @summary Were any requests made during the execution of the current
-              requests */
+              requests
+  * @memberof client.data */
 var pipelineRestart = false;
 
 /** @private
@@ -201,7 +212,8 @@ var pipelineRestart = false;
   * @param {Type} type the type of the instances
   * @param {int|string|int[]|string[]} The id or ids of the instances
   * @param {bool} many Request one or many
-  * @return {Instance|Instance[]} */
+  * @return {Instance|Instance[]}
+  * @memberof client.data */
 function getSpecificReal(http, manager, type, id, many) {
   if (many) {
     return getManyURL(http, manager, getManyTemplate(
@@ -219,7 +231,8 @@ function getSpecificReal(http, manager, type, id, many) {
   * @param {loader} manager
   * @param {Object} expecting The postponed requests
   * @param {Type} type the type of the instances
-  * @return {external:Promise} */
+  * @return {external:Promise}
+  * @memberof client.data */
 function getManySpecific(http, manager, expecting, type) {
   var ids = _.map(expecting, function(val, key) {
     return key;
@@ -253,7 +266,8 @@ function getManySpecific(http, manager, expecting, type) {
   * @param {loader} manager
   * @param {Object} expecting The postponed requests for one relationship.
   * @param {Type} type the type of the instance
-  * @return {external:Promise} */
+  * @return {external:Promise}
+  * @memberof client.data */
 function getManyManyRelationship(http, manager, expecting, type) {
   return _.map(expecting, function(waiting, relationship) {
     var ids = _.map(waiting, function(val, key) {
@@ -300,7 +314,8 @@ function getManyManyRelationship(http, manager, expecting, type) {
               {@link getManySpecific}. If {@link timeoutRestart} is true
               then the function calls itself again.
   * @param {external:http} http
-  * @param {loader} manager */
+  * @param {loader} manager
+  * @memberof client.data */
 function timeoutFct(http, manager) {
   pipelineRestart = false;
 
@@ -347,7 +362,8 @@ function timeoutFct(http, manager) {
 /** @private
   * @summary This function starts {@link timeoutFct} after 10ms.
   * @param {external:http} http
-  * @param {loader} manager */
+  * @param {loader} manager
+  * @memberof client.data */
 function startPipelineTimeout(http, manager) {
   pipelineRestart = true;
   if (pipelineTimeout === false) {
@@ -364,7 +380,8 @@ function startPipelineTimeout(http, manager) {
                       completes
   * @param {string|undefined} relationship If undefined this postpones a request
                               to get the specific instance, otherwise gets the
-                              relationship for this instance */
+                              relationship for this instance
+  * @memberof client.data */
 function addToPipeline(type, id, deferred, relationship) {
   if (!pipeline[type.typeName]) {
     pipeline[type.typeName] = {
@@ -385,7 +402,8 @@ function addToPipeline(type, id, deferred, relationship) {
 }
 
 /** @private
-  * @see loader#getSpecific */
+  * @see loader#getSpecific
+  * @memberof client.data */
 function getSpecific(http, manager, type, id) {
   var cached = getCache(type.typeName, id);
 
@@ -403,7 +421,8 @@ function getSpecific(http, manager, type, id) {
 }
 
 /** @private
-  * @see loader#getRelationship */
+  * @see loader#getRelationship
+  * @memberof client.data */
 function getRelationship(http, manager, instance, relationship) {
   if (_.isObject(instance[relationship])) {
     return RSVP.Promise.resolve(instance[relationship]);
@@ -441,7 +460,8 @@ function getRelationship(http, manager, instance, relationship) {
 }
 
 /** @private
-  * @see loader#getAll */
+  * @see loader#getAll
+  * @memberof client.data */
 function getAll(http, manager, type) {
   return getManyURL(http, manager, getAllTemplate(
     {type: type.plural}), type);
@@ -603,6 +623,7 @@ var File = {
 };
 
 /** @class
+  * @alias Function
   * @implements Type */
 var FunctionType = {
   typeName: 'Function',
@@ -835,6 +856,7 @@ var loader = {
 
 /** @return {external:Promise.<Access>}
   * @param {int|string} id The id of the element
+  * @method
   * @instance */
 loader.getAccess = function(id) {
   return loader.getSpecific(Access, id);
@@ -995,8 +1017,7 @@ angular.module('app')
       });
     };
 
-    /** @method getOneURL
-      * @memberof loader
+    /** @method
       * @instance
       * @private
       * @summary Load an instance from an URL. This bypasses the cache,
@@ -1006,8 +1027,7 @@ angular.module('app')
       * @return {external:Promise.<Instance>} the instance */
     loader.getOneURL = _.partial(getOneURL, http, loader);
 
-    /** @method getManyURL
-      * @memberof loader
+    /** @method
       * @instance
       * @private
       * @summary Load many instances from an URL. This bypasses the cache,
@@ -1017,8 +1037,7 @@ angular.module('app')
       * @return {external:Promise.<Instance[]>} the instances */
     loader.getManyURL = _.partial(getManyURL, http, loader);
 
-    /** @method getSpecific
-      * @memberof loader
+    /** @method
       * @instance
       * @summary Load a specific instance with a specified type
       * @param {Type} type The type to use
@@ -1026,16 +1045,14 @@ angular.module('app')
       * @return {external:Promise.<Instance>} the instance */
     loader.getSpecific = _.partial(getSpecific, http, loader);
 
-    /** @method getAll
-      * @memberof loader
+    /** @method
       * @instance
       * @summary Load all instances with a specified type
       * @param {Type} type The type to use
       * @return {external:Promise.<Instance[]>} the instances */
     loader.getAll = _.partial(getAll, http, loader);
 
-    /** @method getRelationship
-      * @memberof loader
+    /** @method
       * @instance
       * @summary Load a relationship
       * @param {Instance} instance The instance for which the relationship

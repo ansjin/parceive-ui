@@ -9,7 +9,7 @@ var _ = require('lodash');
 /** @external SQLiteDB
   * @see https://github.com/mapbox/node-sqlite3 */
 
-/** @type {Object.<String,Array.<SQLiteDB>>}
+/** @type {Object.<String,Array.<external:SQLiteDB>>}
     @memberof server.db
     @summary This cache keeps multiple databases open in order to reduce access
               time for new queries. The open databases are closed at a rate of
@@ -37,7 +37,7 @@ setInterval(cleanupDB, 1000);
 /** @callback DBCallback
     @memberof server.db
     @param {String} err
-    @param {SQLiteDB} db
+    @param {external:SQLiteDB} db
  */
 
 /** @memberof server.db
@@ -46,7 +46,7 @@ setInterval(cleanupDB, 1000);
     @private
     @param {String} id The name of the database.
     @param {server.db.DBCallback} cb
-    @return {SQLiteDB}
+    @return {external:SQLiteDB}
 */
 function openDb(id, cb) {
   var path = './data/' + id + '.db';
@@ -70,7 +70,7 @@ function openDb(id, cb) {
     @summary Get a open SQLiteDB. It is only abailable after cb fires.
     @param {String} id The name of the database.
     @param {server.db.DBCallback} cb
-    @return {SQLiteDB}
+    @return {external:SQLiteDB}
 */
 function dbManager(id, cb) {
   if (!cache[id]) {
