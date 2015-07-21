@@ -1,0 +1,16 @@
+#textSizeTest
+{
+    position: absolute;
+    visibility: hidden;
+    height: auto;
+    width: auto;
+    white-space: nowrap; /* Thanks to Herb Caudill comment */
+}
+
+#hiddenSVG
+{
+  position: absolute;
+  visibility: hidden;
+  height: auto;
+  width: auto;
+}

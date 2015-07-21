@@ -87,8 +87,8 @@ function(loader, callgraph, d3) {
 
     var edges = _.map(graph.edges(), function(e) {
       return _.merge(graph.edge(e), {
-        from: e.v,
-        to: e.w
+        from: graph.node(e.v),
+        to: graph.node(e.w)
       });
     });
 
@@ -97,21 +97,23 @@ function(loader, callgraph, d3) {
 
     edgesNodes.enter()
       .append('line')
-      .attr('class', 'edge');
+      .attr('class', function(d) {
+        return 'edge ' + (d.to.isReference ? 'edge-ref' : 'edge-call');
+      });
     edgesNodes.exit().remove();
 
     edgesNodes
       .attr('x1', function(d) {
-        return d.points[0].x;
+        return d.from.x + d.from.width;
       })
       .attr('x2', function(d) {
-        return d.points[2].x;
+        return d.to.x;
       })
       .attr('y1', function(d) {
-        return d.points[0].y;
+        return d.from.y - d.from.height / 2;
       })
       .attr('y2', function(d) {
-        return d.points[2].y;
+        return d.to.y - d.to.height / 2;
       });
   }
 

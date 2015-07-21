@@ -11,7 +11,11 @@ g.callgraph {
     fill: red;
   }
 
-  line.edge {
+  line.edge-call {
     stroke: red;
+  }
+
+  line.edge-ref {
+    stroke: blue;
   }
 }

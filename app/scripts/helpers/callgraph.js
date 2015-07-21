@@ -1,8 +1,13 @@
 angular.module('app')
-  .service('CallGraphDataService', ['loader', 'dagre', function(loader, dagre) {
+  .service('CallGraphDataService',
+  ['loader', 'dagre', 'sizeHelper', function(loader, dagre, sizeHelper) {
     function setNodeSize(data) {
-      data.width = 50;
-      data.height = 10;
+      var text = data.label;
+
+      var size = sizeHelper.svgTextSize(text);
+
+      data.width = size.width;
+      data.height = size.height;
     }
 
     function addReferences(graph, call) {
