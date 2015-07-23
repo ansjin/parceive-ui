@@ -3,11 +3,12 @@ angular.module('callgraph-view', ['app'])
 .value('group', 'Calls')
 .value('markedChanged', function() {})
 .value('focus', function() {})
-.service('render', ['loader', 'CallGraphDataService', 'd3',
-function(loader, callgraph, d3) {
+.service('render', ['loader', 'CallGraphDataService', 'd3', 'sizeHelper',
+function(loader, callgraph, d3, sizeHelper) {
   function addZoom(svg) {
+    svg.call(d3.behavior.zoom().scaleExtent([1, 10]).on('zoom', zoom));
+
     var g = svg.append('g')
-      .call(d3.behavior.zoom().scaleExtent([-10, 10]).on('zoom', zoom))
       .attr('class', 'callgraph');
 
     function zoom() {
