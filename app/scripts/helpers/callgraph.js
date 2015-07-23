@@ -140,7 +140,7 @@ angular.module('app')
         });
       },
 
-      collapseCall: function collapseCall(graph, call) {
+      collapseCall: function collapseCall(graph, call, leaveRefs) {
         var expanded = graph.graph().expanded;
 
         var index = expanded.indexOf(call.id);
@@ -151,19 +151,30 @@ angular.module('app')
         }
 
         graph.node('call:' + call.id).isExpanded = false;
-        _.forEach(graph.children('call:' + call.id), function(child) {
-          var refs = graph.successors(child);
-          graph.removeNode(child);
-          _.forEach(refs, function(ref) {
-            if (graph.node(ref).isReference) {
-              if (graph.predecessors(ref).length === 0) {
-                graph.removeNode(ref);
-              }
-            } else if (graph.node(ref).isCall) {
-              collapseCall(graph, graph.node(ref).call);
-            }
-          });
+        _.forEach(graph.successors('call:' + call.id), function(child) {
+          if (graph.node(child).isCall) {
+            collapseCall(graph, graph.node(child).call, true);
+            graph.removeNode(child);
+          }
         });
+
+        if (!leaveRefs) {
+          _.chain(graph.nodes())
+            .map(function(node) {
+              return graph.node(node);
+            })
+            .filter(function(node) {
+              return node.isReference;
+            })
+            .filter(function(node) {
+              var into = graph.predecessors(node.id);
+              return into.length === 0;
+            })
+            .forEach(function(node) {
+              graph.removeNode(node.id);
+            })
+            .value();
+        }
 
         dagre.layout(graph);
       }
