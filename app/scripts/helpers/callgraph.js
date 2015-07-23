@@ -119,7 +119,10 @@ angular.module('app')
           rankdir: 'LR',
           root: root,
           includeMemoryNodes: includeMemoryNodes,
-          expanded: expanded
+          expanded: expanded,
+          nodesep: 5,
+          edgesep: 1,
+          ranksep: 20
         });
 
         return addCall(g, root, 0).then(function() {
