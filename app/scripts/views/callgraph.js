@@ -4,7 +4,8 @@ angular.module('callgraph-view', ['app'])
 .value('markedChanged', function() {})
 .value('focus', function() {})
 .service('render', ['loader', 'CallGraphDataService', 'd3', 'sizeHelper',
-function(loader, callgraph, d3, sizeHelper) {
+                    'dagre',
+function(loader, callgraph, d3, sizeHelper, dagre) {
   function addZoom(svg) {
     svg.call(d3.behavior.zoom().scaleExtent([1, 10]).on('zoom', zoom));
 
@@ -19,6 +20,8 @@ function(loader, callgraph, d3, sizeHelper) {
 
   function render(svg, state) {
     var graph = state.unsaved.graph;
+
+    dagre.layout(graph);
 
     var g = svg.select('g.callgraph');
 

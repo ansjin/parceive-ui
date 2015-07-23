@@ -126,8 +126,6 @@ angular.module('app')
         });
 
         return addCall(g, root, 0).then(function() {
-          dagre.layout(g);
-
           return g;
         });
       },
@@ -138,9 +136,7 @@ angular.module('app')
         var data = graph.node('call:' + call.id);
         data.isExpanded = true;
 
-        return addCallChildren(graph, data).then(function() {
-          dagre.layout(graph);
-        });
+        return addCallChildren(graph, data);
       },
 
       collapseCall: function collapseCall(graph, call, leaveRefs) {
@@ -178,8 +174,6 @@ angular.module('app')
             })
             .value();
         }
-
-        dagre.layout(graph);
       }
     };
   }]);
