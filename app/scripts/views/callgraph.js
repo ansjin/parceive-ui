@@ -1,11 +1,209 @@
+var conf = {
+  horisontalMargin: 20,
+  verticalMargin: 0
+};
+
+function clearLayout(graph) {
+  _.chain(graph.nodes())
+    .map(function(node) {
+      return graph.node(node);
+    })
+    .forEach(function(node) {
+      delete node.x;
+      delete node.y;
+      delete node.rank;
+      delete node.maxSequence;
+    })
+    .value();
+
+  var g = graph.graph();
+
+  delete g.rank;
+}
+
+function rankCalls(graph) {
+  var roots =
+    _.chain(graph.sources())
+      .map(function(node) {
+        return graph.node(node);
+      })
+      .filter(function(node) {
+        return node.isCall;
+      })
+      .value();
+
+  var rank = [roots];
+
+  var index = 0;
+  var i;
+  var j;
+
+  while (true) {
+    var last = rank[index];
+    var current = [];
+
+    for (i = 0; i < last.length; i++) {
+      var successors = graph.successors(last[i].id);
+
+      for (j = 0; j < successors.length; j++) {
+        var node = graph.node(successors[j]);
+
+        if (node.isCall) {
+          current.push(node);
+        }
+      }
+    }
+
+    index++;
+
+    if (current.length > 0) {
+      rank.push(current);
+    } else {
+      break;
+    }
+  }
+
+  for (i = 0; i < rank.length; i++) {
+    var line = rank[i];
+
+    for (j = 0; j < line.length; j++) {
+      line[j].rank = i;
+    }
+  }
+
+  graph.graph().rank = rank;
+}
+
+function calcMaxSequence(graph) {
+  var i;
+  var j;
+
+  var current = graph.sinks();
+  var next = [];
+
+  for (i = 0; i < current.length; i++) {
+    var node = graph.node(current[i]);
+    if (node.isCall) {
+      next.push(current[i]);
+    } else if (node.isReference) {
+      var scall = graph.predecessors(current[i]);
+      for (j = 0; j < scall.length; j++) {
+        if (graph.node(scall[j]).isCall && next.indexOf(scall[j]) === -1) {
+          next.push(scall[j]);
+        }
+      }
+    }
+  }
+
+  current = next;
+
+  var at = 0;
+  do {
+    next = [];
+
+    for (i = 0; i < current.length; i++) {
+      graph.node(current[i]).maxSequence = at;
+
+      var pred = graph.predecessors(current[i]);
+
+      for (j = 0; j < pred.length; j++) {
+        if (graph.node(pred[j]).isCall && next.indexOf(pred[j]) === -1) {
+          next.push(pred[j]);
+        }
+      }
+    }
+
+    at++;
+    current = next;
+  } while (current.length > 0);
+}
+
+function maxWidth(nodes) {
+  var max = nodes[0].width;
+
+  for (var i = 0; i < nodes.length; i++) {
+    if (nodes[i].width > max) {
+      max = nodes[i].width;
+    }
+  }
+
+  return max;
+}
+
+function layoutCalls(graph) {
+  var i;
+  var j;
+
+  var x = 0;
+  var y = 0;
+
+  var rank = graph.graph().rank;
+
+  function sortByMaxSequence(a, b) {
+    return a.maxSequence < b.maxSequence;
+  }
+
+  for (i = 0; i < rank.length; i++) {
+    rank[i].sort(sortByMaxSequence);
+  }
+
+  for (i = 0; i < rank.length; i++) {
+    var width = maxWidth(rank[i]);
+
+    y = 0;
+    for (j = 0; j < rank[i].length; j++) {
+      rank[i][j].x = x;
+      rank[i][j].y = y;
+
+      if (y >= 0) {
+        y += rank[i][j].height + conf.verticalMargin;
+      } else {
+        y -= rank[i][j].height + conf.verticalMargin;
+      }
+
+      y = -y;
+    }
+
+    x += width + conf.horisontalMargin;
+  }
+}
+
+function layoutRefs(graph) {
+  var x = 0;
+  var y = -300;
+
+  _.chain(graph.nodes())
+      .map(function(node) {
+        return graph.node(node);
+      })
+      .filter(function(node) {
+        return node.isReference;
+      })
+      .forEach(function(node) {
+        node.x = x;
+        node.y = y;
+
+        x += node.width;
+      })
+      .value();
+
+}
+
+function layout(graph) {
+  clearLayout(graph);
+  rankCalls(graph);
+  calcMaxSequence(graph);
+  layoutCalls(graph);
+  layoutRefs(graph);
+}
+
 angular.module('callgraph-view', ['app'])
 .value('name', 'Callgraph')
 .value('group', 'Calls')
 .value('markedChanged', function() {})
 .value('focus', function() {})
-.service('render', ['loader', 'CallGraphDataService', 'd3', 'sizeHelper',
-                    'dagre',
-function(loader, callgraph, d3, sizeHelper, dagre) {
+.service('render', ['loader', 'CallGraphDataService', 'd3', 'dagre',
+function(loader, callgraph, d3, dagre) {
   function addZoom(svg) {
     svg.call(d3.behavior.zoom().scaleExtent([1, 10]).on('zoom', zoom));
 
@@ -22,6 +220,7 @@ function(loader, callgraph, d3, sizeHelper, dagre) {
     var graph = state.unsaved.graph;
 
     dagre.layout(graph);
+    layout(graph);
 
     var g = svg.select('g.callgraph');
 
