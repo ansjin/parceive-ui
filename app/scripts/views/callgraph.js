@@ -1,6 +1,7 @@
 var conf = {
   horisontalMargin: 20,
-  verticalMargin: 0
+  verticalMargin: 0,
+  layout: 'self'
 };
 
 function clearLayout(graph) {
@@ -177,7 +178,7 @@ function layoutRefs(graph) {
         return graph.node(node);
       })
       .filter(function(node) {
-        return node.isReference;
+        return node.isReference || node.isGroup;
       })
       .forEach(function(node) {
         node.x = x;
@@ -191,10 +192,117 @@ function layoutRefs(graph) {
 
 function layout(graph) {
   clearLayout(graph);
-  rankCalls(graph);
+  /*rankCalls(graph);
   calcMaxSequence(graph);
   layoutCalls(graph);
-  layoutRefs(graph);
+  layoutRefs(graph);*/
+}
+
+function groupRefs(graph, ret) {
+  var groups = [];
+
+  function addToGroup(node) {
+    var group = _.find(groups, function(group) {
+      return _.isEqual(group.inbound, graph.predecessors(node.id));
+    });
+
+    if (group) {
+      group.elements.push(node);
+    } else {
+      group = {
+        isGroup: true,
+        elements: [node],
+        inbound: graph.predecessors(node.id),
+        id: 'group:ref:' + groups.length,
+        label: 'Grouped references',
+        height: 50,
+        width: 150
+      };
+
+      groups.push(group);
+    }
+  }
+
+  _.chain(graph.nodes())
+    .map(function(node) {
+      return graph.node(node);
+    })
+    .filter(function(node) {
+      return node.isReference;
+    })
+    .forEach(function(node) {
+      addToGroup(node);
+    })
+    .value();
+
+  _.forEach(groups, function(group) {
+    if (group.elements.length > 1) {
+      ret.setNode(group.id, group);
+    } else {
+      ret.setNode(group.elements[0].id, group.elements[0]);
+    }
+
+  });
+
+  ret.graph().refGroups = groups;
+}
+
+function groupCalls(graph, ret) {
+  _.chain(graph.nodes())
+    .map(function(node) {
+      return graph.node(node);
+    })
+    .filter(function(node) {
+      return node.isCall;
+    })
+    .forEach(function(node) {
+      ret.setNode(node.id, node);
+    })
+    .value();
+}
+
+function addEdges(graph, ret) {
+  var groups = ret.graph().refGroups;
+
+  _.forEach(groups, function(group) {
+    if (group.elements.length > 1) {
+      var preds = group.inbound;
+
+      for (var i = 0; i < preds.length; i++) {
+        ret.setEdge(preds[i], group.id, {});
+      }
+    }
+  });
+
+  _.chain(ret.nodes())
+    .map(function(node) {
+      return ret.node(node);
+    })
+    .filter(function(node) {
+      return node.isReference || node.isCall;
+    })
+    .forEach(function(node) {
+      var preds = graph.predecessors(node.id);
+
+      for (var i = 0; i < preds.length; i++) {
+        ret.setEdge(preds[i], node.id, graph.edge(preds[i], node.id));
+      }
+    })
+    .value();
+}
+
+function groupGraph(graph) {
+  var ret = new dagre.graphlib.Graph({
+    directed: true
+  });
+
+  ret.setGraph(graph.graph());
+
+  groupRefs(graph, ret);
+  groupCalls(graph, ret);
+  addEdges(graph, ret);
+
+  return ret;
 }
 
 angular.module('callgraph-view', ['app'])
@@ -202,8 +310,8 @@ angular.module('callgraph-view', ['app'])
 .value('group', 'Calls')
 .value('markedChanged', function() {})
 .value('focus', function() {})
-.service('render', ['loader', 'CallGraphDataService', 'd3', 'dagre',
-function(loader, callgraph, d3, dagre) {
+.service('render', ['loader', 'CallGraphDataService', 'd3', 'dagre', 'cola',
+function(loader, callgraph, d3, dagre, cola) {
   function addZoom(svg) {
     svg.call(d3.behavior.zoom().scaleExtent([1, 10]).on('zoom', zoom));
 
@@ -219,57 +327,76 @@ function(loader, callgraph, d3, dagre) {
   function render(svg, state) {
     var graph = state.unsaved.graph;
 
-    dagre.layout(graph);
-    layout(graph);
+    var nodes;
+    var calls;
+    var refs;
+    var edges;
+
+    var usingCola = false;
+    var d3cola;
+
+    function setUpGraph() {
+      nodes = _.chain(graph.nodes())
+                    .sort()
+                    .map(function(node, index) {
+                      var nodeLabel = graph.node(node);
+
+                      nodeLabel.index = index;
+
+                      return nodeLabel;
+                    })
+                    .partition(function(node) {
+                      return node.isCall;
+                    })
+                    .value();
+
+      calls = nodes[0];
+      refs = nodes[1];
+
+      edges = _.map(graph.edges(), function(e) {
+        return _.merge(graph.edge(e), {
+          source: graph.node(e.v).index,
+          target: graph.node(e.w).index,
+          from: graph.node(e.v),
+          to: graph.node(e.w)
+        });
+      });
+    }
+
+    if (conf.layout === 'dagre') {
+      dagre.layout(graph);
+      setUpGraph();
+    } else if (conf.layout === 'self') {
+      graph = groupGraph(graph);
+      layout(graph);
+
+      setUpGraph();
+
+      /*_.forEach(calls, function(call) {
+        call.fixed = true;
+      });*/
+
+      d3cola = cola.d3adaptor();
+
+      d3cola
+        .size([1000, 1000])
+        .nodes(nodes)
+        .links(edges)
+        .symmetricDiffLinkLengths(5)
+        .start(30);
+
+      usingCola = true;
+    } else {
+      return;
+    }
 
     var g = svg.select('g.callgraph');
-
-    var nodes = _.chain(graph.nodes())
-                  .sort()
-                  .map(function(node) {
-                    return graph.node(node);
-                  })
-                  .partition(function(node) {
-                    return node.isCall;
-                  })
-                  .value();
-
-    var calls = nodes[0];
-    var refs = nodes[1];
 
     var callNodes = g.selectAll('text.call')
       .data(calls);
     callNodes.exit().remove();
     callNodes.enter()
       .append('text');
-    callNodes.attr('class', function(d) {
-        return 'call ' + (d.isExpanded ? 'expanded-call' : 'collapsed-call');
-      })
-      .text(function(d) {
-        return d.label;
-      })
-      .attr('x', function(d) {
-        return d.x;
-      })
-      .attr('y', function(d) {
-        return d.y;
-      })
-      .on('click', function() {
-        var data = d3.select(this).datum();
-
-        var promise;
-
-        if (data.isExpanded) {
-          callgraph.collapseCall(graph, data.call);
-          promise = RSVP.Promise.resolve();
-        } else {
-          promise = callgraph.expandCall(graph, data.call);
-        }
-
-        promise.then(function() {
-          render(svg, state);
-        });
-      });
 
     var refNodes = g.selectAll('text.ref')
       .data(refs);
@@ -277,23 +404,6 @@ function(loader, callgraph, d3, dagre) {
     refNodes.enter()
       .append('text')
       .attr('class', 'ref');
-
-    refNodes.attr('x', function(d) {
-        return d.x;
-      })
-      .attr('y', function(d) {
-        return d.y;
-      })
-      .text(function(d) {
-        return d.label;
-      });
-
-    var edges = _.map(graph.edges(), function(e) {
-      return _.merge(graph.edge(e), {
-        from: graph.node(e.v),
-        to: graph.node(e.w)
-      });
-    });
 
     var edgesNodes = g.selectAll('line')
       .data(edges);
@@ -305,19 +415,61 @@ function(loader, callgraph, d3, dagre) {
       });
     edgesNodes.exit().remove();
 
-    edgesNodes
-      .attr('x1', function(d) {
-        return d.from.x + d.from.width;
-      })
-      .attr('x2', function(d) {
-        return d.to.x;
-      })
-      .attr('y1', function(d) {
-        return d.from.y - d.from.height / 2;
-      })
-      .attr('y2', function(d) {
-        return d.to.y - d.to.height / 2;
-      });
+    d3cola.on('tick', function() {
+      callNodes.attr('class', function(d) {
+          return 'call ' + (d.isExpanded ? 'expanded-call' : 'collapsed-call');
+        })
+        .text(function(d) {
+          return d.label;
+        })
+        .attr('x', function(d) {
+          return d.x;
+        })
+        .attr('y', function(d) {
+          return d.y;
+        })
+        .on('click', function() {
+          var data = d3.select(this).datum();
+
+          var promise;
+
+          if (data.isExpanded) {
+            callgraph.collapseCall(state.unsaved.graph, data.call);
+            promise = RSVP.Promise.resolve();
+          } else {
+            promise = callgraph.expandCall(state.unsaved.graph, data.call);
+          }
+
+          promise.then(function() {
+            d3cola.stop();
+            render(svg, state);
+          });
+        });
+
+      refNodes.attr('x', function(d) {
+          return d.x;
+        })
+        .attr('y', function(d) {
+          return d.y;
+        })
+        .text(function(d) {
+          return d.label;
+        });
+
+      edgesNodes
+        .attr('x1', function(d) {
+          return d.from.x + d.from.width;
+        })
+        .attr('x2', function(d) {
+          return d.to.x;
+        })
+        .attr('y1', function(d) {
+          return d.from.y - d.from.height / 2;
+        })
+        .attr('y2', function(d) {
+          return d.to.y - d.to.height / 2;
+        });
+    });
   }
 
   return function(svg, stateManager) {
@@ -337,7 +489,10 @@ function(loader, callgraph, d3, dagre) {
         return callgraph.createGraph(calls[0], state.expanded, true);
       }).then(function(graph) {
         state.unsaved.graph = graph;
+        stateManager.save();
         render(svg, state);
+      }).catch(function(err) {
+        debugger;
       });
     } else {
       render(svg, state);
