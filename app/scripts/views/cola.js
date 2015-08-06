@@ -4,7 +4,8 @@ angular.module('cola-view', ['app'])
 .value('markedChanged', function() {})
 .value('focus', function() {})
 .service('render', ['d3', 'cola', 'loader', 'CallGraphDataService',
-function(d3, cola, loader, callgraph) {
+                      'LayoutCallGraphService',
+function(d3, cola, loader, callgraph, layout) {
   function addZoom(svg) {
     svg.call(d3.behavior.zoom().scaleExtent([1, 10]).on('zoom', zoom));
 
@@ -101,6 +102,12 @@ function(d3, cola, loader, callgraph) {
         return 'edge ' + (d.to.isReference ? 'edge-ref' : 'edge-call');
       });
     edgesNodes.exit().remove();
+
+    layout.layout(graph);
+
+    _.forEach(calls, function(call) {
+      call.fixed = true;
+    });
 
     d3cola
       .nodes(nodes)
