@@ -139,10 +139,10 @@ function(d3, cola, loader, callgraph, layout) {
     d3cola.on('tick', function() {
       edgesNodes
         .attr('x1', function(d) {
-          return d.source.x + d.source.width;
+          return d.source.x + d.source.width / 2;
         })
         .attr('x2', function(d) {
-          return d.target.x;
+          return d.target.x + d.target.width / 2;
         })
         .attr('y1', function(d) {
           return d.source.y - d.source.height / 2;
