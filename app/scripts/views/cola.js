@@ -109,9 +109,31 @@ function(d3, cola, loader, callgraph, layout) {
       call.fixed = true;
     });
 
+    var rank = graph.graph().rank;
+
+    var groups = [];
+
+    var i;
+    var j;
+
+    for (i = 0; i < rank.length; i++) {
+      var line = rank[i];
+      var group = [];
+
+      for (j = 0; j < line.length; j++) {
+        group.push(line[j].index);
+      }
+
+      groups.push({
+        groups: [],
+        leaves: group
+      });
+    }
+
     d3cola
       .nodes(nodes)
       .links(edges)
+      .groups(groups)
       .start();
 
     d3cola.on('tick', function() {
