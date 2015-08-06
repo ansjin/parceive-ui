@@ -22,8 +22,7 @@ function mapper(mapping, row) {
     @memberof server.util
     @summary Parse the request parameters and prepare the sql fragment and the
               values that can be used to create a prepared statement
-    @param {String} stmt The prepared statement to execute.
-    @param {Object} mapping The mapping to use to convert the DB row.
+    @param {Object} str The json string that contains the array of ids
     @param {Express.Response} res
 */
 function prepareDBArgs(str) {
@@ -33,14 +32,11 @@ function prepareDBArgs(str) {
     return '()';
   }
 
-  var args = [];
-
   data = _.map(data, function(el) {
     if (_.isNumber(el)) {
       return el;
     } else if (_.isString(el)) {
-      args.push(el);
-      return '?';
+      return '\'' + el.replace('\'', '\'\'') + '\'';
     } else {
       return;
     }
@@ -48,10 +44,7 @@ function prepareDBArgs(str) {
 
   data = _.reject(data, _.isUndefined);
 
-  return {
-    str: '(' + data.join()  + ')',
-    args: args
-  };
+  return '(' + data.join()  + ')';
 }
 
 /** @function
@@ -130,11 +123,7 @@ function handleManyQuery(db, mapping, res, ids, table, ending) {
 
   var prep = prepareDBArgs(ids);
 
-  var stmt = db.prepare('SELECT * FROM ' + table + ' IN' + prep.str + ending);
-
-  if (prep.args.length > 0) {
-    stmt.bind.call(stmt, prep.args);
-  }
+  var stmt = db.prepare('SELECT * FROM ' + table + ' IN' + prep + ending);
 
   sendAll(stmt, mapping, res);
 }
