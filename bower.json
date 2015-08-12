@@ -10,7 +10,8 @@
     "lodash": "3.8.0",
     "bootstrap-sass": "~3.3.4",
     "rsvp": "~3.0.18",
-    "dagre": "~0.7.2"
+    "dagre": "~0.7.2",
+    "jquery-hoverIntent": "~1.8.1"
   },
   "resolutions": {
     "lodash": "3.8.0"
