@@ -1,5 +1,5 @@
 angular.module('app')
-  .directive('d3Visualization', ['stateManager', 'd3',
+  .directive('d3Visualization', ['StateService', 'd3',
     function(stateManager, d3) {
       return {
         restrict: 'E',
@@ -19,7 +19,7 @@ angular.module('app')
       };
     }])
   .controller('viewsController', ['$scope', 'views', 'viewProperties',
-                                  'stateManager', 'LoaderService',
+                                  'StateService', 'LoaderService',
                                   '$templateCache',
     function($scope, getViews, viewProperties, stateManager, loader,
               $templateCache) {

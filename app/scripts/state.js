@@ -296,7 +296,7 @@ manager.bindId = function(id) {
 };
 
 angular.module('app')
-  .service('stateManager', ['LoaderService', function(loader) {
+  .service('StateService', ['LoaderService', function(loader) {
     getRun = loader.getRun;
     setRun = loader.setRun;
 
