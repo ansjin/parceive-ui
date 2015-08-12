@@ -1,8 +1,9 @@
 angular.module('test1-view', ['app'])
 .value('name', 'Test view 1')
 .value('group', 'Simple test views')
-.value('markedChanged', function() {})
-.value('focus', function() {})
+.value('markedCb', function() {})
+.value('focusCb', function() {})
+.value('hoverCb', function() {})
 .service('render', ['d3', function(d3) {
   return function(svg, stateManager) {
     svg.selectAll('*').remove();
@@ -39,8 +40,9 @@ angular.module('test1-view', ['app'])
 angular.module('test2-view', ['app'])
 .value('name', 'Test view 2')
 .value('group', 'Simple test views')
-.value('markedChanged', function() {})
-.value('focus', function() {})
+.value('markedCb', function() {})
+.value('focusCb', function() {})
+.value('hoverCb', function() {})
 .service('render', ['d3', function(d3) {
   return function(svg) {
     svg.selectAll('*').remove();
@@ -64,7 +66,8 @@ angular.module('test2-view', ['app'])
 angular.module('test1-loader-view', ['app'])
 .value('name', 'Loader view 1')
 .value('group', 'Loader test views')
-.service('markedChanged', ['stateManager', function(stateManager) {
+.value('hoverCb', function() {})
+.service('markedCb', ['stateManager', function(stateManager) {
   return function(id) {
     var isMarked = stateManager.isMarked(id, 'File', 1);
     var state = stateManager.getData(id);
@@ -72,10 +75,8 @@ angular.module('test1-loader-view', ['app'])
     state.unsaved.fileE.style('stroke', isMarked ? 'red' : 'blue');
   };
 }])
-.service('focus', ['stateManager', function(stateManager) {
-  return function(id, focused) {
-    var state = stateManager.getData(id);
-
+.service('focusCb', ['stateManager', function(stateManager) {
+  return function(state, focused) {
     _.forEach(state.unsaved.fcts, function(fct) {
       var hasFocus = stateManager.checkFocus(focused, 'Function', fct.id);
 
@@ -134,8 +135,9 @@ angular.module('test1-loader-view', ['app'])
 angular.module('tes2-loader-view', ['app'])
 .value('name', 'Loader view 2')
 .value('group', 'Loader test views')
-.value('markedChanged', function() {})
-.value('focus', function() {})
+.value('markedCb', function() {})
+.value('focusCb', function() {})
+.value('hoverCb', function() {})
 .service('render', ['loader', function(loader) {
   return function(svg) {
     svg.selectAll('*').remove();
@@ -187,8 +189,9 @@ angular.module('tes2-loader-view', ['app'])
 angular.module('test5-view', ['app'])
 .value('name', 'Test view 5')
 .value('group', 'Dagre test views')
-.value('markedChanged', function() {})
-.value('focus', function() {})
+.value('markedCb', function() {})
+.value('focusCb', function() {})
+.value('hoverCb', function() {})
 .service('render', ['loader', 'dagre', function(loader, dagre) {
   return function doRender(svg, stateManager) {
     svg.selectAll('*').remove();
@@ -324,8 +327,9 @@ angular.module('test5-view', ['app'])
 angular.module('test6-view', ['app'])
 .value('name', 'Test view 6')
 .value('group', 'Stress tests')
-.value('markedChanged', function() {})
-.value('focus', function() {})
+.value('markedCb', function() {})
+.value('hoverCb', function() {})
+.value('focusCb', function() {})
 .service('render', ['loader', function(loader) {
   return function doRender(svg) {
     RSVP.all([

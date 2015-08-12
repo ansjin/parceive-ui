@@ -1,8 +1,9 @@
 angular.module('cola-view', ['app'])
 .value('name', 'Cola view')
 .value('group', 'Callgraph')
-.value('markedChanged', function() {})
-.value('focus', function() {})
+.value('markedCb', function() {})
+.value('focusCb', function() {})
+.value('hoverCb', function() {})
 .service('render', ['d3', 'cola', 'loader', 'CallGraphDataService',
                       'LayoutCallGraphService',
 function(d3, cola, loader, callgraph, layout) {

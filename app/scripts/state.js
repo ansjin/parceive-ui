@@ -227,12 +227,22 @@ var manager = {
     callCb(group, 'focus', val);
   },
 
+  hover: function(id, val) {
+    var group = state[id].group;
+
+    callCb(group, 'hover', val);
+  },
+
   setMarkedCallback: function(id, cb) {
     state[id]._cb.unsaved.marked = cb;
   },
 
   setFocusCallback: function(id, cb) {
     state[id]._cb.unsaved.focus = cb;
+  },
+
+  setHoverCallback: function(id, cb) {
+    state[id]._cb.unsaved.hover = cb;
   },
 
   removeMarkedCallback: function(id) {
@@ -243,12 +253,23 @@ var manager = {
     delete state[id]._cb.unsaved.focus;
   },
 
+  removeHoverCallback: function(id) {
+    delete state[id]._cb.unsaved.hover;
+  },
+
   clearCallbacks: function(id) {
     delete state[id]._cb.unsaved.focus;
     delete state[id]._cb.unsaved.marked;
+    delete state[id]._cb.unsaved.focus;
   },
 
   checkFocus: function(array, type, id) {
+    return !_.isUndefined(_.find(array, function(e) {
+      return e.id === id && e.type === type;
+    }));
+  },
+
+  checkHover: function(array, type, id) {
     return !_.isUndefined(_.find(array, function(e) {
       return e.id === id && e.type === type;
     }));
@@ -258,7 +279,8 @@ var manager = {
 manager.bindId = function(id) {
   var functionsToBind = ['mark', 'clearMarked', 'getData', 'isMarked',
    'getMarked', 'focus', 'setMarkedCallback', 'setFocusCallback',
-   'removeMarkedCallback', 'removeFocusCallback', 'clearCallbacks'];
+   'setHoverCallback', 'removeMarkedCallback', 'removeFocusCallback',
+   'removeHoverCallback', 'clearCallbacks'];
 
   var bound = _.zipObject(
     _.map(functionsToBind, function(fct) {
@@ -268,6 +290,7 @@ manager.bindId = function(id) {
 
   bound.save = manager.save;
   bound.checkFocus = manager.checkFocus;
+  bound.checkHover = bound.checkHover;
 
   return bound;
 };

@@ -200,8 +200,9 @@ function layout(graph) {
 angular.module('callgraph-view', ['app'])
 .value('name', 'Callgraph')
 .value('group', 'Calls')
-.value('markedChanged', function() {})
-.value('focus', function() {})
+.value('markedCb', function() {})
+.value('focusCb', function() {})
+.value('hoverCb', function() {})
 .service('render', ['loader', 'CallGraphDataService', 'd3', 'dagre',
 function(loader, callgraph, d3, dagre) {
   function addZoom(svg) {

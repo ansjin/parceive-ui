@@ -19,30 +19,43 @@ angular.module('app')
       };
     }])
   .controller('viewsController', ['$scope', 'views', 'viewProperties',
-                                  'stateManager', 'loader',
-    function($scope, getViews, viewProperties, stateManager, loader) {
+                                  'stateManager', 'loader', '$templateCache',
+    function($scope, getViews, viewProperties, stateManager, loader,
+              $templateCache) {
+      function initView(id) {
+        var bound = stateManager.bindId(id);
+        var view = bound.getData();
+
+        view._views = {
+          unsaved: {
+            htmlHeader: 'views/' + view.type.id + '-header.html',
+            htmlFooter: 'views/' + view.type.id + '-footer.html',
+            htmlTitle: 'views/' + view.type.id + '-title.html',
+            htmlMenu: 'views/' + view.type.id + '-menu.html'
+          }
+        };
+
+        /* this is to avoid loading templates using http */
+        _.forEach(view._views.unsaved, function(template) {
+          if (_.isUndefined($templateCache.get(template))) {
+            $templateCache.put(template, '');
+          }
+        });
+
+        var data = viewProperties(view.type.id);
+
+        view.type.unsaved = _.pick(data, _.isFunction);
+
+        bound.setFocusCallback(data.focusCb);
+        bound.setMarkedCallback(data.markedCb);
+        bound.setHoverCallback(data.hoverCb);
+
+        $scope.views.push(view);
+      }
+
       function initViews() {
         $scope.views = [];
-        _.forEach(stateManager.getList(), function(id) {
-          var bound = stateManager.bindId(id);
-          var view = bound.getData();
-
-          view._views = {
-            unsaved: {
-              htmlHeader: 'views/' + view.type.id + '-header.html',
-              htmlFooter: 'views/' + view.type.id + '-footer.html'
-            }
-          };
-
-          var data = viewProperties(view.type.id);
-
-          view.type.unsaved = _.pick(data, _.isFunction);
-
-          bound.setFocusCallback(data.focus);
-          bound.setMarkedCallback(data.markedChanged);
-
-          $scope.views.push(view);
-        });
+        _.forEach(stateManager.getList(), initView);
       }
 
       loader.getRuns().then(function(runs) {
@@ -86,7 +99,7 @@ angular.module('app')
 
         return {
           name: data.name,
-          group:data.group,
+          group: data.group,
           id: view,
           data: data
         };
@@ -119,21 +132,10 @@ angular.module('app')
         var newView = stateManager.create();
 
         newView.type = _.omit(selected, 'data');
-        newView.type.unsaved = _.pick(selected.data, _.isFunction);
 
-        newView._views = {
-          unsaved: {
-            htmlHeader: 'views/' + newView.type.id + '-header.html',
-            htmlFooter: 'views/' + newView.type.id + '-footer.html'
-          }
-        };
-
-        stateManager.setFocusCallback(newView.id, selected.data.focus);
-        stateManager.setMarkedCallback(newView.id, selected.data.markedChanged);
+        initView(newView.id);
 
         stateManager.save();
-
-        $scope.views.push(newView);
       };
 
       $scope.removeView = function(id) {
