@@ -67,23 +67,21 @@ angular.module('test1-loader-view', ['app'])
 .value('name', 'Loader view 1')
 .value('group', 'Loader test views')
 .value('hoverCb', function() {})
-.service('markedCb', ['stateManager', function(stateManager) {
-  return function(id) {
-    var isMarked = stateManager.isMarked(id, 'File', 1);
-    var state = stateManager.getData(id);
+.value('markedCb', function(stateManager) {
+  var isMarked = stateManager.isMarked('File', 1);
+  var state = stateManager.getData();
 
-    state.unsaved.fileE.style('stroke', isMarked ? 'red' : 'blue');
-  };
-}])
-.service('focusCb', ['stateManager', function(stateManager) {
-  return function(state, focused) {
-    _.forEach(state.unsaved.fcts, function(fct) {
-      var hasFocus = stateManager.checkFocus(focused, 'Function', fct.id);
+  state.unsaved.fileE.style('stroke', isMarked ? 'red' : 'blue');
+})
+.value('focusCb', function(stateManager, focused) {
+  var state = stateManager.getData();
 
-      fct.fctE.style('stroke', hasFocus ? 'green' : 'blue');
-    });
-  };
-}])
+  _.forEach(state.unsaved.fcts, function(fct) {
+    var hasFocus = stateManager.checkFocus(focused, 'Function', fct.id);
+
+    fct.fctE.style('stroke', hasFocus ? 'green' : 'blue');
+  });
+})
 .service('render', ['LoaderService', function(loader) {
   return function(svg, stateManager) {
     svg.selectAll('*').remove();

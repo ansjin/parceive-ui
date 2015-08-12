@@ -8,6 +8,8 @@ var marked = {
 var getRun;
 var setRun;
 
+var manager;
+
 var removeUnsaved = function(key, val) {
   if (key === 'unsaved') {
     return {};
@@ -60,7 +62,7 @@ function callCb(group, type) {
       return val.group === group;
     })
     .map(function(val) {
-      return [val.id, val._cb.unsaved[type]];
+      return [manager.bindId(val.id), val._cb.unsaved[type]];
     })
     .forEach(function(cb) {
       [].splice.call(params, 0, 1, cb[0]);
@@ -115,7 +117,7 @@ function mark(id, type, oid, isMarked, doCb, doSave) {
     }
 
     if (doCb) {
-      callCb(group, 'marked', obj);
+      callCb(group, 'marked', [obj]);
     }
 
     if (doSave) {
@@ -123,7 +125,7 @@ function mark(id, type, oid, isMarked, doCb, doSave) {
     }
   }
 
-var manager = {
+manager = {
   loadRun: loadRun,
   saveRun: saveRun,
 
@@ -186,6 +188,10 @@ var manager = {
 
   getData: function(id) {
     return state[id];
+  },
+
+  getId: function(id) {
+    return id;
   },
 
   remove: function(id) {
@@ -277,7 +283,12 @@ var manager = {
 };
 
 manager.bindId = function(id) {
-  var functionsToBind = ['mark', 'clearMarked', 'getData', 'isMarked',
+  if (state[id]._bound && state[id]._bound.unsaved &&
+      state[id]._bound.unsaved.getData) {
+    return state[id]._bound.unsaved;
+  }
+
+  var functionsToBind = ['mark', 'clearMarked', 'getData', 'isMarked', 'getId',
    'getMarked', 'focus', 'setMarkedCallback', 'setFocusCallback',
    'setHoverCallback', 'removeMarkedCallback', 'removeFocusCallback',
    'removeHoverCallback', 'clearCallbacks'];
@@ -291,6 +302,10 @@ manager.bindId = function(id) {
   bound.save = manager.save;
   bound.checkFocus = manager.checkFocus;
   bound.checkHover = bound.checkHover;
+
+  state[id]._bound = {
+    unsaved: bound
+  };
 
   return bound;
 };
