@@ -78,10 +78,10 @@ angular.module('app')
 
       var refPromise;
 
-      if (!graph.graph().includeMemoryNodes) {
-        refPromise = RSVP.Promise.resolve();
-      } else {
+      if (node.isMemoryExpanded) {
         refPromise = addReferences(graph, self);
+      } else {
+        refPromise = RSVP.Promise.resolve();
       }
 
       return RSVP.all([childrenPromise, refPromise]);
@@ -112,14 +112,14 @@ angular.module('app')
     }
 
     return {
-      createGraph: function(root, expanded, includeMemoryNodes) {
+      createGraph: function(root, expanded, expandedMemory) {
         var g = new dagre.graphlib.Graph({
           directed: true
         });
         g.setGraph({
           rankdir: 'LR',
           root: root,
-          includeMemoryNodes: includeMemoryNodes,
+          expandedMemory: expandedMemory,
           expanded: expanded,
           nodesep: 5,
           edgesep: 1,
@@ -138,6 +138,50 @@ angular.module('app')
         data.isExpanded = true;
 
         return addCallChildren(graph, data);
+      },
+
+      expandCallMemory: function(graph, call) {
+        graph.graph().expandedMemory.push(call.id);
+
+        var data = graph.node('call:' + call.id);
+        data.isMemoryExpanded = true;
+
+        return addReferences(graph, call);
+      },
+
+      collapseCallMemory: function(graph, call) {
+        var expanded = graph.graph().expandedMemory;
+
+        var index = expanded.indexOf(call.id);
+        if (index > -1) {
+          expanded.splice(index, 1);
+        } else {
+          return;
+        }
+
+        graph.node('call:' + call.id).isMemoryExpanded = false;
+
+        _.forEach(graph.successors('call:' + call.id), function(child) {
+          if (graph.node(child).isReference) {
+            graph.removeEdge('call:' + call.id, child);
+          }
+        });
+
+        _.chain(graph.nodes())
+          .map(function(node) {
+            return graph.node(node);
+          })
+          .filter(function(node) {
+            return node.isReference;
+          })
+          .filter(function(node) {
+            var into = graph.predecessors(node.id);
+            return into.length === 0;
+          })
+          .forEach(function(node) {
+            graph.removeNode(node.id);
+          })
+          .value();
       },
 
       collapseCall: function collapseCall(graph, call, leaveRefs) {

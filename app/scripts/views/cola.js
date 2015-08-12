@@ -5,8 +5,8 @@ angular.module('cola-view', ['app'])
 .value('focusCb', function() {})
 .value('hoverCb', function() {})
 .service('render', ['d3', 'cola', 'LoaderService', 'CallGraphDataService',
-                      'LayoutCallGraphService',
-function(d3, cola, loader, callgraph, layout) {
+                      'LayoutCallGraphService', 'SizeService',
+function(d3, cola, loader, callgraph, layout, SizeService) {
   function addZoom(svg) {
     svg.call(d3.behavior.zoom().scaleExtent([1, 10]).on('zoom', zoom));
 
@@ -21,9 +21,7 @@ function(d3, cola, loader, callgraph, layout) {
 
   var d3cola = cola.d3adaptor()
     .avoidOverlaps(true)
-    .linkDistance(60)
-    .flowLayout('x', 150)
-    .size([1000, 1000]);
+    .linkDistance(60);
 
   function render(svg, state) {
     var graph = state.unsaved.graph;
@@ -54,6 +52,16 @@ function(d3, cola, loader, callgraph, layout) {
     var calls = partition[0];
     var refs = partition[1];
 
+    var edgesNodes = g.selectAll('line')
+      .data(edges);
+
+    edgesNodes.enter()
+      .append('line')
+      .attr('class', function(d) {
+        return 'edge ' + (d.to.isReference ? 'edge-ref' : 'edge-call');
+      });
+    edgesNodes.exit().remove();
+
     var callNodes = g.selectAll('text.call')
       .data(calls);
     callNodes.exit().remove();
@@ -81,6 +89,23 @@ function(d3, cola, loader, callgraph, layout) {
           //d3cola.stop();
           render(svg, state);
         });
+      })
+      .on('dblclick', function() {
+        var data = d3.select(this).datum();
+
+        var promise;
+
+        if (data.isMemoryExpanded) {
+          callgraph.collapseCallMemory(graph, data.call);
+          promise = RSVP.Promise.resolve();
+        } else {
+          promise = callgraph.expandCallMemory(graph, data.call);
+        }
+
+        promise.then(function() {
+          //d3cola.stop();
+          render(svg, state);
+        });
       });
 
     var refNodes = g.selectAll('text.ref')
@@ -93,16 +118,6 @@ function(d3, cola, loader, callgraph, layout) {
     refNodes.text(function(d) {
         return d.label;
       });
-
-    var edgesNodes = g.selectAll('line')
-      .data(edges);
-
-    edgesNodes.enter()
-      .append('line')
-      .attr('class', function(d) {
-        return 'edge ' + (d.to.isReference ? 'edge-ref' : 'edge-call');
-      });
-    edgesNodes.exit().remove();
 
     layout.layout(graph);
 
@@ -173,18 +188,24 @@ function(d3, cola, loader, callgraph, layout) {
   return function(svg, stateManager) {
     var state = stateManager.getData();
 
-    if (!state.expanded) {
+    if (!state.expanded || !state.expandedMemory) {
       state.expanded = [];
+      state.expandedMemory = [];
       stateManager.save();
     }
 
     addZoom(svg);
 
+    var size = SizeService.svgSize(svg);
+
+    d3cola.size([size.width, size.height]);
+
     if (!state.unsaved.graph) {
       loader.getFunctionBySignature('main').then(function(fct) {
         return fct.getCalls();
       }).then(function(calls) {
-        return callgraph.createGraph(calls[0], state.expanded, true);
+        return callgraph.createGraph(calls[0], state.expanded,
+                                          state.expandedMemory);
       }).then(function(graph) {
         state.unsaved.graph = graph;
         render(svg, state);
