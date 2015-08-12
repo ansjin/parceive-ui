@@ -203,7 +203,7 @@ angular.module('callgraph-view', ['app'])
 .value('markedCb', function() {})
 .value('focusCb', function() {})
 .value('hoverCb', function() {})
-.service('render', ['loader', 'CallGraphDataService', 'd3', 'dagre',
+.service('render', ['LoaderService', 'CallGraphDataService', 'd3', 'dagre',
 function(loader, callgraph, d3, dagre) {
   function addZoom(svg) {
     svg.call(d3.behavior.zoom().scaleExtent([1, 10]).on('zoom', zoom));

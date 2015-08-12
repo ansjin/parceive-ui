@@ -4,7 +4,7 @@ angular.module('cola-view', ['app'])
 .value('markedCb', function() {})
 .value('focusCb', function() {})
 .value('hoverCb', function() {})
-.service('render', ['d3', 'cola', 'loader', 'CallGraphDataService',
+.service('render', ['d3', 'cola', 'LoaderService', 'CallGraphDataService',
                       'LayoutCallGraphService',
 function(d3, cola, loader, callgraph, layout) {
   function addZoom(svg) {

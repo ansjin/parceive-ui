@@ -1,6 +1,7 @@
 angular.module('app')
   .service('CallGraphDataService',
-  ['loader', 'dagre', 'sizeHelper', function(loader, dagre, sizeHelper) {
+  ['LoaderService', 'dagre', 'SizeService',
+  function(loader, dagre, sizeHelper) {
     function setNodeSize(data) {
       var text = data.label;
 

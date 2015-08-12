@@ -1,6 +1,6 @@
 angular.module('app')
   .service('LayoutCallGraphService',
-  ['sizeHelper', 'dagre',
+  ['SizeService', 'dagre',
 function(sizeHelper, dagre) {
   var conf = {
     horisontalMargin: 5,

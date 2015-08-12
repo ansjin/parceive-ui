@@ -84,7 +84,7 @@ angular.module('test1-loader-view', ['app'])
     });
   };
 }])
-.service('render', ['loader', function(loader) {
+.service('render', ['LoaderService', function(loader) {
   return function(svg, stateManager) {
     svg.selectAll('*').remove();
 
@@ -138,7 +138,7 @@ angular.module('tes2-loader-view', ['app'])
 .value('markedCb', function() {})
 .value('focusCb', function() {})
 .value('hoverCb', function() {})
-.service('render', ['loader', function(loader) {
+.service('render', ['LoaderService', function(loader) {
   return function(svg) {
     svg.selectAll('*').remove();
 
@@ -192,7 +192,7 @@ angular.module('test5-view', ['app'])
 .value('markedCb', function() {})
 .value('focusCb', function() {})
 .value('hoverCb', function() {})
-.service('render', ['loader', 'dagre', function(loader, dagre) {
+.service('render', ['LoaderService', 'dagre', function(loader, dagre) {
   return function doRender(svg, stateManager) {
     svg.selectAll('*').remove();
 
@@ -330,7 +330,7 @@ angular.module('test6-view', ['app'])
 .value('markedCb', function() {})
 .value('hoverCb', function() {})
 .value('focusCb', function() {})
-.service('render', ['loader', function(loader) {
+.service('render', ['LoaderService', function(loader) {
   return function doRender(svg) {
     RSVP.all([
       loader.getAccesses(),

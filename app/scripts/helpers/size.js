@@ -1,7 +1,7 @@
 /* global document */
 
 angular.module('app')
-  .value('sizeHelper', {
+  .value('SizeService', {
     svgSize: function(svg) {
       var bound = svg[0][0].getBoundingClientRect();
 

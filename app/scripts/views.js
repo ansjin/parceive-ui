@@ -19,7 +19,8 @@ angular.module('app')
       };
     }])
   .controller('viewsController', ['$scope', 'views', 'viewProperties',
-                                  'stateManager', 'loader', '$templateCache',
+                                  'stateManager', 'LoaderService',
+                                  '$templateCache',
     function($scope, getViews, viewProperties, stateManager, loader,
               $templateCache) {
       function initView(id) {

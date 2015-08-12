@@ -1005,7 +1005,7 @@ loader.setRun = function(nrun) {
 _.bindAll(loader);
 
 angular.module('app')
-  .service('loader', ['$http', function(http) {
+  .service('LoaderService', ['$http', function(http) {
 
     /** @return {external:Promise.<string[]>} All available databases
       * @instance */
