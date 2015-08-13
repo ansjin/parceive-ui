@@ -13,6 +13,15 @@ function(d3, cola, loader, callgraph, layout, SizeService) {
     var g = svg.append('g')
       .attr('class', 'callgraph');
 
+    g.append('g')
+      .attr('class', 'edges-group');
+
+    g.append('g')
+      .attr('class', 'calls-group');
+
+    g.append('g')
+      .attr('class', 'refs-group');
+
     function zoom() {
       g.attr('transform', 'translate(' + d3.event.translate +
                 ')scale(' + d3.event.scale + ')');
@@ -27,6 +36,10 @@ function(d3, cola, loader, callgraph, layout, SizeService) {
     var graph = state.unsaved.graph;
 
     var g = svg.select('g.callgraph');
+
+    var callGroup = g.select('g.calls-group');
+    var refGroup = g.select('g.refs-group');
+    var edgeGroup = g.select('g.edges-group');
 
     var nodes = _.map(graph.nodes(), function(node, index) {
       node = graph.node(node);
@@ -52,23 +65,63 @@ function(d3, cola, loader, callgraph, layout, SizeService) {
     var calls = partition[0];
     var refs = partition[1];
 
-    var edgesNodes = g.selectAll('line')
-      .data(edges);
-
-    edgesNodes.enter()
-      .append('line')
-      .attr('class', function(d) {
-        return 'edge ' + (d.to.isReference ? 'edge-ref' : 'edge-call');
-      });
-    edgesNodes.exit().remove();
-
-    var callNodes = g.selectAll('text.call')
+    var callNodes = callGroup.selectAll('g.call')
       .data(calls);
-    callNodes.exit().remove();
-    callNodes.enter()
-      .append('text');
-    callNodes.attr('class', function(d) {
+
+    callNodes.exit()
+      .remove();
+
+    var callNodesEnter = callNodes
+      .enter()
+      .append('g')
+      .attr('class', function(d) {
         return 'call ' + (d.isExpanded ? 'expanded-call' : 'collapsed-call');
+      });
+
+    callNodesEnter.append('rect')
+      .attr('class', 'call-bg')
+      .attr('x', 0)
+      .attr('y', 0)
+      .attr('width', function(d) {
+        return d.width + 20;
+      })
+      .attr('height', function(d) {
+        return d.height + 10;
+      });
+
+    callNodesEnter.append('rect')
+      .attr('class', 'call-refs')
+      .attr('x', function(d) {
+        return d.width + 12;
+      })
+      .attr('y', 2)
+      .attr('width', 6)
+      .attr('height', function(d) {
+        return d.height + 6;
+      })
+      .on('click', function() {
+        var data = d3.select(this).datum();
+
+        var promise;
+
+        if (data.isMemoryExpanded) {
+          callgraph.collapseCallMemory(graph, data.call);
+          promise = RSVP.Promise.resolve();
+        } else {
+          promise = callgraph.expandCallMemory(graph, data.call);
+        }
+
+        promise.then(function() {
+          //d3cola.stop();
+          render(svg, state);
+        });
+      });
+
+    callNodesEnter
+      .append('text')
+      .attr('x', 5)
+      .attr('y', function(d) {
+        return d.height;
       })
       .text(function(d) {
         return d.label;
@@ -89,26 +142,15 @@ function(d3, cola, loader, callgraph, layout, SizeService) {
           //d3cola.stop();
           render(svg, state);
         });
-      })
-      .on('dblclick', function() {
-        var data = d3.select(this).datum();
-
-        var promise;
-
-        if (data.isMemoryExpanded) {
-          callgraph.collapseCallMemory(graph, data.call);
-          promise = RSVP.Promise.resolve();
-        } else {
-          promise = callgraph.expandCallMemory(graph, data.call);
-        }
-
-        promise.then(function() {
-          //d3cola.stop();
-          render(svg, state);
-        });
       });
 
-    var refNodes = g.selectAll('text.ref')
+    callNodes.each(function(d) {
+      var bbox = this.getBBox();
+      d.width = bbox.width;
+      d.height = bbox.height;
+    });
+
+    var refNodes = refGroup.selectAll('text.ref')
       .data(refs);
     refNodes.exit().remove();
     refNodes.enter()
@@ -124,6 +166,16 @@ function(d3, cola, loader, callgraph, layout, SizeService) {
     _.forEach(calls, function(call) {
       call.fixed = true;
     });
+
+    var edgesNodes = edgeGroup.selectAll('line')
+      .data(edges);
+
+    edgesNodes.enter()
+      .append('line')
+      .attr('class', function(d) {
+        return 'edge ' + (d.to.isReference ? 'edge-ref' : 'edge-call');
+      });
+    edgesNodes.exit().remove();
 
     var rank = graph.graph().rank;
 
@@ -161,18 +213,15 @@ function(d3, cola, loader, callgraph, layout, SizeService) {
           return d.target.x + d.target.width / 2;
         })
         .attr('y1', function(d) {
-          return d.source.y - d.source.height / 2;
+          return d.source.y + d.source.height / 2;
         })
         .attr('y2', function(d) {
-          return d.target.y - d.target.height / 2;
+          return d.target.y + d.target.height / 2;
         });
 
       callNodes
-        .attr('x', function(d) {
-          return d.x;
-        })
-        .attr('y', function(d) {
-          return d.y;
+        .attr('transform', function(d) {
+          return 'translate(' + d.x + ',' + d.y + ')';
         });
 
       refNodes
