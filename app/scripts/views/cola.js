@@ -148,7 +148,7 @@ function(d3, cola, loader, callgraph, layout, SizeService) {
       d.height = bbox.height;
     });
 
-    var refNodes = callGroup.selectAll('g.ref')
+    var refNodes = refGroup.selectAll('g.ref')
       .data(refs);
 
     refNodes.exit()
