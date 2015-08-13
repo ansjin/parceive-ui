@@ -23,13 +23,24 @@ g.callgraph {
 
   g.expanded-call {
     text {
-      fill: $base03;
+      fill: $base01;
     }
   }
 
   g.memory-expanded-call {
     rect.call-refs {
       fill: $red;
+    }
+  }
+
+  g.ref {
+    rect.ref-bg {
+      fill: $base02;
+      stroke: $base1;
+    }
+
+    text {
+      fill: $base0;
     }
   }
 }

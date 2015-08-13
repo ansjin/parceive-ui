@@ -148,14 +148,35 @@ function(d3, cola, loader, callgraph, layout, SizeService) {
       d.height = bbox.height;
     });
 
-    var refNodes = refGroup.selectAll('text.ref')
+    var refNodes = callGroup.selectAll('g.ref')
       .data(refs);
-    refNodes.exit().remove();
-    refNodes.enter()
-      .append('text')
-      .attr('class', 'ref');
 
-    refNodes.text(function(d) {
+    refNodes.exit()
+      .remove();
+
+    var refNodesEnter = refNodes
+      .enter()
+      .append('g')
+      .classed('ref', true);
+
+    refNodesEnter.append('rect')
+      .attr('class', 'ref-bg')
+      .attr('x', 0)
+      .attr('y', 0)
+      .attr('width', function(d) {
+        return d.width + 10;
+      })
+      .attr('height', function(d) {
+        return d.height + 10;
+      });
+
+    refNodesEnter
+      .append('text')
+      .attr('x', 5)
+      .attr('y', function(d) {
+        return d.height;
+      })
+      .text(function(d) {
         return d.label;
       });
 
@@ -207,6 +228,12 @@ function(d3, cola, loader, callgraph, layout, SizeService) {
       });
     }
 
+    refNodes.each(function(d) {
+      var bbox = this.getBBox();
+      d.width = bbox.width;
+      d.height = bbox.height;
+    });
+
     d3cola
       .nodes(nodes)
       .links(edges)
@@ -229,11 +256,8 @@ function(d3, cola, loader, callgraph, layout, SizeService) {
         });
 
       refNodes
-        .attr('x', function(d) {
-          return d.x;
-        })
-        .attr('y', function(d) {
-          return d.y;
+        .attr('transform', function(d) {
+          return 'translate(' + d.x + ',' + d.y + ')';
         });
     });
   }
