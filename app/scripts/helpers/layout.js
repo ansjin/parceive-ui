@@ -3,7 +3,7 @@ angular.module('app')
   ['SizeService', 'dagre',
 function(sizeHelper, dagre) {
   var conf = {
-    horisontalMargin: 5,
+    horisontalMargin: 10,
     verticalMargin: 0
   };
 
@@ -154,18 +154,31 @@ function(sizeHelper, dagre) {
     for (i = 0; i < rank.length; i++) {
       var width = maxWidth(rank[i]);
 
-      y = 0;
-      for (j = 0; j < rank[i].length; j++) {
-        rank[i][j].x = x;
-        rank[i][j].y = y;
+      var column = new Array(rank[i].length);
 
-        if (y >= 0) {
-          y += rank[i][j].height + conf.verticalMargin;
-        } else {
-          y -= rank[i][j].height + conf.verticalMargin;
+      var mid = Math.floor(rank[i].length / 2);
+      var at = 0;
+
+      for (j = 0; j < rank[i].length; j++) {
+        column[mid + at] = rank[i][j];
+
+        if (at >= 0) {
+          at++;
         }
 
-        y = -y;
+        at = -at;
+      }
+
+      y = 0;
+      for (j = 0; j < column.length; j++) {
+        column[j].x = x;
+        column[j].y = y;
+
+        y += column[j].height + conf.verticalMargin;
+      }
+
+      for (j = 0; j < column.length; j++) {
+        column[j].y -= y / 2;
       }
 
       x += width + conf.horisontalMargin;
