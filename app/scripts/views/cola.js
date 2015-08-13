@@ -74,9 +74,7 @@ function(d3, cola, loader, callgraph, layout, SizeService) {
     var callNodesEnter = callNodes
       .enter()
       .append('g')
-      .attr('class', function(d) {
-        return 'call ' + (d.isExpanded ? 'expanded-call' : 'collapsed-call');
-      });
+      .classed('call', true);
 
     callNodesEnter.append('rect')
       .attr('class', 'call-bg')
@@ -163,6 +161,17 @@ function(d3, cola, loader, callgraph, layout, SizeService) {
 
     layout.layout(graph);
 
+    callNodes
+      .attr('transform', function(d) {
+        return 'translate(' + d.x + ',' + d.y + ')';
+      })
+      .classed('expanded-call', function(d) {
+        return d.isExpanded;
+      })
+      .classed('memory-expanded-call', function(d) {
+        return d.isMemoryExpanded;
+      });
+
     _.forEach(calls, function(call) {
       call.fixed = true;
     });
@@ -217,11 +226,6 @@ function(d3, cola, loader, callgraph, layout, SizeService) {
         })
         .attr('y2', function(d) {
           return d.target.y + d.target.height / 2;
-        });
-
-      callNodes
-        .attr('transform', function(d) {
-          return 'translate(' + d.x + ',' + d.y + ')';
         });
 
       refNodes

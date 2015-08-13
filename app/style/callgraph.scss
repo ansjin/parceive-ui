@@ -1,36 +1,35 @@
 @import "colors";
 
 g.callgraph {
-  text.collapsed-call {
-    fill: blue;
-  }
-
-  text.expanded-call {
-    fill:green;
-  }
-
-  text.ref {
-    fill: red;
-  }
-
   line.edge {
     opacity: 0.2;
+    stroke: $base03;
   }
 
-  line.edge-call {
-    stroke: red;
+  g.call {
+    rect.call-bg {
+      fill: $base2;
+      stroke: $base1;
+    }
+
+    rect.call-refs {
+      fill: $green;
+    }
+
+    text {
+      fill: $green;
+    }
   }
 
-  line.edge-ref {
-    stroke: blue;
+  g.expanded-call {
+    text {
+      fill: $base03;
+    }
   }
 
-  rect.call-bg {
-    fill: $base2;
-    stroke: $base1;
-  }
-
-  rect.call-refs {
-    fill: $blue;
+  g.memory-expanded-call {
+    rect.call-refs {
+      fill: $red;
+    }
   }
 }
