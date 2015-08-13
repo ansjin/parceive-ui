@@ -13,7 +13,8 @@ var mapping = {
   'INSTRUCTION_ID': 'instruction',
   'START_TIME': 'start',
   'END_TIME': 'end',
-  'CALLER': 'caller'
+  'CALLER': 'caller',
+  'CALLS_OTHER': 'callsOthers'
 };
 
 router.get('/', function(req, res) {

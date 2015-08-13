@@ -504,7 +504,7 @@ var Call = {
   singular: 'call',
   plural: 'calls',
   properties: ['process', 'thread', 'function', 'instruction',
-                'start', 'end', 'caller'],
+                'start', 'end', 'caller', 'callsOthers'],
   relationships: {
     'thread': {
       type: 'Thread'
