@@ -93,10 +93,12 @@ function(d3, cola, loader, callgraph, layout, SizeService, GradientService) {
       .attr('x', function(d) {
         return d.width + 12;
       })
-      .attr('y', 2)
+      .attr('y', function(d) {
+        return d.height / 2 + 6;
+      })
       .attr('width', 6)
       .attr('height', function(d) {
-        return d.height + 6;
+        return d.height / 2 + 1;
       })
       .on('click', function() {
         var data = d3.select(this).datum();
@@ -114,6 +116,17 @@ function(d3, cola, loader, callgraph, layout, SizeService, GradientService) {
           //d3cola.stop();
           render(svg, state);
         });
+      });
+
+    callNodesEnter.append('rect')
+      .attr('class', 'call-calls')
+      .attr('x', function(d) {
+        return d.width + 12;
+      })
+      .attr('y', 2)
+      .attr('width', 6)
+      .attr('height', function(d) {
+        return d.height / 2 + 1;
       });
 
     var durations = _.map(calls, function(call) {
