@@ -159,20 +159,15 @@ function(d3, cola, loader, callgraph, layout, SizeService) {
       .append('g')
       .classed('ref', true);
 
-    refNodesEnter.append('rect')
+    refNodesEnter.append('circle')
       .attr('class', 'ref-bg')
-      .attr('x', 0)
-      .attr('y', 0)
-      .attr('width', function(d) {
-        return d.width + 10;
-      })
-      .attr('height', function(d) {
-        return d.height + 10;
-      });
+      .attr('cx', 0)
+      .attr('cy', 0)
+      .attr('r', 10);
 
     refNodesEnter
       .append('text')
-      .attr('x', 5)
+      .attr('x', 10)
       .attr('y', function(d) {
         return d.height;
       })
