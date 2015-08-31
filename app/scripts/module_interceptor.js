@@ -1,3 +1,6 @@
+/* global confirm */
+/* global location */
+
 var orig = angular.module;
 var modules = [];
 
@@ -21,9 +24,18 @@ mod.value('views', function() {
   });
 });
 
-mod.service('viewProperties', function() {
+mod.service('viewProperties', ['StateService',  function(StateService) {
   return function(view) {
-    var $injector = angular.injector(['ng', view]);
+    var $injector;
+    try {
+      $injector = angular.injector(['ng', view]);
+    }
+    catch (e) {
+      if (confirm('View removed from code. Remove from local storage?')) {
+        StateService.removeType(view);
+        location.reload();
+      }
+    }
 
     return {
       name: $injector.get('name'),
@@ -34,4 +46,4 @@ mod.service('viewProperties', function() {
       hoverCb: $injector.get('hoverCb')
     };
   };
-});
+}]);

@@ -200,6 +200,16 @@ manager = {
     saveState();
   },
 
+  removeType: function(view) {
+    _.forEach(state, function(val, id) {
+      if (val.type.id === view) {
+        delete state[id];
+      }
+    });
+
+    saveState();
+  },
+
   mark: mark,
 
   clearMarked: function(id) {
