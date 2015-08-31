@@ -16,14 +16,14 @@ g.callgraph {
       fill: $green;
     }
 
-    text {
+    rect.call-calls {
       fill: $green;
     }
   }
 
   g.expanded-call {
-    text {
-      fill: $base01;
+    rect.call-calls {
+      fill: $red;
     }
   }
 
@@ -34,7 +34,7 @@ g.callgraph {
   }
 
   g.ref {
-    rect.ref-bg {
+    circle.ref-bg {
       fill: $base02;
       stroke: $base1;
     }

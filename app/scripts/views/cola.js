@@ -6,7 +6,8 @@ angular.module('cola-view', ['app'])
 .value('hoverCb', function() {})
 .service('render', ['d3', 'cola', 'LoaderService', 'CallGraphDataService',
                       'LayoutCallGraphService', 'SizeService',
-function(d3, cola, loader, callgraph, layout, SizeService) {
+                      'GradientService',
+function(d3, cola, loader, callgraph, layout, SizeService, GradientService) {
   function addZoom(svg) {
     svg.call(d3.behavior.zoom().scaleExtent([1, 10]).on('zoom', zoom));
 
@@ -92,10 +93,12 @@ function(d3, cola, loader, callgraph, layout, SizeService) {
       .attr('x', function(d) {
         return d.width + 12;
       })
-      .attr('y', 2)
+      .attr('y', function(d) {
+        return d.height / 2 + 6;
+      })
       .attr('width', 6)
       .attr('height', function(d) {
-        return d.height + 6;
+        return d.height / 2 + 1;
       })
       .on('click', function() {
         var data = d3.select(this).datum();
@@ -114,6 +117,26 @@ function(d3, cola, loader, callgraph, layout, SizeService) {
           render(svg, state);
         });
       });
+
+    callNodesEnter.append('rect')
+      .attr('class', 'call-calls')
+      .attr('x', function(d) {
+        return d.width + 12;
+      })
+      .attr('y', 2)
+      .attr('width', 6)
+      .attr('height', function(d) {
+        return d.height / 2 + 1;
+      });
+
+    var durations = _.map(calls, function(call) {
+      return call.call.end - call.call.start;
+    });
+
+    var min = _.min(durations);
+    var max = _.max(durations);
+
+    var gradient = GradientService.gradient(min, max);
 
     callNodesEnter
       .append('text')
@@ -142,6 +165,12 @@ function(d3, cola, loader, callgraph, layout, SizeService) {
         });
       });
 
+    callNodes
+      .selectAll('text')
+      .attr('fill', function(d) {
+        return gradient(d.call.end - d.call.start);
+      });
+
     callNodes.each(function(d) {
       var bbox = this.getBBox();
       d.width = bbox.width;
@@ -159,20 +188,15 @@ function(d3, cola, loader, callgraph, layout, SizeService) {
       .append('g')
       .classed('ref', true);
 
-    refNodesEnter.append('rect')
+    refNodesEnter.append('circle')
       .attr('class', 'ref-bg')
-      .attr('x', 0)
-      .attr('y', 0)
-      .attr('width', function(d) {
-        return d.width + 10;
-      })
-      .attr('height', function(d) {
-        return d.height + 10;
-      });
+      .attr('cx', 0)
+      .attr('cy', 0)
+      .attr('r', 10);
 
     refNodesEnter
       .append('text')
-      .attr('x', 5)
+      .attr('x', 10)
       .attr('y', function(d) {
         return d.height;
       })
