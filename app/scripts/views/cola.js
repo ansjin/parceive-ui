@@ -6,7 +6,8 @@ angular.module('cola-view', ['app'])
 .value('hoverCb', function() {})
 .service('render', ['d3', 'cola', 'LoaderService', 'CallGraphDataService',
                       'LayoutCallGraphService', 'SizeService',
-function(d3, cola, loader, callgraph, layout, SizeService) {
+                      'GradientService',
+function(d3, cola, loader, callgraph, layout, SizeService, GradientService) {
   function addZoom(svg) {
     svg.call(d3.behavior.zoom().scaleExtent([1, 10]).on('zoom', zoom));
 
@@ -115,6 +116,15 @@ function(d3, cola, loader, callgraph, layout, SizeService) {
         });
       });
 
+    var durations = _.map(calls, function(call) {
+      return call.call.end - call.call.start;
+    });
+
+    var min = _.min(durations);
+    var max = _.max(durations);
+
+    var gradient = GradientService.gradient(min, max);
+
     callNodesEnter
       .append('text')
       .attr('x', 5)
@@ -140,6 +150,12 @@ function(d3, cola, loader, callgraph, layout, SizeService) {
           //d3cola.stop();
           render(svg, state);
         });
+      });
+
+    callNodes
+      .selectAll('text')
+      .attr('fill', function(d) {
+        return gradient(d.call.end - d.call.start);
       });
 
     callNodes.each(function(d) {
