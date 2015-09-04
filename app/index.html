@@ -2,58 +2,172 @@
 <html ng-app="app" ng-strict-di>
 	<head>
 		<link rel="stylesheet" href="style.css">
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css">
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+
 	</head>
-	<body ng-controller="viewsController">
-		<select ng-model="selectedRun" ng-options="run for run in allruns"></select>
+	<body>
+	<script src="deps.js"></script>
+	<script src="code.js"></script>
 
-		<div ng-show="hasRun">
-		  <div class="add-view">
-				<select ng-model="selectedView" ng-options="view.name group by view.group for view in allviews"></select>
-			  <button ng-click="addView()">
-	        Add view
-	      </button>
-			</div>
+    <div id="wrapper">
 
-			<div class="add-group">
-				<input type="text" name="group" ng-model="addGroupInput" required>
-				<button ng-click="addGroup()">
-	        Add group
-	      </button>
-			</div>
+    <nav class="navbar-default navbar-static-side" role="navigation">
+        <div class="sidebar-collapse">
+            <ul class="nav metismenu" id="side-menu">
+                <li class="nav-header">
+                    
+                    <p> Views </p>
+                </li>
+               
+                <li class="active">
+                    <a href="#"><i class="fa fa-bar-chart-o"></i> <span class="nav-label">Graphs</span><span class="fa arrow"></span></a>
+                    <ul class="nav nav-second-level">
+                        <li class="active"><a href="graph_flot.html">Souce code</a></li>
+                        <li><a href="graph_morris.html">Abstraction View</a></li>
+                        <li><a href="graph_rickshaw.html">Profiling View</a></li>
+                        <li><a href="graph_chartjs.html">Call Graph View</a></li>
+                    </ul>
+                </li>
+                
+            </ul>
 
-			<div class="remove-group">
-				<select ng-model="removeGroupInput" ng-options="group for group in allgroups"></select>
-			  <button ng-click="removeGroup()">
-	        Remove group
-	      </button>
-			</div>
+        </div>
+    </nav>
 
-			<div ng-repeat="view in views track by view.id" class="views" ng-class="{'view-container': true, 'view-container-half': view.halfSize}">
-		    <div class="flex">
-					<div class="view-header">
-			      <span>{{view.type.name}}</span>
-						<div class="html-title" ng-include="view._views.unsaved.htmlTitle"></div>
-			      <select ng-model="view.group" ng-options="group for group in allgroups"></select>
-			      <button ng-click="removeView(view.id)">
-			        Remove view
-			      </button>
-			      <input type="checkbox" ng-model="view.halfSize">
-						<div class="html-menu" ng-include="view._views.unsaved.htmlMenu"></div>
-			    </div>
-		      <div class="html-header" ng-include="view._views.unsaved.htmlHeader"></div>
-		      <d3-visualization class="view" view="{{view.id}}"></d3-visualization>
-		      <div class="html-footer" ng-include="view._views.unsaved.htmlFooter"></div>
-				</div>
-			</div>
-		</div>
+        <div id="page-wrapper" class="gray-bg">
+        <div class="row border-bottom">
+        <nav class="navbar navbar-static-top" role="navigation" style="margin-bottom: 0">
+        <div class="navbar-header">
+            <p><a class="navbar-minimalize minimalize-styl-2 btn btn-primary " href="#"><i class="fa fa-bars"></i> </a>
+                   <h4> PARCEIVE </h4> </p>
+            
+        </div>
 
-		<script src="deps.js"></script>
-		<script src="code.js"></script>
-		<script src="templates.js"></script>
+        </nav>
+        </div>
+            <div class="row wrapper border-bottom white-bg page-heading">
+                <div class="col-lg-10">
+                    <h2>Graphs</h2>
+                </div>
+                <div class="col-lg-2">
 
-		<div id="textSizeTest"></div>
-		<svg id="hiddenSVG">
-			<text id="hiddenSVGTextTest"></text>
-		</svg>
+                </div>
+            </div>
+        <div class="wrapper wrapper-content animated fadeInRight">
+            <div class="row">
+                <div class="col-lg-6">
+                <div class="ibox float-e-margins">
+                    <div class="ibox-title">
+                        <h5>Profiling View </h5>
+                        <div class="ibox-tools">
+                            <a class="collapse-link">
+                                <i class="fa fa-chevron-up"></i>
+                            </a>
+                            <a class="dropdown-toggle" data-toggle="dropdown" href="#">
+                                <i class="fa fa-wrench"></i>
+                            </a>
+                            <ul class="dropdown-menu dropdown-user">
+                                <li><a href="#">Config option 1</a>
+                                </li>
+                                <li><a href="#">Config option 2</a>
+                                </li>
+                            </ul>
+                            <a class="close-link">
+                                <i class="fa fa-times"></i>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="ibox-content">
+                            
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="ibox float-e-margins">
+                    <div class="ibox-title">
+                        <h5>Abstraction View</h5>
+                        <div class="ibox-tools">
+                            <a class="collapse-link">
+                                <i class="fa fa-chevron-up"></i>
+                            </a>
+                            <a class="dropdown-toggle" data-toggle="dropdown" href="#">
+                                <i class="fa fa-wrench"></i>
+                            </a>
+                            <ul class="dropdown-menu dropdown-user">
+                                <li><a href="#">Config option 1</a>
+                                </li>
+                                <li><a href="#">Config option 2</a>
+                                </li>
+                            </ul>
+                            <a class="close-link">
+                                <i class="fa fa-times"></i>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="ibox-content">
+                    </div>
+                </div>
+            </div>
+                <div class="col-lg-6">
+                <div class="ibox float-e-margins">
+                    <div class="ibox-title">
+                        <h5>Call graph View </h5>
+                        <div class="ibox-tools">
+                            <a class="collapse-link">
+                                <i class="fa fa-chevron-up"></i>
+                            </a>
+                            <a class="dropdown-toggle" data-toggle="dropdown" href="#">
+                                <i class="fa fa-wrench"></i>
+                            </a>
+                            <ul class="dropdown-menu dropdown-user">
+                                <li><a href="#">Config option 1</a>
+                                </li>
+                                <li><a href="#">Config option 2</a>
+                                </li>
+                            </ul>
+                            <a class="close-link">
+                                <i class="fa fa-times"></i>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="ibox-content">
+                            
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="ibox float-e-margins">
+                    <div class="ibox-title">
+                        <h5>Source code View</h5>
+                        <div class="ibox-tools">
+                            <a class="collapse-link">
+                                <i class="fa fa-chevron-up"></i>
+                            </a>
+                            <a class="dropdown-toggle" data-toggle="dropdown" href="#">
+                                <i class="fa fa-wrench"></i>
+                            </a>
+                            <ul class="dropdown-menu dropdown-user">
+                                <li><a href="#">Config option 1</a>
+                                </li>
+                                <li><a href="#">Config option 2</a>
+                                </li>
+                            </ul>
+                            <a class="close-link">
+                                <i class="fa fa-times"></i>
+                            </a>
+                        </div>
+                    </div>
+                    <div class="ibox-content">
+                    </div>
+                </div>
+            </div>
+            </div>
+
+
+        </div>
+        </div>
+
 	</body>
 </html>
+																																																																																																																																																																																																																																																																																																																																																																																																																																																																			
