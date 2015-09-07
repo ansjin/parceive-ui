@@ -183,8 +183,14 @@ function(sizeHelper, dagre) {
         y += column[j].height + conf.verticalMargin;
       }
 
+      var distUp = y / 2;
+
+      if (column.length % 2 === 0) {
+        distUp += column[column.length - 1].height / 2;
+      }
+
       for (j = 0; j < column.length; j++) {
-        column[j].y -= y / 2;
+        column[j].y -= distUp;
       }
 
       x += width + conf.horisontalMargin;
