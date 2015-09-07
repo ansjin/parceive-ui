@@ -145,11 +145,11 @@ function(sizeHelper, dagre) {
 
     function sortByMaxSequence(a, b) {
       if (a.maxSequence < b.maxSequence) {
-        return true;
+        return 1;
       } else if (a.maxSequence > b.maxSequence) {
-        return false;
+        return -1;
       } else {
-        return a.call.end - a.call.start < b.call.end - b.call.start;
+        return b.call.end - b.call.start - (a.call.end - a.call.start);
       }
     }
 
