@@ -144,7 +144,13 @@ function(sizeHelper, dagre) {
     var rank = graph.graph().rank;
 
     function sortByMaxSequence(a, b) {
-      return a.maxSequence < b.maxSequence;
+      if (a.maxSequence < b.maxSequence) {
+        return true;
+      } else if (a.maxSequence > b.maxSequence) {
+        return false;
+      } else {
+        return a.call.end - a.call.start < b.call.end - b.call.start;
+      }
     }
 
     for (i = 0; i < rank.length; i++) {
