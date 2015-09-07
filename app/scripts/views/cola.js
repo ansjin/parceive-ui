@@ -130,7 +130,7 @@ function(d3, cola, loader, callgraph, layout, SizeService, GradientService) {
       });
 
     var durations = _.map(calls, function(call) {
-      return call.call.end - call.call.start;
+      return call.call.duration;
     });
 
     var min = _.min(durations);
@@ -168,7 +168,7 @@ function(d3, cola, loader, callgraph, layout, SizeService, GradientService) {
     callNodes
       .selectAll('text')
       .attr('fill', function(d) {
-        return gradient(d.call.end - d.call.start);
+        return gradient(d.call.duration);
       });
 
     callNodes.each(function(d) {

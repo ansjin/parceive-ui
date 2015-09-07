@@ -149,7 +149,7 @@ function(sizeHelper, dagre) {
       } else if (a.maxSequence > b.maxSequence) {
         return -1;
       } else {
-        return b.call.end - b.call.start - (a.call.end - a.call.start);
+        return b.call.duration - a.call.duration;
       }
     }
 
