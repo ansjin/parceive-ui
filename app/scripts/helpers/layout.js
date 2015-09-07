@@ -3,7 +3,7 @@ angular.module('app')
   ['SizeService', 'dagre',
 function(sizeHelper, dagre) {
   var conf = {
-    horisontalMargin: 10,
+    horisontalMargin: 20,
     verticalMargin: 0
   };
 

@@ -231,6 +231,23 @@ function(d3, cola, loader, callgraph, layout, SizeService, GradientService) {
       });
     edgesNodes.exit().remove();
 
+    var refEdges = edgeGroup.selectAll('line.edge-ref');
+    var callEdges = edgeGroup.selectAll('line.edge-call');
+
+    callEdges
+      .attr('x1', function(d) {
+        return nodes[d.source].x + nodes[d.source].width;
+      })
+      .attr('x2', function(d) {
+        return nodes[d.target].x;
+      })
+      .attr('y1', function(d) {
+        return nodes[d.source].y + nodes[d.source].height / 2;
+      })
+      .attr('y2', function(d) {
+        return nodes[d.target].y + nodes[d.target].height / 2;
+      });
+
     var rank = graph.graph().rank;
 
     var groups = [];
@@ -265,7 +282,7 @@ function(d3, cola, loader, callgraph, layout, SizeService, GradientService) {
       .start();
 
     d3cola.on('tick', function() {
-      edgesNodes
+      refEdges
         .attr('x1', function(d) {
           return d.source.x + d.source.width / 2;
         })
