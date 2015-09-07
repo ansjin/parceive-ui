@@ -3,7 +3,14 @@
 g.callgraph {
   line.edge {
     opacity: 0.2;
-    stroke: $base03;
+  }
+
+  line.edge-call {
+    stroke: $red;
+  }
+
+  line.edge-ref {
+    stroke: $blue;
   }
 
   g.call {
