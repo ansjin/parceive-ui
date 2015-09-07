@@ -14,7 +14,8 @@ var mapping = {
   'START_TIME': 'start',
   'END_TIME': 'end',
   'CALLER': 'caller',
-  'CALLS_OTHER': 'callsOthers'
+  'CALLS_OTHER': 'callsOthers',
+  'DURATION': 'duration'
 };
 
 router.get('/', function(req, res) {
