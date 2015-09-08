@@ -299,7 +299,7 @@ manager.bindId = function(id) {
   }
 
   var functionsToBind = ['mark', 'clearMarked', 'getData', 'isMarked', 'getId',
-   'getMarked', 'focus', 'setMarkedCallback', 'setFocusCallback',
+   'getMarked', 'hover', 'focus', 'setMarkedCallback', 'setFocusCallback',
    'setHoverCallback', 'removeMarkedCallback', 'removeFocusCallback',
    'removeHoverCallback', 'clearCallbacks'];
 
