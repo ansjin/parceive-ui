@@ -77,7 +77,10 @@ function(d3, loader, callgraph, layout, SizeService, GradientService) {
     var calls = partition[0];
     var refs = partition[1];
 
-    var callNodes = callGroup.selectAll('g.call')
+    var callNodes;
+    var refNodes;
+
+    callNodes = callGroup.selectAll('g.call')
       .data(calls);
 
     callNodes.exit()
@@ -186,7 +189,7 @@ function(d3, loader, callgraph, layout, SizeService, GradientService) {
       d.height = bbox.height;
     });
 
-    var refNodes = refGroup.selectAll('g.ref')
+    refNodes = refGroup.selectAll('g.ref')
       .data(refs);
 
     refNodes.exit()
@@ -285,6 +288,50 @@ function(d3, loader, callgraph, layout, SizeService, GradientService) {
       d.width = bbox.width;
       d.height = bbox.height;
     });
+
+    refNodes.on('mouseover', mouseoverEvent(nodes, refNodes, callNodes));
+    callNodes.on('mouseover', mouseoverEvent(nodes, refNodes, callNodes));
+
+    refNodes.on('mouseout', mouseoutEvent(refNodes, callNodes));
+    callNodes.on('mouseout', mouseoutEvent(refNodes, callNodes));
+
+    function mouseoutEvent(refNodes, callNodes) {
+      return function() {
+        refNodes.classed('active', false);
+        refNodes.classed('inactive', false);
+
+        callNodes.classed('active', false);
+        callNodes.classed('inactive', false);
+      };
+    }
+
+    function mouseoverEvent(nodes, refNodes, callNodes) {
+      return function(d) {
+        nodes.forEach(function(node) {
+          node.active = false;
+        });
+
+        nodes[d.index].active = true;
+
+        _.forEach(graph.successors(nodes[d.index].id), function(node) {
+          graph.node(node).active = true;
+        });
+
+        _.forEach(graph.predecessors(nodes[d.index].id), function(node) {
+          graph.node(node).active = true;
+        });
+
+        refNodes
+          .classed('active', function(d) { return d.active; });
+        callNodes
+          .classed('active', function(d) { return d.active; });
+
+        refNodes
+          .classed('inactive', function(d) { return !d.active; });
+        callNodes
+          .classed('inactive', function(d) { return !d.active; });
+      };
+    }
 
     d3cola
       .nodes(nodes)
