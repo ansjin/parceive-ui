@@ -3,7 +3,62 @@ angular.module('force-view', ['app'])
 .value('group', 'Callgraph')
 .value('markedCb', function() {})
 .value('focusCb', function() {})
-.value('hoverCb', function() {})
+.value('hoverCb', function(stateManager, elms) {
+  var state = stateManager.getData();
+
+  var nodes = state.unsaved.nodes;
+  var refNodes = state.unsaved.refNodes;
+  var callNodes = state.unsaved.callNodes;
+  var graph = state.unsaved.graph;
+
+  if (elms.length === 0) {
+    refNodes.classed('active', false);
+    refNodes.classed('inactive', false);
+
+    callNodes.classed('active', false);
+    callNodes.classed('inactive', false);
+  } else {
+    nodes.forEach(function(node) {
+      node.active = false;
+    });
+
+    _.forEach(elms, function(e) {
+      var hoveredNode = _.find(nodes, function(node) {
+        if (e.type === 'Call' && node.isCall) {
+          return e.id === node.call.id;
+        } else if (e.type === 'Reference' && node.isReference) {
+          return e.id === node.reference.id;
+        }
+      });
+
+      if (!hoveredNode) {
+        return;
+      }
+
+      var index = hoveredNode.index;
+
+      nodes[index].active = true;
+
+      _.forEach(graph.successors(nodes[index].id), function(node) {
+        graph.node(node).active = true;
+      });
+
+      _.forEach(graph.predecessors(nodes[index].id), function(node) {
+        graph.node(node).active = true;
+      });
+    });
+
+    refNodes
+      .classed('active', function(d) { return d.active; });
+    callNodes
+      .classed('active', function(d) { return d.active; });
+
+    refNodes
+      .classed('inactive', function(d) { return !d.active; });
+    callNodes
+      .classed('inactive', function(d) { return !d.active; });
+  }
+})
 .service('render', ['d3', 'LoaderService', 'CallGraphDataService',
                       'LayoutCallGraphService', 'SizeService',
                       'GradientService',
@@ -44,7 +99,7 @@ function(d3, loader, callgraph, layout, SizeService, GradientService) {
       }
     });
 
-  function render(svg, state) {
+  function render(svg, state, stateManager) {
     var graph = state.unsaved.graph;
 
     var g = svg.select('g.callgraph');
@@ -127,7 +182,7 @@ function(d3, loader, callgraph, layout, SizeService, GradientService) {
         }
 
         promise.then(function() {
-          render(svg, state);
+          render(svg, state, stateManager);
         });
       });
 
@@ -173,7 +228,7 @@ function(d3, loader, callgraph, layout, SizeService, GradientService) {
         }
 
         promise.then(function() {
-          render(svg, state);
+          render(svg, state, stateManager);
         });
       });
 
@@ -289,49 +344,33 @@ function(d3, loader, callgraph, layout, SizeService, GradientService) {
       d.height = bbox.height;
     });
 
-    refNodes.on('mouseover', mouseoverEvent(nodes, refNodes, callNodes));
-    callNodes.on('mouseover', mouseoverEvent(nodes, refNodes, callNodes));
+    state.unsaved.refNodes = refNodes;
+    state.unsaved.callNodes = callNodes;
+    state.unsaved.nodes = nodes;
 
-    refNodes.on('mouseout', mouseoutEvent(refNodes, callNodes));
-    callNodes.on('mouseout', mouseoutEvent(refNodes, callNodes));
+    refNodes.on('mouseover', function(d) {
+      stateManager.hover([
+        {
+          type: 'Reference',
+          id: d.reference.id
+        }
+      ]);
+    });
+    callNodes.on('mouseover', function(d) {
+      stateManager.hover([
+        {
+          type: 'Call',
+          id: d.call.id
+        }
+      ]);
+    });
 
-    function mouseoutEvent(refNodes, callNodes) {
-      return function() {
-        refNodes.classed('active', false);
-        refNodes.classed('inactive', false);
-
-        callNodes.classed('active', false);
-        callNodes.classed('inactive', false);
-      };
-    }
-
-    function mouseoverEvent(nodes, refNodes, callNodes) {
-      return function(d) {
-        nodes.forEach(function(node) {
-          node.active = false;
-        });
-
-        nodes[d.index].active = true;
-
-        _.forEach(graph.successors(nodes[d.index].id), function(node) {
-          graph.node(node).active = true;
-        });
-
-        _.forEach(graph.predecessors(nodes[d.index].id), function(node) {
-          graph.node(node).active = true;
-        });
-
-        refNodes
-          .classed('active', function(d) { return d.active; });
-        callNodes
-          .classed('active', function(d) { return d.active; });
-
-        refNodes
-          .classed('inactive', function(d) { return !d.active; });
-        callNodes
-          .classed('inactive', function(d) { return !d.active; });
-      };
-    }
+    refNodes.on('mouseout', function() {
+      stateManager.hover([]);
+    });
+    callNodes.on('mouseout', function() {
+      stateManager.hover([]);
+    });
 
     d3cola
       .nodes(nodes)
@@ -391,10 +430,10 @@ function(d3, loader, callgraph, layout, SizeService, GradientService) {
                                           state.expandedMemory);
       }).then(function(graph) {
         state.unsaved.graph = graph;
-        render(svg, state);
+        render(svg, state, stateManager);
       });
     } else {
-      render(svg, state);
+      render(svg, state, stateManager);
     }
   };
 }]);
