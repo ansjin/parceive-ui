@@ -184,15 +184,26 @@ function(d3, loader, callgraph, layout, SizeService, GradientService) {
     var callNodes;
     var refNodes;
 
+    layout.layout(graph);
+
     callNodes = callGroup.selectAll('g.call')
       .data(calls);
 
     callNodes.exit()
+      .transition()
+      .style('opacity', 0)
+      .attr('transform', function(d) {
+        return 'translate(' + (d.x - d.width / 2) + ',' + 0 + ')';
+      })
       .remove();
 
     var callNodesEnter = callNodes
       .enter()
       .append('g')
+      .style('opacity', 0)
+      .attr('transform', function(d) {
+        return 'translate(' + (d.x - d.width / 2) + ',' + 0 + ')';
+      })
       .classed('call', true);
 
     callNodesEnter.append('rect')
@@ -322,17 +333,17 @@ function(d3, loader, callgraph, layout, SizeService, GradientService) {
         return d.label;
       });
 
-    layout.layout(graph);
-
     callNodes
-      .attr('transform', function(d) {
-        return 'translate(' + d.x + ',' + d.y + ')';
-      })
       .classed('expanded-call', function(d) {
         return d.isExpanded;
       })
       .classed('memory-expanded-call', function(d) {
         return d.isMemoryExpanded;
+      })
+      .transition()
+      .style('opacity', 1)
+      .attr('transform', function(d) {
+        return 'translate(' + d.x + ',' + d.y + ')';
       });
 
     _.forEach(calls, function(call) {
