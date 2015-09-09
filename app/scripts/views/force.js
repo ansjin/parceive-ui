@@ -1,3 +1,10 @@
+var opacityIgnore = 0.3;
+var opacityNeighbour = 0.6;
+var opacityHover = 1;
+
+var hoverTransitionDuration = 50;
+var hoverTransitionDelay = 0;
+
 angular.module('force-view', ['app'])
 .value('name', 'Force view')
 .value('group', 'Callgraph')
@@ -12,14 +19,20 @@ angular.module('force-view', ['app'])
   var graph = state.unsaved.graph;
 
   if (elms.length === 0) {
-    refNodes.classed('active', false);
-    refNodes.classed('inactive', false);
-
-    callNodes.classed('active', false);
-    callNodes.classed('inactive', false);
+    refNodes
+      .transition()
+      .duration(hoverTransitionDuration)
+      .delay(hoverTransitionDelay)
+      .style('opacity', opacityHover);
+    callNodes
+      .transition()
+      .duration(hoverTransitionDuration)
+      .delay(hoverTransitionDelay)
+      .style('opacity', opacityHover);
   } else {
     nodes.forEach(function(node) {
-      node.active = false;
+      node.hovered = false;
+      node.neighbourHovered = false;
     });
 
     _.forEach(elms, function(e) {
@@ -37,26 +50,44 @@ angular.module('force-view', ['app'])
 
       var index = hoveredNode.index;
 
-      nodes[index].active = true;
+      nodes[index].hovered = true;
 
       _.forEach(graph.successors(nodes[index].id), function(node) {
-        graph.node(node).active = true;
+        graph.node(node).neighbourHovered = true;
       });
 
       _.forEach(graph.predecessors(nodes[index].id), function(node) {
-        graph.node(node).active = true;
+        graph.node(node).neighbourHovered = true;
       });
     });
 
-    refNodes
-      .classed('active', function(d) { return d.active; });
     callNodes
-      .classed('active', function(d) { return d.active; });
+      .transition()
+      .duration(hoverTransitionDuration)
+      .delay(hoverTransitionDelay)
+      .style('opacity', function(d) {
+        if (d.hovered) {
+          return opacityHover;
+        } else if (d.neighbourHovered) {
+          return opacityNeighbour;
+        } else {
+          return opacityIgnore;
+        }
+      });
 
     refNodes
-      .classed('inactive', function(d) { return !d.active; });
-    callNodes
-      .classed('inactive', function(d) { return !d.active; });
+      .transition()
+      .duration(hoverTransitionDuration)
+      .delay(hoverTransitionDelay)
+      .style('opacity', function(d) {
+        if (d.hovered) {
+          return opacityHover;
+        } else if (d.neighbourHovered) {
+          return opacityNeighbour;
+        } else {
+          return opacityIgnore;
+        }
+      });
   }
 })
 .service('render', ['d3', 'LoaderService', 'CallGraphDataService',
