@@ -1,5 +1,5 @@
 var opacityIgnore = 0.3;
-var opacityNeighbour = 0.6;
+var opacityNeighbour = 0.8;
 var opacityHover = 1;
 
 var hoverTransitionDuration = 50;
@@ -60,6 +60,24 @@ angular.module('force-view', ['app'])
         graph.node(node).neighbourHovered = true;
       });
     });
+
+    refNodes
+      .attr('stroke-width', function(d) {
+        if (d.hovered) {
+          return 2;
+        } else {
+          return 1;
+        }
+      });
+
+    callNodes
+      .attr('stroke-width', function(d) {
+        if (d.hovered) {
+          return 1.5;
+        } else {
+          return 1;
+        }
+      });
 
     callNodes
       .transition()
