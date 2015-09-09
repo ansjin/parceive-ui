@@ -184,8 +184,6 @@ function(d3, loader, callgraph, layout, SizeService, GradientService) {
     var callNodes;
     var refNodes;
 
-    layout.layout(graph);
-
     callNodes = callGroup.selectAll('g.call')
       .data(calls);
 
@@ -303,6 +301,8 @@ function(d3, loader, callgraph, layout, SizeService, GradientService) {
       d.width = bbox.width;
       d.height = bbox.height;
     });
+
+    layout.layout(graph);
 
     refNodes = refGroup.selectAll('g.ref')
       .data(refs);
