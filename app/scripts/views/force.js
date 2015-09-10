@@ -20,12 +20,12 @@ angular.module('force-view', ['app'])
 
   if (elms.length === 0) {
     refNodes
-      .transition()
+      .transition('hover')
       .duration(hoverTransitionDuration)
       .delay(hoverTransitionDelay)
       .style('opacity', opacityHover);
     callNodes
-      .transition()
+      .transition('hover')
       .duration(hoverTransitionDuration)
       .delay(hoverTransitionDelay)
       .style('opacity', opacityHover);
@@ -80,7 +80,7 @@ angular.module('force-view', ['app'])
       });
 
     callNodes
-      .transition()
+      .transition('hover')
       .duration(hoverTransitionDuration)
       .delay(hoverTransitionDelay)
       .style('opacity', function(d) {
@@ -94,7 +94,7 @@ angular.module('force-view', ['app'])
       });
 
     refNodes
-      .transition()
+      .transition('hover')
       .duration(hoverTransitionDuration)
       .delay(hoverTransitionDelay)
       .style('opacity', function(d) {
@@ -188,7 +188,7 @@ function(d3, loader, callgraph, layout, SizeService, GradientService) {
       .data(calls);
 
     callNodes.exit()
-      .transition()
+      .transition('position')
       .style('opacity', 0)
       .attr('transform', function(d) {
         return 'translate(' + (d.x - d.width / 2) + ',' + 0 + ')';
@@ -340,7 +340,7 @@ function(d3, loader, callgraph, layout, SizeService, GradientService) {
       .classed('memory-expanded-call', function(d) {
         return d.isMemoryExpanded;
       })
-      .transition()
+      .transition('position')
       .style('opacity', 1)
       .attr('transform', function(d) {
         return 'translate(' + d.x + ',' + d.y + ')';
