@@ -5,6 +5,9 @@ var opacityHover = 1;
 var hoverTransitionDuration = 50;
 var hoverTransitionDelay = 0;
 
+var opacityLineReference = 0.4;
+var opacityLineCall = 0.2;
+
 angular.module('force-view', ['app'])
 .value('name', 'Force view')
 .value('group', 'Callgraph')
@@ -355,10 +358,27 @@ function(d3, loader, callgraph, layout, SizeService, GradientService) {
 
     edgesNodes.enter()
       .append('line')
+      .style('opacity', 0)
       .attr('class', function(d) {
         return 'edge ' + (d.to.isReference ? 'edge-ref' : 'edge-call');
       });
-    edgesNodes.exit().remove();
+
+    edgesNodes
+      .exit()
+      .transition()
+      .style('opacity', 0)
+      .remove();
+
+    edgesNodes
+      .transition()
+      .duration(3000)
+      .style('opacity', function(d) {
+        if (d.isCall) {
+          return opacityLineCall;
+        } else if (d.isReference) {
+          return opacityLineReference;
+        }
+      });
 
     var refEdges = edgeGroup.selectAll('line.edge-ref');
     var callEdges = edgeGroup.selectAll('line.edge-call');
