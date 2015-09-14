@@ -208,7 +208,6 @@ function(d3, loader, callgraph, layout, SizeService, GradientService) {
       .classed('call', true);
 
     callNodesEnter.append('rect')
-      .attr('class', 'call-bg')
       .attr('x', 0)
       .attr('y', 0)
       .attr('width', function(d) {
@@ -252,7 +251,7 @@ function(d3, loader, callgraph, layout, SizeService, GradientService) {
       .attr('x', function(d) {
         return d.width + 12;
       })
-      .attr('y', 2)
+      .attr('y', 4)
       .attr('width', 6)
       .attr('height', function(d) {
         return d.height / 2 + 1;
@@ -294,7 +293,6 @@ function(d3, loader, callgraph, layout, SizeService, GradientService) {
       });
 
     callNodes
-      .selectAll('text')
       .attr('fill', function(d) {
         return gradient(d.call.duration);
       });

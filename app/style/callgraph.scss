@@ -20,6 +20,10 @@ g.callgraph {
       stroke: $base1;
     }
 
+    text {
+      fill: $white;
+    }
+
     rect.call-refs {
       fill: $green;
     }
