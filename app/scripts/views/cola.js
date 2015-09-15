@@ -9,7 +9,7 @@ angular.module('cola-view', ['app'])
                       'GradientService',
 function(d3, cola, loader, callgraph, layout, SizeService, GradientService) {
   function addZoom(svg) {
-    svg.call(d3.behavior.zoom().scaleExtent([1, 10]).on('zoom', zoom));
+    svg.call(d3.behavior.zoom().scaleExtent([0, Infinity]).on('zoom', zoom));
 
     var g = svg.append('g')
       .attr('class', 'callgraph');

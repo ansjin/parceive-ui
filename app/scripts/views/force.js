@@ -19,6 +19,7 @@ angular.module('force-view', ['app'])
   var nodes = state.unsaved.nodes;
   var refNodes = state.unsaved.refNodes;
   var callNodes = state.unsaved.callNodes;
+  var edgesNodes = state.unsaved.edgesNodes;
   var graph = state.unsaved.graph;
 
   if (elms.length === 0) {
@@ -32,10 +33,18 @@ angular.module('force-view', ['app'])
       .duration(hoverTransitionDuration)
       .delay(hoverTransitionDelay)
       .style('opacity', opacityHover);
+    edgesNodes
+      .transition('hover')
+      .duration(hoverTransitionDuration)
+      .delay(hoverTransitionDelay)
+      .style('opacity', opacityHover);
   } else {
     nodes.forEach(function(node) {
       node.hovered = false;
       node.neighbourHovered = false;
+    });
+    _.forEach(edgesNodes, function(edge) {
+      edge.hovered = false;
     });
 
     _.forEach(elms, function(e) {
@@ -54,6 +63,10 @@ angular.module('force-view', ['app'])
       var index = hoveredNode.index;
 
       nodes[index].hovered = true;
+
+      _.forEach(graph.nodeEdges(nodes[index].id), function(edge) {
+        graph.edge(edge).hovered = true;
+      });
 
       _.forEach(graph.successors(nodes[index].id), function(node) {
         graph.node(node).neighbourHovered = true;
@@ -109,6 +122,18 @@ angular.module('force-view', ['app'])
           return opacityIgnore;
         }
       });
+
+    edgesNodes
+      .transition('hover')
+      .duration(hoverTransitionDuration)
+      .delay(hoverTransitionDelay)
+      .style('opacity', function(d) {
+        if (d.hovered) {
+          return opacityHover;
+        } else {
+          return opacityIgnore;
+        }
+      });
   }
 })
 .service('render', ['d3', 'LoaderService', 'CallGraphDataService',
@@ -116,7 +141,7 @@ angular.module('force-view', ['app'])
                       'GradientService',
 function(d3, loader, callgraph, layout, SizeService, GradientService) {
   function addZoom(svg) {
-    svg.call(d3.behavior.zoom().scaleExtent([1, 10]).on('zoom', zoom));
+    svg.call(d3.behavior.zoom().scaleExtent([0, 10]).on('zoom', zoom));
 
     var g = svg.append('g')
       .attr('class', 'callgraph');
@@ -162,9 +187,7 @@ function(d3, loader, callgraph, layout, SizeService, GradientService) {
 
     var nodes = _.map(graph.nodes(), function(node, index) {
       node = graph.node(node);
-
       node.index = index;
-
       return node;
     });
 
@@ -425,6 +448,7 @@ function(d3, loader, callgraph, layout, SizeService, GradientService) {
     state.unsaved.refNodes = refNodes;
     state.unsaved.callNodes = callNodes;
     state.unsaved.nodes = nodes;
+    state.unsaved.edgesNodes = edgesNodes;
 
     refNodes.on('mouseover', function(d) {
       stateManager.hover([

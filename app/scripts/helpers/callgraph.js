@@ -36,7 +36,8 @@ angular.module('app')
             if (!data) {
               data = {
                 reads: 0,
-                writes: 0
+                writes: 0,
+                isEdge: true
               };
               graph.setEdge('call:' + call.id, 'ref:' + ref.id, data);
             }
@@ -70,7 +71,13 @@ angular.module('app')
         }).then(function(calls) {
           _.forEach(calls, function(call) {
             if (self.id !== call.id) {
-              graph.setEdge('call:' + self.id, 'call:' + call.id, {});
+              var data = graph.edge('call:' + self.id, 'call:' + call.id);
+              if (!data) {
+                data = {
+                  isEdge: true
+                };
+                graph.setEdge('call:' + self.id, 'call:' + call.id, data);
+              }
             }
           });
         });
