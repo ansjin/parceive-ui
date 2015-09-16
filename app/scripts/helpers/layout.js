@@ -81,9 +81,6 @@ function(sizeHelper, dagre) {
   function calcMaxSequence(graph) {
     var i;
     var current = graph.sinks();
-  
-    console.log(graph);
-      
 
     for (i = 0; i < current.length; i++) {
       graph.node(current[i]).maxSequence = i;

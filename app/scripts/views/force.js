@@ -268,6 +268,11 @@ function(d3, loader, callgraph, layout, SizeService, GradientService) {
 
     var gradient = GradientService.gradient(min, max);
 
+    callNodes
+      .attr('fill', function(d) {
+        return gradient(d.call.duration);
+      });
+
     callNodesEnter
       .append('text')
       .attr('x', 5)
@@ -292,11 +297,6 @@ function(d3, loader, callgraph, layout, SizeService, GradientService) {
         promise.then(function() {
           render(svg, state, stateManager);
         });
-      });
-
-    callNodes
-      .attr('fill', function(d) {
-        return gradient(d.call.duration);
       });
 
     callNodes.each(function(d) {
