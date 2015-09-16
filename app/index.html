@@ -1,25 +1,20 @@
 <!doctype html>
 <html ng-app="app" ng-strict-di>
-	<head>
-		<link rel="stylesheet" href="style.css">
-		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css">
-		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
-
-	</head>
-	<body>
-	<script src="deps.js"></script>
-	<script src="code.js"></script>
-
+    <head>
+        <link rel="stylesheet" href="style.css">
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+            <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css">
+    </head>
+    <body ng-controller="viewsController">
+    <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
+    <script src="http://netdna.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js"></script>
+    <!-- Brand and toggle get grouped for better mobile display -->
     <div id="wrapper">
-
-    <nav class="navbar-default navbar-static-side" role="navigation">
-        <div class="sidebar-collapse">
-            <ul class="nav metismenu" id="side-menu">
-                <li class="nav-header">
-                    
-                    <p> Views </p>
-                </li>
-               
+      <div id="sidebar-wrapper" style="background-color: #213a53;">
+           <ul class="nav metismenu" id="side-menu">
+               <br>
+               <br>
+               <br>
                 <li class="active">
                     <a href="#"><i class="fa fa-bar-chart-o"></i> <span class="nav-label">Graphs</span><span class="fa arrow"></span></a>
                     <ul class="nav nav-second-level">
@@ -28,146 +23,82 @@
                         <li><a href="graph_rickshaw.html">Profiling View</a></li>
                         <li><a href="graph_chartjs.html">Call Graph View</a></li>
                     </ul>
-                </li>
-                
+                </li>    
             </ul>
-
+      </div>
+      <nav class="navbar navbar-default">
+      <a class="navbar-brand navbar-right" href="#">Parceive</a>
+      <div class="container-fluid">
+      <div class="navbar-header">
+        
+        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+        </button>
+      </div>
+      <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+      <ul class="nav navbar-nav">
+      <a href="#" class="navbar-minimalize minimalize-styl-2 btn btn-primary" id="menu-toggle"><i class="fa fa-bars"></i></a>
+      &nbsp;
+      &nbsp;
+       <div class="btn-group">
+        <select ng-model="selectedRun" ng-options="run for run in allruns"></select>
+      </div>
+      &nbsp;  
+      <div class="btn-group">
+               <select ng-model="selectedView" ng-options="view.name group by view.group for view in allviews"></select>
+               <button ng-click="addView()">
+            Add view
+          </button>
         </div>
-    </nav>
+      </div><!-- /.navbar-collapse -->
+      </div><!-- /.container-fluid -->
+      </nav>
 
-        <div id="page-wrapper" class="gray-bg">
-        <div class="row border-bottom">
-        <nav class="navbar navbar-static-top" role="navigation" style="margin-bottom: 0">
-        <div class="navbar-header">
-            <p><a class="navbar-minimalize minimalize-styl-2 btn btn-primary " href="#"><i class="fa fa-bars"></i> </a>
-                   <h4> PARCEIVE </h4> </p>
-            
-        </div>
-
-        </nav>
-        </div>
-            <div class="row wrapper border-bottom white-bg page-heading">
-                <div class="col-lg-10">
-                    <h2>Graphs</h2>
-                </div>
-                <div class="col-lg-2">
-
-                </div>
-            </div>
-        <div class="wrapper wrapper-content animated fadeInRight">
-            <div class="row">
-                <div class="col-lg-6">
-                <div class="ibox float-e-margins">
-                    <div class="ibox-title">
-                        <h5>Profiling View </h5>
-                        <div class="ibox-tools">
-                            <a class="collapse-link">
-                                <i class="fa fa-chevron-up"></i>
-                            </a>
-                            <a class="dropdown-toggle" data-toggle="dropdown" href="#">
-                                <i class="fa fa-wrench"></i>
-                            </a>
-                            <ul class="dropdown-menu dropdown-user">
-                                <li><a href="#">Config option 1</a>
-                                </li>
-                                <li><a href="#">Config option 2</a>
-                                </li>
-                            </ul>
-                            <a class="close-link">
+      <div class="container-fluid" id ="main">
+            <div ng-repeat="view in views track by view.id" class="views" ng-class="{'view-container': true, 'view-container-half': view.halfSize}">
+          
+                <div class="panel" >
+                    <div class="panel-heading">
+                        <span>{{view.type.name}}</span>
+                        <a class="close-link">
                                 <i class="fa fa-times"></i>
                             </a>
-                        </div>
+                            <hr>
                     </div>
-                    <div class="ibox-content">
-                            
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-6">
-                <div class="ibox float-e-margins">
-                    <div class="ibox-title">
-                        <h5>Abstraction View</h5>
-                        <div class="ibox-tools">
-                            <a class="collapse-link">
-                                <i class="fa fa-chevron-up"></i>
-                            </a>
-                            <a class="dropdown-toggle" data-toggle="dropdown" href="#">
-                                <i class="fa fa-wrench"></i>
-                            </a>
-                            <ul class="dropdown-menu dropdown-user">
-                                <li><a href="#">Config option 1</a>
-                                </li>
-                                <li><a href="#">Config option 2</a>
-                                </li>
-                            </ul>
-                            <a class="close-link">
-                                <i class="fa fa-times"></i>
-                            </a>
-                        </div>
-                    </div>
-                    <div class="ibox-content">
-                    </div>
-                </div>
-            </div>
-                <div class="col-lg-6">
-                <div class="ibox float-e-margins">
-                    <div class="ibox-title">
-                        <h5>Call graph View </h5>
-                        <div class="ibox-tools">
-                            <a class="collapse-link">
-                                <i class="fa fa-chevron-up"></i>
-                            </a>
-                            <a class="dropdown-toggle" data-toggle="dropdown" href="#">
-                                <i class="fa fa-wrench"></i>
-                            </a>
-                            <ul class="dropdown-menu dropdown-user">
-                                <li><a href="#">Config option 1</a>
-                                </li>
-                                <li><a href="#">Config option 2</a>
-                                </li>
-                            </ul>
-                            <a class="close-link">
-                                <i class="fa fa-times"></i>
-                            </a>
-                        </div>
-                    </div>
-                    <div class="ibox-content">
-                            
-                    </div>
-                </div>
-            </div>
-            <div class="col-lg-6">
-                <div class="ibox float-e-margins">
-                    <div class="ibox-title">
-                        <h5>Source code View</h5>
-                        <div class="ibox-tools">
-                            <a class="collapse-link">
-                                <i class="fa fa-chevron-up"></i>
-                            </a>
-                            <a class="dropdown-toggle" data-toggle="dropdown" href="#">
-                                <i class="fa fa-wrench"></i>
-                            </a>
-                            <ul class="dropdown-menu dropdown-user">
-                                <li><a href="#">Config option 1</a>
-                                </li>
-                                <li><a href="#">Config option 2</a>
-                                </li>
-                            </ul>
-                            <a class="close-link">
-                                <i class="fa fa-times"></i>
-                            </a>
-                        </div>
-                    </div>
-                    <div class="ibox-content">
-                    </div>
-                </div>
-            </div>
-            </div>
 
+                    <div class="view-header">
 
-        </div>
+                  <button ng-click="removeView(view.id)">
+                    Remove view
+                  </button>
+              <div class="html-header" ng-include="view._views.unsaved.htmlHeader"></div>
+              <d3-visualization class="view" view="{{view.id}}"></d3-visualization>
+              <div class="html-footer" ng-include="view._views.unsaved.htmlFooter"></div>
+                </div>
+            </div>
+            </div>
         </div>
 
-	</body>
+        <script src="deps.js"></script>
+        <script src="code.js"></script>
+        <script src="templates.js"></script>
+
+        <div id="textSizeTest"></div>
+        <svg id="hiddenSVG">
+            <text id="hiddenSVGTextTest"></text>
+        </svg>
+  </div>
+  </div>
+  <script>
+    $("#menu-toggle").click(function(e) {
+        e.preventDefault();
+        $("#wrapper").toggleClass("toggled");
+    });
+
+    </script>
+        
+    </body>
 </html>
-																																																																																																																																																																																																																																																																																																																																																																																																																																																																			
