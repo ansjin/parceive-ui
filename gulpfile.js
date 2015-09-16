@@ -8,6 +8,7 @@ var gulp = require('gulp');
 //util
 var util = require('gulp-util');
 var _ = require('lodash');
+var os = require('os');
 
 // plugins
 var connect = require('gulp-connect');
@@ -152,9 +153,14 @@ gulp.task('html', function() {
     .pipe(gulp.dest('./build'));
 });
 
-gulp.task('doc', shell.task([
-  'node_modules/jsdoc/jsdoc.js -c docconf.json'
-]));
+gulp.task('doc', function() {
+  var cmd = 'node_modules/jsdoc/jsdoc.js -c docconf.json';
+  if(os.platform() === 'win32') {
+    cmd = 'node node_modules\\jsdoc\\jsdoc.js -c docconf.json';
+  }
+  return gulp.src('')
+    .pipe(shell([cmd]));
+});
 
 gulp.task('db', function(cb) {
   processDB.all('./import/', './data/', cb);
