@@ -1,0 +1,82 @@
+@import "colors";
+
+.node {
+  cursor: pointer;
+}
+
+.node circle {
+  fill: #fff;
+  stroke: steelblue;
+  stroke-width: 1.5px;
+}
+
+.node text {
+  font: 10px sans-serif;
+}
+
+.link {
+  fill: none;
+  stroke: #ccc;
+  stroke-width: 1.5px;
+}
+
+g.callgraph {
+  line.edge {
+    opacity: 0.2;
+  }
+
+  line.edge-call {
+    opacity: 0.4;
+    stroke: $red;
+  }
+
+  line.edge-ref {
+    stroke: $blue;
+  }
+
+  g.call {
+    rect.call-bg {
+      fill: $base2;
+      stroke: $base1;
+    }
+
+    text {
+      fill: $white;
+      font-family: 'Arial';
+      font-size: 14px;
+    }
+
+    rect.call-refs {
+      fill: $green;
+    }
+
+    rect.call-calls {
+      fill: $green;
+    }
+  }
+
+  g.expanded-call {
+    rect.call-calls {
+      fill: $blue;
+    }
+  }
+
+  g.memory-expanded-call {
+    rect.call-refs {
+      fill: $blue;
+    }
+  }
+
+  g.ref {
+    circle.ref-bg {
+      fill: $base02;
+      stroke: $base1;
+    }
+
+    text {
+      fill: $base0;
+      font-family: 'Arial';
+      font-size: 14px;
+    }
+  }
+}
