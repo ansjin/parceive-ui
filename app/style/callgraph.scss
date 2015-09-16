@@ -22,6 +22,8 @@ g.callgraph {
 
     text {
       fill: $white;
+      font-family: 'Arial';
+      font-size: 14px;
     }
 
     rect.call-refs {
@@ -35,13 +37,13 @@ g.callgraph {
 
   g.expanded-call {
     rect.call-calls {
-      fill: $red;
+      fill: $blue;
     }
   }
 
   g.memory-expanded-call {
     rect.call-refs {
-      fill: $red;
+      fill: $blue;
     }
   }
 
@@ -53,6 +55,8 @@ g.callgraph {
 
     text {
       fill: $base0;
+      font-family: 'Arial';
+      font-size: 14px;
     }
   }
 }

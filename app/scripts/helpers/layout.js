@@ -4,7 +4,7 @@ angular.module('app')
 function(sizeHelper, dagre) {
   var conf = {
     horisontalMargin: 20,
-    verticalMargin: 0
+    verticalMargin: 2
   };
 
   function clearLayout(graph) {
@@ -80,46 +80,14 @@ function(sizeHelper, dagre) {
 
   function calcMaxSequence(graph) {
     var i;
-    var j;
-
     var current = graph.sinks();
-    var next = [];
+  
+    console.log(graph);
+      
 
     for (i = 0; i < current.length; i++) {
-      var node = graph.node(current[i]);
-      if (node.isCall) {
-        next.push(current[i]);
-      } else if (node.isReference) {
-        var scall = graph.predecessors(current[i]);
-        for (j = 0; j < scall.length; j++) {
-          if (graph.node(scall[j]).isCall && next.indexOf(scall[j]) === -1) {
-            next.push(scall[j]);
-          }
-        }
-      }
+      graph.node(current[i]).maxSequence = i;
     }
-
-    current = next;
-
-    var at = 0;
-    do {
-      next = [];
-
-      for (i = 0; i < current.length; i++) {
-        graph.node(current[i]).maxSequence = at;
-
-        var pred = graph.predecessors(current[i]);
-
-        for (j = 0; j < pred.length; j++) {
-          if (graph.node(pred[j]).isCall && next.indexOf(pred[j]) === -1) {
-            next.push(pred[j]);
-          }
-        }
-      }
-
-      at++;
-      current = next;
-    } while (current.length > 0);
   }
 
   function maxWidth(nodes) {
