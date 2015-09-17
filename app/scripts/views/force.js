@@ -196,14 +196,14 @@ function(d3, loader, callgraph, layout, SizeService, GradientService) {
       .attr('transform', function(d) {
         return 'translate(' + (d.x - d.width / 2) + ',' + 0 + ')';
       })
-      .remove();  
+      .remove();
 
     var callNodesEnter = callNodes
       .enter()
       .append('g')
       .style('opacity', 0)
       .attr('transform', function(d) {
-        return 'translate(' + (0 - (d.width / 2)) + ',' + 0 + ')';
+        return 'translate(' + (0 - d.width / 2) + ',' + 0 + ')';
       })
       .classed('call', true);
 
