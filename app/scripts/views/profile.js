@@ -26,27 +26,27 @@ function hoverCb() {
 }
 
 // view dependencies
-render.$inject = ['LoaderService', 'd3'];
+render.$inject = ['LoaderService', 'd3', 'SizeService'];
 
 // render the view
-function render(loader, d3) {
+function render(loader, d3, size) {
   return function(svg, stateManager) {
     var width = '100%';
-    var height = '100%';
     var xScale = d3.scale.linear()
       .range([0, width]);
     var colorScale = d3.scale.linear()
       .domain([0, 50, 100])
-      .range(['#FC2323', '#EEFC23', '#B0FC23']);
+      .range(['#B0FC23', '#EEFC23', '#FC2323']);
     var flatData = [];
     var nestedData = {};
     var calledId = [];
     var runtimeThreshold = null;
     var thresholdFactor = 0.01;
     var maxRuntime;
+    var profileId = Date.now();
 
+    svg.attr('id', profileId);
     svg.selectAll('*').remove();
-    svg.attr('class', 'profile-svg');
 
     var partition = d3.layout.partition().value(function(d) {
       return d.runtime;
@@ -73,28 +73,29 @@ function render(loader, d3) {
           temp.ancestor = ancestor;
           temp.level = level;
           temp.callId = callData.id;
-          return loader.getFunction(callData.function);
-        })
-        .then(function(funcData) {
-          temp.name = funcData.signature;
-          flatData.push(temp);
-          return call.getCalls();
-        })
-        .then(function(childData) {
-          calledId.push(callId);
-          mapViewData(flatData);
+          return loader.getFunction(callData.function)
+            .then(function(funcData) {
+              temp.name = funcData.signature;
+              flatData.push(temp);
+              return call.getCalls();
+            })
+            .then(function(childData) {
+              calledId.push(callId);
+              mapViewData(flatData);
 
-          var d = childData;
-          var l = level + 1;
-          var p = temp.callId;
-          if (d.length > 0) {
-            $.each(d, function(index, child) {
-              if (calledId.indexOf(child.id) === -1) {
-                getData(child.id, p, l);
+              var d = childData;
+              var l = level + 1;
+              var p = temp.callId;
+              if (d.length > 0) {
+                $.each(d, function(index, child) {
+                  if (calledId.indexOf(child.id) === -1) {
+                    getData(child.id, p, l);
+                  }
+                });
               }
             });
-          }
-        });
+        })
+        .then(function(ok) {}, function(err) {});
     };
 
     var mapViewData = function(data) {
@@ -118,37 +119,100 @@ function render(loader, d3) {
       displayView(nestedData);
     };
 
-    var nodes;
-    var rect = svg.selectAll('rect');
+    // var nodes;
+    // var rect = svg.selectAll('rect');
+    // var displayView = function(data) {
+    //   var json = $.extend(true, {}, data);
+    //   nodes = partition.nodes(json);
+
+    //   svg.selectAll('*').remove();
+    //   rect = svg.selectAll('rect');
+
+    //   var rectHeight = 15;
+    //   rect = rect
+    //     .data(nodes)
+    //     .enter()
+    //     .append('rect')
+    //     .attr('x', function(d) { return xScale(d.x); })
+    //     .attr('y', function(d) { return rectHeight * d.level - rectHeight; })
+    //     .attr('width', function(d) { return xScale(d.dx); })
+    //     .attr('height', function() { return rectHeight; })
+    //     .attr('stroke', 'black')
+    //     .attr('stroke-opacity', 0.1)
+    //     .attr('stroke-width', 2)
+    //     .attr('fill', function(d) {
+    //       return colorScale(d.runtime / maxRuntime * 100);
+    //     })
+    //     .on('click', selectNode)
+    //     .on('dblclick', loadChildren)
+    //     .on('mouseenter', highlightNode)
+    //     .on('mouseleave', removeNodeHighlight)
+    //     .append('title')
+    //     .text(function(d) {
+    //       var runtime = d.runtime.toLocaleString();
+    //       return d.level + ' | ' + d.name + ' | ' + runtime;
+    //     });
+    // };
+
+    var nodes, g;
+    var rectHeight = 20;
+    var textPadY = 15;
+    var textPadX = 5;
     var displayView = function(data) {
       var json = $.extend(true, {}, data);
       nodes = partition.nodes(json);
 
       svg.selectAll('*').remove();
-      rect = svg.selectAll('rect');
+      g = svg.selectAll('g');
 
-      var rectHeight = 15;
-      rect = rect
+      g = g
         .data(nodes)
         .enter()
-        .append('rect')
+        .append('g');
+
+      g.append('rect')
         .attr('x', function(d) { return xScale(d.x); })
-        .attr('y', function(d) { return (rectHeight * d.level) - rectHeight; })
+        .attr('y', function(d) { 
+          return rectHeight * d.level - rectHeight; 
+        })
         .attr('width', function(d) { return xScale(d.dx); })
-        .attr('height', function(d) { return rectHeight; })
+        .attr('height', function() { return rectHeight; })
+        .attr('id', function(d) { return d.callId; })
         .attr('stroke', 'black')
         .attr('stroke-opacity', 0.1)
         .attr('stroke-width', 2)
-        .attr('fill', function(d) { return colorScale(d.runtime / maxRuntime * 100); })
+        .attr('fill', function(d) {
+          return colorScale(d.runtime / maxRuntime * 100);
+        })
         .on('click', selectNode)
         .on('dblclick', loadChildren)
         .on('mouseenter', highlightNode)
         .on('mouseleave', removeNodeHighlight)
         .append('title')
-        .text(function(d) { 
-          var runtime = d.runtime.toLocaleString()
-          return d.level + ' | ' + d.name + ' | ' + runtime; 
+        .text(function(d) {
+          var runtime = d.runtime.toLocaleString();
+          return d.level + ' | ' + d.name + ' | ' + runtime;
         });
+
+      g.append('text')
+        .filter(function(d, i) { 
+          var rectWidth = size.svgSizeById(d.callId).width;
+          var textWidth = size.svgTextSize(d.name, '11px').width;
+          return rectWidth > textWidth + textPadX; 
+        })
+        .attr('x', function(d) {
+          var svgWidth = size.svgSizeById(profileId).width;
+          var xVal = xScale(d.x);
+          var percentVal = xVal.slice(0, - 1);
+          return Math.ceil(percentVal * svgWidth / 100) + textPadX;
+        })
+        .attr('y', function(d) { 
+          return (rectHeight * d.level - rectHeight) + textPadY;
+        })
+        .attr('font-family', 'sans-serif')
+        .attr('font-size', '11px')
+        .attr('fill', 'black')
+        .text(function(d) { return d.name; });
     };
 
     function highlightNode(d) {
