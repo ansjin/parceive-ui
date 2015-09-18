@@ -219,20 +219,22 @@ function(d3, loader, callgraph, layout, SizeService, GradientService) {
       .attr('transform', function(d) {
         return 'translate(' + (d.x - d.width / 2) + ',' + 0 + ')';
       })
-      .remove();
+      .remove();  
 
     var callNodesEnter = callNodes
       .enter()
       .append('g')
       .style('opacity', 0)
       .attr('transform', function(d) {
-        return 'translate(' + (d.x - d.width / 2) + ',' + 0 + ')';
+        return 'translate(' + (0 - (d.width / 2)) + ',' + 0 + ')';
       })
       .classed('call', true);
 
     callNodesEnter.append('rect')
       .attr('x', 0)
       .attr('y', 0)
+      .attr('rx', 5)
+      .attr('ry', 5)
       .attr('width', function(d) {
         return d.width + 20;
       })
@@ -289,6 +291,11 @@ function(d3, loader, callgraph, layout, SizeService, GradientService) {
 
     var gradient = GradientService.gradient(min, max);
 
+    callNodes
+      .attr('fill', function(d) {
+        return gradient(d.call.duration);
+      });
+
     callNodesEnter
       .append('text')
       .attr('x', 5)
@@ -313,11 +320,6 @@ function(d3, loader, callgraph, layout, SizeService, GradientService) {
         promise.then(function() {
           render(svg, state, stateManager);
         });
-      });
-
-    callNodes
-      .attr('fill', function(d) {
-        return gradient(d.call.duration);
       });
 
     callNodes.each(function(d) {
@@ -463,6 +465,14 @@ function(d3, loader, callgraph, layout, SizeService, GradientService) {
         {
           type: 'Call',
           id: d.call.id
+        }
+      ]);
+    });
+    edgesNodes.on('mouseover', function(d) {
+      stateManager.hover([
+        {
+          type: 'Edge',
+          id: d.id
         }
       ]);
     });
