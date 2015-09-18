@@ -1,16 +1,5 @@
-var opacityIgnore = 0.3;
-var opacityNeighbour = 0.8;
-var opacityHover = 1;
-
-var hoverTransitionDuration = 50;
-var hoverTransitionDelay = 0;
-
-var opacityLineReference = 0.4;
-var opacityLineCall = 0.2;
-
-var margin = {top: 20, right: 120, bottom: 20, left: 120},
-    width = 960 - margin.right - margin.left,
-    height = 800 - margin.top - margin.bottom;
+var margin = {top: 20, right: 120, bottom: 20, left: 120};
+var height = 800 - margin.top - margin.bottom;
 
 var i = 0;
 var duration = 750;
@@ -49,9 +38,9 @@ function(d3, loader, callgraph, layout, SizeService, GradientService) {
       g.attr('transform', 'translate(' + d3.event.translate +
                 ')scale(' + d3.event.scale + ')');
     }
-  }  
+  }
 
-  function render(svg, state, stateManager) {
+  function render(svg, state) {
     var graph = state.unsaved.graph;
 
     state.unsaved.nodes = graph.sources()[0];
@@ -68,12 +57,11 @@ function(d3, loader, callgraph, layout, SizeService, GradientService) {
   function update(svg, state, source) {
     var g = svg.select('g.callgraph');
     var callGroup = g.select('g.calls-group');
-    var refGroup = g.select('g.refs-group');
     var edgeGroup = g.select('g.edges-group');
 
     var graph = state.unsaved.graph;
-    var nodes = tree.nodes(root).reverse(),
-        links = tree.links(nodes);
+    var nodes = tree.nodes(root).reverse();
+    var links = tree.links(nodes);
 
     // Normalize for fixed-depth.
     nodes.forEach(function(d) {
@@ -83,7 +71,7 @@ function(d3, loader, callgraph, layout, SizeService, GradientService) {
     // Update the nodes…
     var node = callGroup.selectAll('g.call')
         .data(nodes, function(d) {
-          return d.id || (d.id = ++i); 
+          return d.id || (d.id = ++i);
         });
 
     // Enter any new nodes at the parent's previous position.
@@ -91,11 +79,13 @@ function(d3, loader, callgraph, layout, SizeService, GradientService) {
       .enter()
       .append('g')
       .attr('class', 'call')
-      .attr('transform', function(d) { return 'translate(' + source.y0 + ',' + source.x0 + ')'; })
+      .attr('transform', function() {
+        return 'translate(' + source.y0 + ',' + source.x0 + ')';
+      })
       .on('click', function() {
         var data = d3.select(this).datum();
         var promise;
-          
+
         if (data.isExpanded) {
           callgraph.collapseCall(graph, data.call);
           promise = RSVP.Promise.resolve();
@@ -149,10 +139,14 @@ function(d3, loader, callgraph, layout, SizeService, GradientService) {
     // Transition nodes to their new position.
     var nodeUpdate = node.transition()
         .duration(duration)
-        .attr('transform', function(d) { return 'translate(' + d.y + ',' + d.x + ')'; });
+        .attr('transform', function(d) {
+          return 'translate(' + d.y + ',' + d.x + ')';
+        });
 
     nodeUpdate.select('rect')
-        .style('opacity', function(d) { return d.call.callsOthers > 0 ? 1 : 0.5; });
+        .style('opacity', function(d) {
+          return d.call.callsOthers > 0 ? 1 : 0.5;
+        });
 
     nodeUpdate.select('text')
         .style('fill-opacity', 1);
@@ -160,7 +154,9 @@ function(d3, loader, callgraph, layout, SizeService, GradientService) {
     // Transition exiting nodes to the parent's new position.
     var nodeExit = node.exit().transition()
         .duration(duration)
-        .attr('transform', function(d) { return 'translate(' + source.y + ',' + source.x + ')'; })
+        .attr('transform', function() {
+          return 'translate(' + source.y + ',' + source.x + ')';
+        })
         .remove();
 
     nodeExit.select('circle')
@@ -176,7 +172,7 @@ function(d3, loader, callgraph, layout, SizeService, GradientService) {
     // Enter any new links at the parent's previous position.
     link.enter().insert('path', 'g')
         .attr('class', 'link')
-        .attr('d', function(d) {
+        .attr('d', function() {
           var o = {x: source.x0, y: source.y0};
           return diagonal({source: o, target: o});
         });
@@ -185,9 +181,9 @@ function(d3, loader, callgraph, layout, SizeService, GradientService) {
     link.transition()
         .duration(duration)
         .attr('d', function(d) {
-          var s = {x: d.source.x+(d.source.height+10)/2,
-                   y: d.source.y+d.source.width+20};
-          var t = {x: d.target.x+(d.target.height+10)/2,
+          var s = {x: d.source.x + (d.source.height + 10) / 2,
+                   y: d.source.y + d.source.width + 20};
+          var t = {x: d.target.x + (d.target.height + 10) / 2,
                    y: d.target.y};
           return diagonal({source: s, target: t});
         });
@@ -195,7 +191,7 @@ function(d3, loader, callgraph, layout, SizeService, GradientService) {
     // Transition exiting nodes to the parent's new position.
     link.exit().transition()
         .duration(duration)
-        .attr('d', function(d) {
+        .attr('d', function() {
           var o = {x: source.x, y: source.y};
           return diagonal({source: o, target: o});
         })
@@ -218,8 +214,8 @@ function(d3, loader, callgraph, layout, SizeService, GradientService) {
     }
 
     addZoom(svg);
-    
-    var size = SizeService.svgSize(svg);
+
+    //var size = SizeService.svgSize(svg);
 
     tree.size([1000, 1000]);
 
