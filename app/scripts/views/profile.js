@@ -52,7 +52,6 @@ function render(loader, d3, size) {
       .value(function(d) { return d.runtime; });
 
     svg.attr('id', profileId);
-    svg.selectAll('*').remove();
 
     var getData = function(callId, ancestor, level) {
       var temp = {};
@@ -122,38 +121,48 @@ function render(loader, d3, size) {
     };
 
     var nodes, g;
+    var zoomId = null;
     var rectHeight = 20;
     var textPadY = 15;
     var textPadX = 5;
     var adjustLevel = 0;
+    var transTime = 400;
+    var transType = 'linear';
     var displayView = function(data) {
       var json = $.extend(true, {}, data);
       nodes = partition.nodes(json);
 
       svg.selectAll('*').remove();
-      g = svg.selectAll('g');
-
-      g = g
+      svg.selectAll('rect')
         .data(nodes)
         .enter()
-        .append('g');
-
-      g.append('rect')
+        .append('rect')
         .attr('x', function(d) { return xScale(d.x); })
         .attr('y', function(d) { 
-          return rectHeight * (d.level - adjustLevel) - rectHeight; 
+          var _y = rectHeight * (d.level - adjustLevel) - rectHeight;
+          if (zoomId !== null) { _y = _y - rectHeight; }
+          return _y;
         })
         .attr('width', function(d) { return xScale(d.dx); })
-        .attr('height', function() { return rectHeight; })
+        .attr('height', function() { 
+          var _h = rectHeight;
+          if (zoomId !== null) { _h = rectHeight / 2; }
+          return _h; 
+        })
+        .attr('fill-opacity', function() {
+          var _o = 1;
+          if (zoomId !== null) { _o = 0; }
+          return _o;
+        })
         .attr('id', function(d) { return d.callId; })
-        .attr('stroke', 'black')
+        .attr('stroke', 'blue')
         .attr('stroke-opacity', 0.1)
         .attr('stroke-width', 2)
         .attr('fill', function(d) {
           return colorScale(d.runtime / maxRuntime * 100);
         })
         .on('click', selectNode)
-        .on('dblclick', zoomer)
+        .on('dblclick', zoom)
         .on('mouseenter', highlightNode)
         .on('mouseleave', removeNodeHighlight)
         .append('title')
@@ -162,20 +171,51 @@ function render(loader, d3, size) {
           return d.level + ' | ' + d.name + ' | ' + runtime;
         });
 
-      g.append('text')
-        .filter(function(d, i) { 
+      svg.selectAll('text')
+        .data(nodes.filter(function(d) {
           var rectWidth = size.svgSizeById(d.callId).width;
           var textWidth = size.svgTextSize(d.name, '11px').width;
-          return rectWidth > textWidth + textPadX; 
-        })
+          return rectWidth > textWidth + textPadX;
+        }))
+        .enter()
+        .append('text')
         .attr('x', function(d) { return widthInPixels(d) + textPadX; })
         .attr('y', function(d) { 
-          return (rectHeight * (d.level - adjustLevel) - rectHeight) + textPadY;
+          var _y = (rectHeight * (d.level - adjustLevel) - rectHeight) + textPadY;
+          if (zoomId !== null) { _y = _y - 50; }
+          return _y;
         })
+        .attr('fill-opacity', function() {
+          var _o = 1;
+          if (zoomId !== null) { _o = 0; }
+          return _o;
+        })
+        .attr('id', function(d) { return 'text_' + d.callId; })
         .attr('font-family', 'sans-serif')
         .attr('font-size', '11px')
         .attr('fill', 'black')
         .text(function(d) { return d.name; });
+
+      if (zoomId !== null) {
+        svg.selectAll('rect')
+          .transition()
+          .duration(transTime)
+          .ease(transType)
+          .attr('y', function(d) { 
+            return rectHeight * (d.level - adjustLevel) - rectHeight; 
+          })
+          .attr('height', function(d) { return rectHeight; })
+          .attr('fill-opacity', 1);
+
+        svg.selectAll('text')
+          .transition()
+          .duration(transTime)
+          .ease(transType)
+          .attr('y', function(d) { 
+            return (rectHeight * (d.level - adjustLevel) - rectHeight) + textPadY; 
+          })
+          .attr('fill-opacity', 1);
+      }
     };
 
     function widthInPixels(d) {
@@ -218,109 +258,20 @@ function render(loader, d3, size) {
       return val;
     }
 
-    function zoomer(d) {
-      var newData = findDeep(nestedData, d.callId);
-      console.log(JSON.stringify(newData));
+    function zoom(d) {
       adjustLevel = d.level - 1;
-      displayView(newData);
-      return;
+      runtimeThreshold = d.runtime * thresholdFactor;
 
-      var dRect = d;
-      var currY = Number(d3.select(this).attr('y'));
-      var svgWidth = size.svgSizeById(profileId).width;
-      var dWidth = size.svgSizeById(d.callId).width;
-      var widthMult = svgWidth / dWidth;
-      var xTransScale = d3.scale.linear()
-        .domain([0, 100])
-        .range([0, 1]);
-
-      svg.selectAll('rect')
-        .filter(function(d, i) {
-          var isAbove = dRect.y >= d.y;
-          var isBelow = dRect.y < d.y;
-          var isLeft = dRect.x < d.x;
-          var isRight = dRect.x > d.x;
-          var isElem = d.callId === dRect.callId;
-          return (isAbove || isLeft || isRight || (isBelow && (isLeft || isRight))) && !isElem; 
-        })
-        .each(function(d) {
-          d3.select(this.parentNode).remove();
-        });
-
+      if (zoomId === d.callId) {
+        adjustLevel = 0;
+        runtimeThreshold = maxRuntime * thresholdFactor
+        displayView(nestedData);
         return;
-      svg.selectAll('rect')
-        .filter(function(d, i) {
-          return dy < d.y || dcallId === d.callId;
-        })
-        .attr('width', function(d) { 
-          var xPercent = d3.select(this).attr('width').slice(0, -1);
-          return xPercent * widthMult + '%'; 
-        })
-        .attr('y', function(d) { return Number(d3.select(this).attr('y') - currY); })
-        .attr('x', function(d) { 
-          var xPercent = d3.select(this).attr('width').slice(0, -1);
-          var transWidth = xPercent * widthMult; 
-          return xTransScale(transWidth); 
-        });
+      }
 
-      svg.selectAll('text')
-        .filter(function(d, i) {
-          return dy <= d.y;
-        })
-        .attr('y', function(d) { return Number(d3.select(this).attr('y') - currY); });
-    }
-
-    var topNode = null;
-    var transDuration = 750
-    function zoomNode(d) {
-      var svgWidth = size.svgSizeById(profileId).width;
-      var dWidth = size.svgSizeById(d.callId).width;
-
-      var widthMult = svgWidth / dWidth;
-
-      var dTransWidth = Math.ceil(dWidth * widthMult);
-      var dTransMaxWidth = Math.ceil(svgWidth * widthMult);
-
-      var dPercentWidthIncrease = dTransWidth / dWidth * 100;
-
-      var dTransX = Math.ceil(dTransWidth * dPercentWidthIncrease / 100);
-      var dTransMaxX = Math.ceil(dTransMaxWidth * dPercentWidthIncrease / 100);
-      var transXBegin = 0 - dTransX;
-      var transXEnd = dTransMaxX - dTransX;
-
-      var xTransScale = d3.scale.linear()
-      .domain([0, 1])
-      .range([transXBegin, transXEnd]);
-      var currY = Number(d3.select(this).attr('y'));
-
-      console.log(currY, dTransWidth, dTransMaxWidth, dPercentWidthIncrease, dTransX, dTransMaxX, transXBegin, transXEnd, xTransScale(0));
-
-      return;
-
-      svg.selectAll('g').transition()
-        .duration(transDuration)
-        // .attr('transform', 'translate(' + widthInPixels(d) + ', ' + -Number(rectHeight * d.level - rectHeight) + ')')
-        .select('rect')
-          .attr('x', function(d) { return xTransScale(d.x); })
-          .attr('y', function(d) { return Number(d3.select(this).attr('y') - currY); })
-          .attr('width', function(d) { return Math.ceil(size.svgSizeById(d.callId).width * widthMult); });
-        // .each(function(d) { 
-        //   d3.select(this)
-        //     .attr('transform', 'translate(' + widthInPixels(d) + ', ' + Number(rectHeight * d.level - rectHeight) + ')');
-        //   console.log(this, widthInPixels(d), rectHeight * d.level - rectHeight); 
-        // });
-      // svg.selectAll('g rect').transition()
-      //   .duration(transDuration)
-      //   // .attr('x', function(d) { return Math.ceil(d.x * dPercentWidthIncrease); })
-      //   .attr('width', function(d) { return Math.ceil(size.svgSizeById(d.callId).width * widthMult); });
-      // svg.selectAll('rect').transition()
-      //   .duration(transDuration)
-      //   .attr('x', function(d) { return xScale(d.x); })
-      //   .attr('y', function(d) { return yScale(d.y); })
-      //   .attr('width', function(d) { return x(d.x + d.dx) - x(d.x); })
-      //   .attr('height', function(d) { return y(d.y + d.dy) - y(d.y); });
-
-      // setTimeout(function() { loadChildren(d); }, transDuration);
+      zoomId = d.callId;
+      var newData = findDeep(nestedData, d.callId);
+      displayView(newData);
     }
 
     var selectedNodes = [];
@@ -329,7 +280,8 @@ function render(loader, d3, size) {
       if (d3.select(this).attr('prev-color') === null) {
         var currentColor = d3.select(this).attr('fill');
         d3.select(this).attr('prev-color', currentColor);
-        d3.select(this).attr('fill', 'black');
+        d3.select(this).attr('fill', 'blue');
+        d3.select('#text_' + d.callId).attr('fill', 'white');
 
         // add node to selection
         n = _.findWhere(selectedNodes, {callId: d.callId});
@@ -344,6 +296,7 @@ function render(loader, d3, size) {
         var prevColor = d3.select(this).attr('prev-color');
         d3.select(this).attr('prev-color', null);
         d3.select(this).attr('fill', prevColor);
+        d3.select('#text_' + d.callId).attr('fill', 'black');
 
         // remove node from selection
         n = _.findWhere(selectedNodes, {id: d.callId});
