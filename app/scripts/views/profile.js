@@ -120,14 +120,14 @@ function render(loader, d3, size) {
       displayView(nestedData);
     };
 
-    var nodes, g;
+    var nodes;
     var zoomId = null;
     var rectHeight = 20;
     var textPadY = 15;
     var textPadX = 5;
     var adjustLevel = 0;
-    var transTime = 400;
-    var transType = 'linear';
+    var transTime = 600;
+    var transType = 'elastic';
     var displayView = function(data) {
       var json = $.extend(true, {}, data);
       nodes = partition.nodes(json);
@@ -258,6 +258,7 @@ function render(loader, d3, size) {
       return val;
     }
 
+    var zoomData;
     function zoom(d) {
       adjustLevel = d.level - 1;
       runtimeThreshold = d.runtime * thresholdFactor;
@@ -270,8 +271,8 @@ function render(loader, d3, size) {
       }
 
       zoomId = d.callId;
-      var newData = findDeep(nestedData, d.callId);
-      displayView(newData);
+      zoomData = findDeep(nestedData, d.callId);
+      displayView(zoomData);
     }
 
     var selectedNodes = [];
