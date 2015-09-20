@@ -32,11 +32,7 @@ render.$inject = ['LoaderService', 'd3', 'SizeService'];
 function render(loader, d3, size) {
   return function(svg, stateManager) {
     var width = '100%';
-    var xScale = d3.scale.linear()
-      .range([0, width]);
-    var colorScale = d3.scale.linear()
-      .domain([0, 50, 100])
-      .range(['#B0FC23', '#EEFC23', '#FC2323']);
+    var height = '100%';
     var flatData = [];
     var nestedData = {};
     var calledId = [];
@@ -45,12 +41,18 @@ function render(loader, d3, size) {
     var maxRuntime;
     var profileId = Date.now();
 
+    var xScale = d3.scale.linear()
+      .range([0, width]);
+    var yScale = d3.scale.linear()
+      .range([0, height]);
+    var colorScale = d3.scale.linear()
+      .domain([0, 50, 100])
+      .range(['#B0FC23', '#EEFC23', '#FC2323']);
+    var partition = d3.layout.partition()
+      .value(function(d) { return d.runtime; });
+
     svg.attr('id', profileId);
     svg.selectAll('*').remove();
-
-    var partition = d3.layout.partition().value(function(d) {
-      return d.runtime;
-    });
 
     var getData = function(callId, ancestor, level) {
       var temp = {};
@@ -119,45 +121,11 @@ function render(loader, d3, size) {
       displayView(nestedData);
     };
 
-    // var nodes;
-    // var rect = svg.selectAll('rect');
-    // var displayView = function(data) {
-    //   var json = $.extend(true, {}, data);
-    //   nodes = partition.nodes(json);
-
-    //   svg.selectAll('*').remove();
-    //   rect = svg.selectAll('rect');
-
-    //   var rectHeight = 15;
-    //   rect = rect
-    //     .data(nodes)
-    //     .enter()
-    //     .append('rect')
-    //     .attr('x', function(d) { return xScale(d.x); })
-    //     .attr('y', function(d) { return rectHeight * d.level - rectHeight; })
-    //     .attr('width', function(d) { return xScale(d.dx); })
-    //     .attr('height', function() { return rectHeight; })
-    //     .attr('stroke', 'black')
-    //     .attr('stroke-opacity', 0.1)
-    //     .attr('stroke-width', 2)
-    //     .attr('fill', function(d) {
-    //       return colorScale(d.runtime / maxRuntime * 100);
-    //     })
-    //     .on('click', selectNode)
-    //     .on('dblclick', loadChildren)
-    //     .on('mouseenter', highlightNode)
-    //     .on('mouseleave', removeNodeHighlight)
-    //     .append('title')
-    //     .text(function(d) {
-    //       var runtime = d.runtime.toLocaleString();
-    //       return d.level + ' | ' + d.name + ' | ' + runtime;
-    //     });
-    // };
-
     var nodes, g;
     var rectHeight = 20;
     var textPadY = 15;
     var textPadX = 5;
+    var adjustLevel = 0;
     var displayView = function(data) {
       var json = $.extend(true, {}, data);
       nodes = partition.nodes(json);
@@ -173,7 +141,7 @@ function render(loader, d3, size) {
       g.append('rect')
         .attr('x', function(d) { return xScale(d.x); })
         .attr('y', function(d) { 
-          return rectHeight * d.level - rectHeight; 
+          return rectHeight * (d.level - adjustLevel) - rectHeight; 
         })
         .attr('width', function(d) { return xScale(d.dx); })
         .attr('height', function() { return rectHeight; })
@@ -185,7 +153,7 @@ function render(loader, d3, size) {
           return colorScale(d.runtime / maxRuntime * 100);
         })
         .on('click', selectNode)
-        .on('dblclick', loadChildren)
+        .on('dblclick', zoomer)
         .on('mouseenter', highlightNode)
         .on('mouseleave', removeNodeHighlight)
         .append('title')
@@ -200,20 +168,22 @@ function render(loader, d3, size) {
           var textWidth = size.svgTextSize(d.name, '11px').width;
           return rectWidth > textWidth + textPadX; 
         })
-        .attr('x', function(d) {
-          var svgWidth = size.svgSizeById(profileId).width;
-          var xVal = xScale(d.x);
-          var percentVal = xVal.slice(0, - 1);
-          return Math.ceil(percentVal * svgWidth / 100) + textPadX;
-        })
+        .attr('x', function(d) { return widthInPixels(d) + textPadX; })
         .attr('y', function(d) { 
-          return (rectHeight * d.level - rectHeight) + textPadY;
+          return (rectHeight * (d.level - adjustLevel) - rectHeight) + textPadY;
         })
         .attr('font-family', 'sans-serif')
         .attr('font-size', '11px')
         .attr('fill', 'black')
         .text(function(d) { return d.name; });
     };
+
+    function widthInPixels(d) {
+      var svgWidth = size.svgSizeById(profileId).width;
+      var xVal = xScale(d.x);
+      var percentVal = xVal.slice(0, -1);
+      return Math.ceil(percentVal * svgWidth / 100);
+    }
 
     function highlightNode(d) {
       d3.select(this).attr('stroke-opacity', 0.7);
@@ -222,6 +192,135 @@ function render(loader, d3, size) {
 
     function removeNodeHighlight() {
       d3.select(this).attr('stroke-opacity', 0.1);
+    }
+
+    function findDeep(obj, id) {
+      var val = {};
+
+      function recurse(children, id) {
+        for (var i = children.length - 1; i >= 0; i--) {
+          if (children[i].callId === id) {
+            val = children[i];
+            break;
+          }
+          if (children[i].hasOwnProperty('children') === true) {
+            recurse(children[i].children, id);
+          }
+        }
+      }
+
+      if (obj.callId === id) {
+        val = obj;
+      } else {
+        recurse(obj.children, id);
+      }
+
+      return val;
+    }
+
+    function zoomer(d) {
+      var newData = findDeep(nestedData, d.callId);
+      console.log(JSON.stringify(newData));
+      adjustLevel = d.level - 1;
+      displayView(newData);
+      return;
+
+      var dRect = d;
+      var currY = Number(d3.select(this).attr('y'));
+      var svgWidth = size.svgSizeById(profileId).width;
+      var dWidth = size.svgSizeById(d.callId).width;
+      var widthMult = svgWidth / dWidth;
+      var xTransScale = d3.scale.linear()
+        .domain([0, 100])
+        .range([0, 1]);
+
+      svg.selectAll('rect')
+        .filter(function(d, i) {
+          var isAbove = dRect.y >= d.y;
+          var isBelow = dRect.y < d.y;
+          var isLeft = dRect.x < d.x;
+          var isRight = dRect.x > d.x;
+          var isElem = d.callId === dRect.callId;
+          return (isAbove || isLeft || isRight || (isBelow && (isLeft || isRight))) && !isElem; 
+        })
+        .each(function(d) {
+          d3.select(this.parentNode).remove();
+        });
+
+        return;
+      svg.selectAll('rect')
+        .filter(function(d, i) {
+          return dy < d.y || dcallId === d.callId;
+        })
+        .attr('width', function(d) { 
+          var xPercent = d3.select(this).attr('width').slice(0, -1);
+          return xPercent * widthMult + '%'; 
+        })
+        .attr('y', function(d) { return Number(d3.select(this).attr('y') - currY); })
+        .attr('x', function(d) { 
+          var xPercent = d3.select(this).attr('width').slice(0, -1);
+          var transWidth = xPercent * widthMult; 
+          return xTransScale(transWidth); 
+        });
+
+      svg.selectAll('text')
+        .filter(function(d, i) {
+          return dy <= d.y;
+        })
+        .attr('y', function(d) { return Number(d3.select(this).attr('y') - currY); });
+    }
+
+    var topNode = null;
+    var transDuration = 750
+    function zoomNode(d) {
+      var svgWidth = size.svgSizeById(profileId).width;
+      var dWidth = size.svgSizeById(d.callId).width;
+
+      var widthMult = svgWidth / dWidth;
+
+      var dTransWidth = Math.ceil(dWidth * widthMult);
+      var dTransMaxWidth = Math.ceil(svgWidth * widthMult);
+
+      var dPercentWidthIncrease = dTransWidth / dWidth * 100;
+
+      var dTransX = Math.ceil(dTransWidth * dPercentWidthIncrease / 100);
+      var dTransMaxX = Math.ceil(dTransMaxWidth * dPercentWidthIncrease / 100);
+      var transXBegin = 0 - dTransX;
+      var transXEnd = dTransMaxX - dTransX;
+
+      var xTransScale = d3.scale.linear()
+      .domain([0, 1])
+      .range([transXBegin, transXEnd]);
+      var currY = Number(d3.select(this).attr('y'));
+
+      console.log(currY, dTransWidth, dTransMaxWidth, dPercentWidthIncrease, dTransX, dTransMaxX, transXBegin, transXEnd, xTransScale(0));
+
+      return;
+
+      svg.selectAll('g').transition()
+        .duration(transDuration)
+        // .attr('transform', 'translate(' + widthInPixels(d) + ', ' + -Number(rectHeight * d.level - rectHeight) + ')')
+        .select('rect')
+          .attr('x', function(d) { return xTransScale(d.x); })
+          .attr('y', function(d) { return Number(d3.select(this).attr('y') - currY); })
+          .attr('width', function(d) { return Math.ceil(size.svgSizeById(d.callId).width * widthMult); });
+        // .each(function(d) { 
+        //   d3.select(this)
+        //     .attr('transform', 'translate(' + widthInPixels(d) + ', ' + Number(rectHeight * d.level - rectHeight) + ')');
+        //   console.log(this, widthInPixels(d), rectHeight * d.level - rectHeight); 
+        // });
+      // svg.selectAll('g rect').transition()
+      //   .duration(transDuration)
+      //   // .attr('x', function(d) { return Math.ceil(d.x * dPercentWidthIncrease); })
+      //   .attr('width', function(d) { return Math.ceil(size.svgSizeById(d.callId).width * widthMult); });
+      // svg.selectAll('rect').transition()
+      //   .duration(transDuration)
+      //   .attr('x', function(d) { return xScale(d.x); })
+      //   .attr('y', function(d) { return yScale(d.y); })
+      //   .attr('width', function(d) { return x(d.x + d.dx) - x(d.x); })
+      //   .attr('height', function(d) { return y(d.y + d.dy) - y(d.y); });
+
+      // setTimeout(function() { loadChildren(d); }, transDuration);
     }
 
     var selectedNodes = [];
