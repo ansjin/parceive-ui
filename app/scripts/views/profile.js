@@ -267,6 +267,7 @@ function render(loader, d3, size) {
         adjustLevel = 0;
         runtimeThreshold = maxRuntime * thresholdFactor
         displayView(nestedData);
+        zoomId = null;
         return;
       }
 
