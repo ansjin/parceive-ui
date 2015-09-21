@@ -317,9 +317,9 @@ function(d3, loader, callgraph, layout, SizeService, GradientService) {
 
     addZoom(svg);
 
-    //var size = SizeService.svgSize(svg);
+    var size = SizeService.svgSize(svg);
 
-    tree.size([1000, 1000]);
+    tree.size([size.height, size.width]);
 
     if (!state.unsaved.graph) {
       loader.getFunctionBySignature('main').then(function(fct) {
