@@ -4,7 +4,7 @@ angular.module('app')
   .service('GradientService', ['d3', function(d3) {
     function gradient(min, max) {
       if (min === max) {
-        return 'red';
+        min = max - 1;
       }
 
       return d3.scale.quantize()
