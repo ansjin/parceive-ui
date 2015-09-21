@@ -68,6 +68,57 @@ function(d3, loader, callgraph, layout, SizeService, GradientService) {
       d.y = d.depth * 300;
     });
 
+    var nodeClick = function() {
+      var data = d3.select(this).datum();
+      var promise;
+
+      if (data.isExpanded) {
+        data._children = data.children;
+        callgraph.collapseCall(graph, data.call);
+        promise = RSVP.Promise.resolve();
+      } else {
+        promise = callgraph.expandCall(graph, data.call);
+      }
+
+      promise.then(function() {
+        data.children = [];
+        graph.successors(data.id).forEach(function(d) {
+          var node = graph.node(d);
+          var add = false;
+
+          var child = _.find(data._children, function(c) {
+            return c.id === node.id;
+          });
+
+          if (child) {
+            add = true;
+          } else {
+            var repr = _.find(data.children, function(c) {
+              return c.label === node.label;
+            });
+
+            if (!repr) {
+              add = true;
+            } else {
+              repr.count++;
+            }
+          }
+
+          if (add) {
+            data.children.push(
+              _.merge(graph.node(d), {
+                count: 0
+              })
+            );
+          }
+        });
+        data.children.sort(function(a, b) {
+          return a.start - b.start;
+        });
+        update(svg, state, data);
+      });
+    };
+
     // Update the nodes…
     var node = callGroup.selectAll('g.call')
         .data(nodes, function(d) {
@@ -81,45 +132,6 @@ function(d3, loader, callgraph, layout, SizeService, GradientService) {
       .attr('class', 'call')
       .attr('transform', function() {
         return 'translate(' + source.y0 + ',' + source.x0 + ')';
-      })
-      .on('click', function() {
-        var data = d3.select(this).datum();
-        
-        var promise;
-
-        if (data.isExpanded) {
-          callgraph.collapseCall(graph, data.call);
-          promise = RSVP.Promise.resolve();
-        } else {
-          promise = callgraph.expandCall(graph, data.call);
-        }
-
-        promise.then(function() {
-          data.children = [];
-          data._children = [];
-          graph.successors(data.id).forEach(function(d) {
-            var node = graph.node(d);
-            var child = _.find(data.children, function(c) {
-              return c.label === node.label;
-            });
-
-            data._children.push(
-              _.merge(graph.node(d), {
-                count:0
-              }));
-            if (!child) {
-              data.children.push(
-                _.merge(graph.node(d), {
-                  count: 0
-                })
-              );
-            } else {
-              child.count++;
-            }
-          });
-
-          update(svg, state, data);
-        });
       });
 
     nodeEnter.append('rect')
@@ -130,7 +142,8 @@ function(d3, loader, callgraph, layout, SizeService, GradientService) {
       })
       .attr('height', function(d) {
         return d.height + 10;
-      });
+      })
+      .on('click', nodeClick);
 
     nodeEnter
       .append('text')
@@ -140,7 +153,8 @@ function(d3, loader, callgraph, layout, SizeService, GradientService) {
       })
       .text(function(d) {
         return d.label;
-      });
+      })
+      .on('click', nodeClick);
 
     var durations = _.map(nodes, function(node) {
       return node.call.duration;
@@ -151,15 +165,33 @@ function(d3, loader, callgraph, layout, SizeService, GradientService) {
 
     var gradient = GradientService.gradient(min, max);
 
+    var clickLabel = function() {
+      var node = d3.select(this).datum();
+      var parent = d3.select(this).datum().parent;
+
+      graph.successors(parent.id).forEach(function(d) {
+        var child = graph.node(d);
+        if (node.label === child.label && node.id !== child.id) {
+          parent.children.push(child);
+        }
+      });
+      node.count = 0;
+      parent.children.sort(function(a, b) {
+        return a.start - b.start;
+      });
+      parent._children = parent.children;
+      update(svg, state, node);
+    };
+
     nodeEnter.append('circle')
+      .classed('labelCircle', true)
       .attr('cx', function(d) {
         return d.width + 18;
       })
       .attr('cy', function(d) {
-        return d.height/2;
+        return d.height / 2 - 4;
       })
       .attr('r', function(d) {
-        console.log(d);
         return d.count > 0 ? 10 : 0;
       })
       .attr('fill', 'white')
@@ -168,25 +200,17 @@ function(d3, loader, callgraph, layout, SizeService, GradientService) {
       })
       .attr('stroke-width', 2)
       .style('stroke-opacity', function(d) {
-          return d.call.callsOthers > 0 ? 1 : 0.5;
+        return d.call.callsOthers > 0 ? 1 : 0.5;
       })
-      .on('click', function(d) {
-        alert('clicked');
-        var succ = graph.successors(d.id).find(function(d) {
-          return true;
-        });
-
-        if (succ) {
-          succ.children = succ._children;
-        }
-      });
+      .on('click', clickLabel);
 
     nodeEnter.append('text')
+      .classed('labelText', true)
       .attr('x', function(d) {
         return d.width + 18;
       })
       .attr('y', function(d) {
-        return d.height/2 + 4;
+        return d.height / 2;
       })
       .attr('text-anchor', 'middle')
       .style('fill', 'black')
@@ -195,8 +219,9 @@ function(d3, loader, callgraph, layout, SizeService, GradientService) {
         return d.count > 0 ? 14 : 0;
       })
       .text(function(d) {
-        return d.count+1;
-      });
+        return d.count + 1;
+      })
+      .on('click', clickLabel);
 
     node
       .attr('fill', function(d) {
@@ -211,12 +236,22 @@ function(d3, loader, callgraph, layout, SizeService, GradientService) {
         });
 
     nodeUpdate.select('rect')
-        .style('opacity', function(d) {
-          return d.call.callsOthers > 0 ? 1 : 0.5;
-        });
+      .style('opacity', function(d) {
+        return d.call.callsOthers > 0 ? 1 : 0.5;
+      });
 
     nodeUpdate.select('text')
-        .style('fill-opacity', 1);
+      .style('fill-opacity', 1);
+
+    nodeUpdate.selectAll('.labelText')
+      .style('font-size', function(d) {
+        return d.count > 0 ? 14 : 0;
+      });
+
+    nodeUpdate.selectAll('.labelCircle')
+      .attr('r', function(d) {
+        return d.count > 0 ? 10 : 0;
+      });
 
     // Transition exiting nodes to the parent's new position.
     var nodeExit = node.exit().transition()
