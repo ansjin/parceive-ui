@@ -84,6 +84,7 @@ function(d3, loader, callgraph, layout, SizeService, GradientService) {
       })
       .on('click', function() {
         var data = d3.select(this).datum();
+        
         var promise;
 
         if (data.isExpanded) {
@@ -94,10 +95,29 @@ function(d3, loader, callgraph, layout, SizeService, GradientService) {
         }
 
         promise.then(function() {
-          data.children = _.map(graph.successors(data.id), function(node) {
-            node = graph.node(node);
-            return node;
+          data.children = [];
+          data._children = [];
+          graph.successors(data.id).forEach(function(d) {
+            var node = graph.node(d);
+            var child = _.find(data.children, function(c) {
+              return c.label === node.label;
+            });
+
+            data._children.push(
+              _.merge(graph.node(d), {
+                count:0
+              }));
+            if (!child) {
+              data.children.push(
+                _.merge(graph.node(d), {
+                  count: 0
+                })
+              );
+            } else {
+              child.count++;
+            }
           });
+
           update(svg, state, data);
         });
       });
@@ -130,6 +150,53 @@ function(d3, loader, callgraph, layout, SizeService, GradientService) {
     var max = _.max(durations);
 
     var gradient = GradientService.gradient(min, max);
+
+    nodeEnter.append('circle')
+      .attr('cx', function(d) {
+        return d.width + 18;
+      })
+      .attr('cy', function(d) {
+        return d.height/2;
+      })
+      .attr('r', function(d) {
+        console.log(d);
+        return d.count > 0 ? 10 : 0;
+      })
+      .attr('fill', 'white')
+      .attr('stroke', function(d) {
+        return gradient(d.call.duration);
+      })
+      .attr('stroke-width', 2)
+      .style('stroke-opacity', function(d) {
+          return d.call.callsOthers > 0 ? 1 : 0.5;
+      })
+      .on('click', function(d) {
+        alert('clicked');
+        var succ = graph.successors(d.id).find(function(d) {
+          return true;
+        });
+
+        if (succ) {
+          succ.children = succ._children;
+        }
+      });
+
+    nodeEnter.append('text')
+      .attr('x', function(d) {
+        return d.width + 18;
+      })
+      .attr('y', function(d) {
+        return d.height/2 + 4;
+      })
+      .attr('text-anchor', 'middle')
+      .style('fill', 'black')
+      .style('font-family', 'Arial')
+      .style('font-size', function(d) {
+        return d.count > 0 ? 14 : 0;
+      })
+      .text(function(d) {
+        return d.count+1;
+      });
 
     node
       .attr('fill', function(d) {
