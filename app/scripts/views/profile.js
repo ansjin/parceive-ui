@@ -73,7 +73,7 @@ function render(loader, d3, size) {
           temp.ancestor = ancestor;
           temp.level = level;
           temp.callId = callData.id;
-          return loader.getFunction(callData.function)
+          return callData.getFunction()
             .then(function(funcData) {
               temp.name = funcData.signature;
               if (_.findWhere(flatData, temp) === undefined) {
