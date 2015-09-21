@@ -40,6 +40,8 @@ function render(loader, d3, size) {
     var thresholdFactor = 0.01;
     var maxRuntime;
     var profileId = Date.now();
+    var nodes;
+    var zoomId = null;
 
     var xScale = d3.scale.linear()
       .range([0, width]);
@@ -77,26 +79,31 @@ function render(loader, d3, size) {
           return loader.getFunction(callData.function)
             .then(function(funcData) {
               temp.name = funcData.signature;
-              flatData.push(temp);
+              if (_.findWhere(flatData, temp) === undefined) {
+                flatData.push(temp);
+              }
               return call.getCalls();
             })
             .then(function(childData) {
               calledId.push(callId);
               mapViewData(flatData);
-
               var d = childData;
               var l = level + 1;
               var p = temp.callId;
-              if (d.length > 0) {
-                $.each(d, function(index, child) {
-                  if (calledId.indexOf(child.id) === -1) {
-                    getData(child.id, p, l);
-                  }
-                });
-              }
+              getChildren(d, p, l);
             });
         })
         .then(function(ok) {}, function(err) {});
+    };
+
+    var getChildren = function(children, parent, level) {
+      if (children.length > 0) {
+        $.each(children, function(index, child) {
+          if (calledId.indexOf(child.id) === -1) {
+            getData(child.id, parent, level);
+          }
+        });
+      }
     };
 
     var mapViewData = function(data) {
@@ -117,11 +124,13 @@ function render(loader, d3, size) {
       });
 
       nestedData = $.extend(true, {}, tree[0]);
+      if (zoomId !== null) {
+        displayView(findDeep(nestedData, zoomId));
+        return;
+      }
       displayView(nestedData);
     };
 
-    var nodes;
-    var zoomId = null;
     var rectHeight = 20;
     var textPadY = 15;
     var textPadX = 5;
@@ -216,6 +225,7 @@ function render(loader, d3, size) {
           })
           .attr('fill-opacity', 1);
       }
+      return true;
     };
 
     function widthInPixels(d) {
@@ -265,7 +275,7 @@ function render(loader, d3, size) {
 
       if (zoomId === d.callId) {
         adjustLevel = 0;
-        runtimeThreshold = maxRuntime * thresholdFactor
+        runtimeThreshold = maxRuntime * thresholdFactor;
         displayView(nestedData);
         zoomId = null;
         return;
@@ -273,7 +283,12 @@ function render(loader, d3, size) {
 
       zoomId = d.callId;
       zoomData = findDeep(nestedData, d.callId);
-      displayView(zoomData);
+      if (displayView(zoomData)) {
+        setTimeout(function() {
+          console.log('load children', d);
+          loadChildren(d);
+        }, transTime);
+      }
     }
 
     var selectedNodes = [];
@@ -319,14 +334,7 @@ function render(loader, d3, size) {
           var data = childData;
           var l = Number(d.level) + 1;
           var p = d.callId;
-          if (data.length > 0) {
-            $.each(data, function(index, child) {
-              if (calledId.indexOf(child.id) === -1) {
-                console.log(index, child);
-                getData(child.id, p, l);
-              }
-            });
-          }
+          getChildren(data, p, l);
         });
     }
 
