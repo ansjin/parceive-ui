@@ -14,7 +14,10 @@ angular.module('app')
           var view = bound.getData();
 
           view.unsaved = {svg: svg};
-          view.type.unsaved.render(svg, bound);
+
+          _.delay(function() {
+            view.type.unsaved.render(svg, bound);
+          }, 10);
         }
       };
     }])
