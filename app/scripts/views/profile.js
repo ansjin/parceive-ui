@@ -32,7 +32,6 @@ render.$inject = ['LoaderService', 'd3', 'SizeService'];
 function render(loader, d3, size) {
   return function(svg, stateManager) {
     var width = '100%';
-    var height = '100%';
     var flatData = [];
     var nestedData = {};
     var calledId = [];
@@ -45,8 +44,6 @@ function render(loader, d3, size) {
 
     var xScale = d3.scale.linear()
       .range([0, width]);
-    var yScale = d3.scale.linear()
-      .range([0, height]);
     var colorScale = d3.scale.linear()
       .domain([0, 50, 100])
       .range(['#B0FC23', '#EEFC23', '#FC2323']);
@@ -93,7 +90,7 @@ function render(loader, d3, size) {
               getChildren(d, p, l);
             });
         })
-        .then(function(ok) {}, function(err) {});
+        .then(function() {}, function() {});
     };
 
     var getChildren = function(children, parent, level) {
@@ -147,16 +144,16 @@ function render(loader, d3, size) {
         .enter()
         .append('rect')
         .attr('x', function(d) { return xScale(d.x); })
-        .attr('y', function(d) { 
+        .attr('y', function(d) {
           var _y = rectHeight * (d.level - adjustLevel) - rectHeight;
           if (zoomId !== null) { _y = _y - rectHeight; }
           return _y;
         })
         .attr('width', function(d) { return xScale(d.dx); })
-        .attr('height', function() { 
+        .attr('height', function() {
           var _h = rectHeight;
           if (zoomId !== null) { _h = rectHeight / 2; }
-          return _h; 
+          return _h;
         })
         .attr('fill-opacity', function() {
           var _o = 1;
@@ -189,8 +186,9 @@ function render(loader, d3, size) {
         .enter()
         .append('text')
         .attr('x', function(d) { return widthInPixels(d) + textPadX; })
-        .attr('y', function(d) { 
-          var _y = (rectHeight * (d.level - adjustLevel) - rectHeight) + textPadY;
+        .attr('y', function(d) {
+          var _y = (rectHeight * (d.level - adjustLevel) - rectHeight);
+          _y = _y + textPadY;
           if (zoomId !== null) { _y = _y - 50; }
           return _y;
         })
@@ -210,18 +208,19 @@ function render(loader, d3, size) {
           .transition()
           .duration(transTime)
           .ease(transType)
-          .attr('y', function(d) { 
-            return rectHeight * (d.level - adjustLevel) - rectHeight; 
+          .attr('y', function(d) {
+            return rectHeight * (d.level - adjustLevel) - rectHeight;
           })
-          .attr('height', function(d) { return rectHeight; })
+          .attr('height', function() { return rectHeight; })
           .attr('fill-opacity', 1);
 
         svg.selectAll('text')
           .transition()
           .duration(transTime)
           .ease(transType)
-          .attr('y', function(d) { 
-            return (rectHeight * (d.level - adjustLevel) - rectHeight) + textPadY; 
+          .attr('y', function(d) {
+            var _y = (rectHeight * (d.level - adjustLevel) - rectHeight);
+            return _y + textPadY;
           })
           .attr('fill-opacity', 1);
       }
