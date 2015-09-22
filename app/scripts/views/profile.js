@@ -243,14 +243,19 @@ function render(loader, d3, size, GradientService) {
       var y = d3.event.pageY;
 
       var runtime = d.runtime / maxRuntime * 100;
+      var svgWidth = size.svgSizeById(profileId).width;
+      var tooltipWidth = _.max([minToolBoxWidth, size.textSize(d.name, 14).width]);
+
+      if (tooltipWidth > svgWidth - x) {
+        x = x - (tooltipWidth + 20);
+      }
 
       //Update the tooltip position and value
       var tooltip =
         d3.select("#tooltip")
           .style("left", x  + "px")
           .style("top", y + "px")
-          .style("width",
-            _.max([minToolBoxWidth, size.textSize(d.name, 14).width]) + "px");
+          .style("width", tooltipWidth + "px");
       tooltip
           .select("#title")
           .text(d.name);
