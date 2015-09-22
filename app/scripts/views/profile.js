@@ -174,7 +174,7 @@ function render(loader, d3, size, GradientService) {
       svg.selectAll('text')
         .data(nodes.filter(function(d) {
           var rectWidth = size.svgSizeById(d.callId).width;
-          var textWidth = size.svgTextSize(d.name, '12px').width;
+          var textWidth = size.svgTextSize(d.name, '14px').width;
           return rectWidth > textWidth + textPadX;
         }))
         .enter()
@@ -193,7 +193,7 @@ function render(loader, d3, size, GradientService) {
         })
         .attr('id', function(d) { return 'text_' + d.callId; })
         .attr('font-family', 'Arial')
-        .attr('font-size', '12px')
+        .attr('font-size', '14px')
         .attr('fill', 'white')
         .text(function(d) { return d.name; });
 
@@ -244,9 +244,10 @@ function render(loader, d3, size, GradientService) {
       var runtime = d.runtime / maxRuntime * 100;
       var svgWidth = size.svgSizeById(profileId).width;
       var tooltipWidth = _.max([minToolBoxWidth, size.textSize(d.name, 14).width]);
+      var tooltipPadding = 20;
 
-      if (tooltipWidth > svgWidth - x) {
-        x = x - (tooltipWidth + 20);
+      if (tooltipWidth + tooltipPadding > svgWidth - x) {
+        x = x - (tooltipWidth + tooltipPadding);
       }
 
       //Update the tooltip position and value
