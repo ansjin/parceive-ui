@@ -26,10 +26,10 @@ function hoverCb() {
 }
 
 // view dependencies
-render.$inject = ['LoaderService', 'd3', 'SizeService'];
+render.$inject = ['LoaderService', 'd3', 'SizeService', 'GradientService'];
 
 // render the view
-function render(loader, d3, size) {
+function render(loader, d3, size, GradientService) {
   return function(svg, stateManager) {
     var width = '100%';
     var flatData = [];
@@ -41,12 +41,11 @@ function render(loader, d3, size) {
     var profileId = Date.now();
     var nodes;
     var zoomId = null;
+    var minToolBoxWidth = 150;
+    var gradient = null;
 
     var xScale = d3.scale.linear()
       .range([0, width]);
-    var colorScale = d3.scale.linear()
-      .domain([0, 50, 100])
-      .range(['#B0FC23', '#EEFC23', '#FC2323']);
     var partition = d3.layout.partition()
       .value(function(d) { return d.runtime; });
 
@@ -64,6 +63,7 @@ function render(loader, d3, size) {
           if (runtimeThreshold === null) {
             maxRuntime = temp.runtime;
             runtimeThreshold = temp.runtime * thresholdFactor;
+            gradient = GradientService.gradient(0, maxRuntime);
           }
 
           if (temp.runtime < runtimeThreshold) {
@@ -128,26 +128,28 @@ function render(loader, d3, size) {
       displayView(nestedData);
     };
 
-    var rectHeight = 20;
+    var rectHeight = 22;
     var textPadY = 15;
     var textPadX = 5;
     var adjustLevel = 0;
     var transTime = 600;
     var transType = 'elastic';
+
     var displayView = function(data) {
       var json = $.extend(true, {}, data);
       nodes = partition.nodes(json);
 
       svg.selectAll('*').remove();
+
       svg.selectAll('rect')
         .data(nodes)
         .enter()
         .append('rect')
         .attr('x', function(d) { return xScale(d.x); })
         .attr('y', function(d) {
-          var _y = rectHeight * (d.level - adjustLevel) - rectHeight;
+          var _y = (rectHeight) * (d.level - adjustLevel) - rectHeight;
           if (zoomId !== null) { _y = _y - rectHeight; }
-          return _y;
+          return _y ;
         })
         .attr('width', function(d) { return xScale(d.dx); })
         .attr('height', function() {
@@ -161,33 +163,25 @@ function render(loader, d3, size) {
           return _o;
         })
         .attr('id', function(d) { return d.callId; })
-        .attr('stroke', 'blue')
-        .attr('stroke-opacity', 0.1)
+        .attr('stroke', 'white')
+        .attr('stroke-opacity', 1)
         .attr('stroke-width', 2)
+        .attr('shape-rendering', 'crispEdges')
         .attr('fill', function(d) {
-          return colorScale(d.runtime / maxRuntime * 100);
-        })
-        .on('click', selectNode)
-        .on('dblclick', zoom)
-        .on('mouseenter', highlightNode)
-        .on('mouseleave', removeNodeHighlight)
-        .append('title')
-        .text(function(d) {
-          var runtime = d.runtime.toLocaleString();
-          return d.level + ' | ' + d.name + ' | ' + runtime;
+          return gradient(d.runtime);
         });
 
       svg.selectAll('text')
         .data(nodes.filter(function(d) {
           var rectWidth = size.svgSizeById(d.callId).width;
-          var textWidth = size.svgTextSize(d.name, '11px').width;
+          var textWidth = size.svgTextSize(d.name, '14px').width;
           return rectWidth > textWidth + textPadX;
         }))
         .enter()
         .append('text')
         .attr('x', function(d) { return widthInPixels(d) + textPadX; })
         .attr('y', function(d) {
-          var _y = (rectHeight * (d.level - adjustLevel) - rectHeight);
+          var _y = ((rectHeight) * (d.level - adjustLevel) - rectHeight);
           _y = _y + textPadY;
           if (zoomId !== null) { _y = _y - 50; }
           return _y;
@@ -198,10 +192,17 @@ function render(loader, d3, size) {
           return _o;
         })
         .attr('id', function(d) { return 'text_' + d.callId; })
-        .attr('font-family', 'sans-serif')
-        .attr('font-size', '11px')
-        .attr('fill', 'black')
+        .attr('font-family', 'Arial')
+        .attr('font-size', '14px')
+        .attr('fill', 'white')
         .text(function(d) { return d.name; });
+
+      svg.selectAll('rect, text')
+        .on('click', selectNode)
+        .on('dblclick', zoom)
+        .on('mouseenter', highlightNode)
+        .on('mouseleave', removeNodeHighlight);
+
 
       if (zoomId !== null) {
         svg.selectAll('rect')
@@ -235,12 +236,41 @@ function render(loader, d3, size) {
     }
 
     function highlightNode(d) {
-      d3.select(this).attr('stroke-opacity', 0.7);
+      d3.select(this)
+        .attr('fill-opacity', 0.5);
+
+      var x = d3.event.pageX;
+      var y = d3.event.pageY;
+
+      var runtime = d.runtime / maxRuntime * 100;
+
+      //Update the tooltip position and value
+      var tooltip =
+        d3.select("#tooltip")
+          .style("left", x  + "px")
+          .style("top", y + "px")
+          .style("width",
+            _.max([minToolBoxWidth, size.textSize(d.name, 14).width]) + "px");
+      tooltip
+          .select("#title")
+          .text(d.name);
+      tooltip
+        .select("#value")
+        .text(runtime.toFixed(2) + ' %');
+
+      //Show the tooltip
+      tooltip
+        .classed("hidden", false);
+
       stateManager.hover([{type: 'Call', id: d.callId}]);
     }
 
     function removeNodeHighlight() {
-      d3.select(this).attr('stroke-opacity', 0.1);
+      d3.select(this)
+        .attr('fill-opacity', 1);
+
+      //Hide the tooltip
+      d3.select("#tooltip").classed("hidden", true);
     }
 
     function findDeep(obj, id) {
@@ -296,8 +326,11 @@ function render(loader, d3, size) {
       if (d3.select(this).attr('prev-color') === null) {
         var currentColor = d3.select(this).attr('fill');
         d3.select(this).attr('prev-color', currentColor);
-        d3.select(this).attr('fill', 'blue');
-        d3.select('#text_' + d.callId).attr('fill', 'white');
+        d3.select(this)
+          .attr('fill', 'grey')
+          .attr('fill-opacity', 0.8);
+        d3.select('#text_' + d.callId)
+          .attr('fill', 'white');
 
         // add node to selection
         n = _.findWhere(selectedNodes, {callId: d.callId});
@@ -312,7 +345,7 @@ function render(loader, d3, size) {
         var prevColor = d3.select(this).attr('prev-color');
         d3.select(this).attr('prev-color', null);
         d3.select(this).attr('fill', prevColor);
-        d3.select('#text_' + d.callId).attr('fill', 'black');
+        d3.select('#text_' + d.callId).attr('fill', 'white');
 
         // remove node from selection
         n = _.findWhere(selectedNodes, {id: d.callId});
@@ -320,7 +353,6 @@ function render(loader, d3, size) {
           selectedNodes.splice(selectedNodes.indexOf(n), 1);
         }
       }
-      console.log(selectedNodes);
     }
 
     function loadChildren(d) {
@@ -348,4 +380,3 @@ function render(loader, d3, size) {
 
   };
 }
-
