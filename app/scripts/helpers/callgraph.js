@@ -190,7 +190,7 @@ angular.module('app')
 
       var fctPromise = self.getFunction().then(function(fct) {
         data.fct = fct;
-        data.label = self.id + fct.signature;
+        data.label = fct.signature;
 
         setNodeSize(data);
       });
