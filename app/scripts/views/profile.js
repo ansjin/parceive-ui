@@ -147,7 +147,7 @@ function render(loader, d3, size, GradientService) {
         .append('rect')
         .attr('x', function(d) { return xScale(d.x); })
         .attr('y', function(d) {
-          var _y = (rectHeight) * (d.level - adjustLevel) - rectHeight;
+          var _y = rectHeight * (d.level - adjustLevel) - rectHeight;
           if (zoomId !== null) { _y = _y - rectHeight; }
           return _y ;
         })
@@ -174,14 +174,14 @@ function render(loader, d3, size, GradientService) {
       svg.selectAll('text')
         .data(nodes.filter(function(d) {
           var rectWidth = size.svgSizeById(d.callId).width;
-          var textWidth = size.svgTextSize(d.name, '14px').width;
+          var textWidth = size.svgTextSize(d.name, '12px').width;
           return rectWidth > textWidth + textPadX;
         }))
         .enter()
         .append('text')
         .attr('x', function(d) { return widthInPixels(d) + textPadX; })
         .attr('y', function(d) {
-          var _y = ((rectHeight) * (d.level - adjustLevel) - rectHeight);
+          var _y = rectHeight * (d.level - adjustLevel) - rectHeight;
           _y = _y + textPadY;
           if (zoomId !== null) { _y = _y - 50; }
           return _y;
@@ -193,7 +193,7 @@ function render(loader, d3, size, GradientService) {
         })
         .attr('id', function(d) { return 'text_' + d.callId; })
         .attr('font-family', 'Arial')
-        .attr('font-size', '14px')
+        .attr('font-size', '12px')
         .attr('fill', 'white')
         .text(function(d) { return d.name; });
 
@@ -202,7 +202,6 @@ function render(loader, d3, size, GradientService) {
         .on('dblclick', zoom)
         .on('mouseenter', highlightNode)
         .on('mouseleave', removeNodeHighlight);
-
 
       if (zoomId !== null) {
         svg.selectAll('rect')
@@ -220,7 +219,7 @@ function render(loader, d3, size, GradientService) {
           .duration(transTime)
           .ease(transType)
           .attr('y', function(d) {
-            var _y = (rectHeight * (d.level - adjustLevel) - rectHeight);
+            var _y = rectHeight * (d.level - adjustLevel) - rectHeight;
             return _y + textPadY;
           })
           .attr('fill-opacity', 1);
@@ -257,15 +256,15 @@ function render(loader, d3, size, GradientService) {
           .style("top", y + "px")
           .style("width", tooltipWidth + "px");
       tooltip
-          .select("#title")
+          .select('#title')
           .text(d.name);
       tooltip
-        .select("#value")
+        .select('#value')
         .text(runtime.toFixed(2) + ' %');
 
       //Show the tooltip
       tooltip
-        .classed("hidden", false);
+        .classed('hidden', false);
 
       stateManager.hover([{type: 'Call', id: d.callId}]);
     }
@@ -275,7 +274,7 @@ function render(loader, d3, size, GradientService) {
         .attr('fill-opacity', 1);
 
       //Hide the tooltip
-      d3.select("#tooltip").classed("hidden", true);
+      d3.select('#tooltip').classed('hidden', true);
     }
 
     function findDeep(obj, id) {
@@ -319,7 +318,6 @@ function render(loader, d3, size, GradientService) {
       zoomData = findDeep(nestedData, d.callId);
       if (displayView(zoomData)) {
         setTimeout(function() {
-          console.log('load children', d);
           loadChildren(d);
         }, transTime);
       }
