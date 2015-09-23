@@ -1,5 +1,4 @@
 /* global $ */
-/* global console */
 
 angular
   .module('profile-view', ['app'])
@@ -29,7 +28,7 @@ function hoverCb() {
 render.$inject = ['LoaderService', 'd3', 'SizeService', 'GradientService'];
 
 // render the view
-function render(loader, d3, size, GradientService) {
+function render(loader, d3, SizeService, GradientService) {
   return function(svg, stateManager) {
     var width = '100%';
     var flatData = [];
@@ -43,12 +42,11 @@ function render(loader, d3, size, GradientService) {
     var zoomId = null;
     var minToolBoxWidth = 150;
     var gradient = null;
+    var myScale = null;
+    var myPoint = null;
 
-    var xScale = d3.scale.linear()
-      .range([0, width]);
     var partition = d3.layout.partition()
       .value(function(d) { return d.runtime; });
-
     svg.attr('id', profileId);
 
     var getData = function(callId, ancestor, level) {
@@ -61,7 +59,6 @@ function render(loader, d3, size, GradientService) {
           temp.runtime = callData.end - callData.start;
 
           if (runtimeThreshold === null) {
-            maxRuntime = temp.runtime;
             runtimeThreshold = temp.runtime * thresholdFactor;
             gradient = GradientService.gradient(0, maxRuntime);
           }
@@ -73,6 +70,8 @@ function render(loader, d3, size, GradientService) {
           temp.ancestor = ancestor;
           temp.level = level;
           temp.callId = callData.id;
+          temp.start = callData.start;
+          temp.end = callData.end;
           return callData.getFunction()
             .then(function(funcData) {
               temp.name = funcData.signature;
@@ -139,19 +138,27 @@ function render(loader, d3, size, GradientService) {
       var json = $.extend(true, {}, data);
       nodes = partition.nodes(json);
 
-      svg.selectAll('*').remove();
+      myScale = d3.scale.linear()
+        .domain([0, nodes[0].runtime])
+        .range([0, width]);
+      myPoint = d3.scale.linear()
+        .domain([nodes[0].start, nodes[0].end])
+        .range([0, SizeService.svgSize(svg).width]);
 
+      svg.selectAll('*').remove();
       svg.selectAll('rect')
         .data(nodes)
         .enter()
         .append('rect')
-        .attr('x', function(d) { return xScale(d.x); })
+        .attr('x', function(d) { return myPoint(d.start); })
         .attr('y', function(d) {
           var _y = rectHeight * (d.level - adjustLevel) - rectHeight;
           if (zoomId !== null) { _y = _y - rectHeight; }
           return _y ;
         })
-        .attr('width', function(d) { return xScale(d.dx); })
+        .attr('width', function(d) {
+          return myScale(d.runtime);
+        })
         .attr('height', function() {
           var _h = rectHeight;
           if (zoomId !== null) { _h = rectHeight / 2; }
@@ -173,13 +180,13 @@ function render(loader, d3, size, GradientService) {
 
       svg.selectAll('text')
         .data(nodes.filter(function(d) {
-          var rectWidth = size.svgSizeById(d.callId).width;
-          var textWidth = size.svgTextSize(d.name, '14px').width;
+          var rectWidth = SizeService.svgSizeById(d.callId).width;
+          var textWidth = SizeService.svgTextSize(d.name, '14px').width;
           return rectWidth > textWidth + textPadX;
         }))
         .enter()
         .append('text')
-        .attr('x', function(d) { return widthInPixels(d) + textPadX; })
+        .attr('x', function(d) { return myPoint(d.start) + textPadX; })
         .attr('y', function(d) {
           var _y = rectHeight * (d.level - adjustLevel) - rectHeight;
           _y = _y + textPadY;
@@ -227,13 +234,6 @@ function render(loader, d3, size, GradientService) {
       return true;
     };
 
-    function widthInPixels(d) {
-      var svgWidth = size.svgSizeById(profileId).width;
-      var xVal = xScale(d.x);
-      var percentVal = xVal.slice(0, -1);
-      return Math.ceil(percentVal * svgWidth / 100);
-    }
-
     function highlightNode(d) {
       d3.select(this)
         .attr('fill-opacity', 0.5);
@@ -242,8 +242,10 @@ function render(loader, d3, size, GradientService) {
       var y = d3.event.pageY;
 
       var runtime = d.runtime / maxRuntime * 100;
-      var svgWidth = size.svgSizeById(profileId).width;
-      var tooltipWidth = _.max([minToolBoxWidth, size.textSize(d.name, 14).width]);
+      var svgWidth = SizeService.svgSizeById(profileId).width;
+      var tooltipWidth = _.max(
+        [minToolBoxWidth, SizeService.textSize(d.name, 14).width]
+      );
       var tooltipPadding = 20;
 
       if (tooltipWidth + tooltipPadding > svgWidth - x) {
@@ -252,10 +254,10 @@ function render(loader, d3, size, GradientService) {
 
       //Update the tooltip position and value
       var tooltip =
-        d3.select("#tooltip")
-          .style("left", x  + "px")
-          .style("top", y + "px")
-          .style("width", tooltipWidth + "px");
+        d3.select('#tooltip')
+          .style('left', x  + 'px')
+          .style('top', y + 'px')
+          .style('width', tooltipWidth + 'px');
       tooltip
           .select('#title')
           .text(d.name);
@@ -379,6 +381,7 @@ function render(loader, d3, size, GradientService) {
         return res.getCalls();
       })
       .then(function(res) {
+        maxRuntime = res[0].end - res[0].start;
         getData(res[0].id, 'null', 1);
       });
 
