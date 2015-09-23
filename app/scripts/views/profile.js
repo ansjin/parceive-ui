@@ -306,7 +306,6 @@ function render(loader, d3, SizeService, GradientService) {
 
     var zoomData;
     function zoom(d) {
-      doubleClick = true;
       adjustLevel = d.level - 1;
       runtimeThreshold = d.runtime * thresholdFactor;
 
