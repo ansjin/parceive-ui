@@ -15,8 +15,7 @@ angular.module('tree2-view', ['app'])
                       'LayoutCallGraphService', 'SizeService',
                       'GradientService',
 function(d3, loader, callgraph, layout, SizeService, GradientService) {
-  var tree = d3.layout.tree()
-    .size([1000, 1000]);
+  var tree = d3.layout.tree();
   var diagonal = d3.svg.diagonal()
     .projection(function(d) {
       return [d.y, d.x];
@@ -32,6 +31,9 @@ function(d3, loader, callgraph, layout, SizeService, GradientService) {
       .attr('class', 'edges-group');
 
     g.append('g')
+      .attr('class', 'refs-group');
+
+    g.append('g')
       .attr('class', 'calls-group');
 
     function zoom() {
@@ -39,6 +41,21 @@ function(d3, loader, callgraph, layout, SizeService, GradientService) {
                 ')scale(' + d3.event.scale + ')');
     }
   }
+
+  var d3cola =
+    d3.layout.force()
+    .linkDistance(100)
+    .linkStrength(0.1)
+    .friction(0.9)
+    .gravity(0)
+    .size([1000, 1000])
+    .charge(function(d) {
+      if (d.isCall) {
+        return -500;
+      } else {
+        return -100;
+      }
+    });
 
   function render(svg, state) {
     var graph = state.unsaved.graph;
@@ -58,10 +75,29 @@ function(d3, loader, callgraph, layout, SizeService, GradientService) {
     var g = svg.select('g.callgraph');
     var callGroup = g.select('g.calls-group');
     var edgeGroup = g.select('g.edges-group');
+    var refGroup = g.select('g.refs-group');
 
     var graph = state.unsaved.graph;
     var nodes = tree.nodes(root).reverse();
     var links = tree.links(nodes);
+    var partition = _.partition(graph.nodes, function(d) {
+      return d.isCall;
+    });
+    var refs = partition[1];
+
+    console.log(refs);
+
+    var maxTreeChildrenHeight = {};
+    nodes.forEach(function(d) {
+      if (!maxTreeChildrenHeight[d.depth]) {
+        maxTreeChildrenHeight[d.depth] = 0;
+      }
+      maxTreeChildrenHeight[d.depth]++;
+    });
+    var maxTreeHeight = _.max(_.values(maxTreeChildrenHeight));
+
+    tree.size([maxTreeHeight*60, SizeService.svgSize(svg).width]);
+    nodes = tree.nodes(root).reverse();
 
     // Normalize for fixed-depth.
     nodes.forEach(function(d) {
@@ -144,6 +180,35 @@ function(d3, loader, callgraph, layout, SizeService, GradientService) {
         return d.height + 10;
       })
       .on('click', nodeClick);
+
+    nodeEnter.append('rect')
+      .attr('class', 'call-refs')
+      .attr('x', function(d) {
+        return d.width + 12;
+      })
+      .attr('y', function(d) {
+        return d.height / 2 + 6;
+      })
+      .attr('width', 6)
+      .attr('height', function(d) {
+        return d.height / 2 + 1;
+      })
+      .on('click', function() {
+        var data = d3.select(this).datum();
+        var promise;
+
+        if (data.isMemoryExpanded) {
+          callgraph.collapseCallMemory(graph, data.call);
+          promise = RSVP.Promise.resolve();
+        } else {
+          promise = callgraph.expandCallMemory(graph, data.call);
+        }
+
+        promise.then(function() {
+          update(svg, state, data);
+        });
+      });
+
 
     nodeEnter
       .append('text')
@@ -318,7 +383,6 @@ function(d3, loader, callgraph, layout, SizeService, GradientService) {
     addZoom(svg);
 
     var size = SizeService.svgSize(svg);
-
     tree.size([size.height, size.width]);
 
     if (!state.unsaved.graph) {
