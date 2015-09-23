@@ -1,4 +1,5 @@
 /* global $ */
+/* global window */
 
 angular
   .module('profile-view', ['app'])
@@ -37,7 +38,9 @@ function render(loader, d3, SizeService, GradientService) {
     var runtimeThreshold = null;
     var thresholdFactor = 0.01;
     var maxRuntime;
+    var selectedNodes = [];
     var profileId = Date.now();
+    var doubleClick = false;
     var nodes;
     var zoomId = null;
     var minToolBoxWidth = 150;
@@ -206,7 +209,6 @@ function render(loader, d3, SizeService, GradientService) {
 
       svg.selectAll('rect, text')
         .on('click', selectNode)
-        .on('dblclick', zoom)
         .on('mouseenter', highlightNode)
         .on('mouseleave', removeNodeHighlight);
 
@@ -231,6 +233,7 @@ function render(loader, d3, SizeService, GradientService) {
           })
           .attr('fill-opacity', 1);
       }
+      displaySelectedNodes();
       return true;
     };
 
@@ -253,21 +256,19 @@ function render(loader, d3, SizeService, GradientService) {
       }
 
       //Update the tooltip position and value
-      var tooltip =
-        d3.select('#tooltip')
-          .style('left', x  + 'px')
-          .style('top', y + 'px')
-          .style('width', tooltipWidth + 'px');
+      var tooltip = d3.select('#tooltip')
+        .style('left', x  + 'px')
+        .style('top', y + 'px')
+        .style('width', tooltipWidth + 'px');
       tooltip
-          .select('#title')
-          .text(d.name);
+        .select('#title')
+        .text(d.name);
       tooltip
         .select('#value')
         .text(runtime.toFixed(2) + ' %');
 
       //Show the tooltip
-      tooltip
-        .classed('hidden', false);
+      tooltip.classed('hidden', false);
 
       stateManager.hover([{type: 'Call', id: d.callId}]);
     }
@@ -306,6 +307,7 @@ function render(loader, d3, SizeService, GradientService) {
 
     var zoomData;
     function zoom(d) {
+      doubleClick = true;
       adjustLevel = d.level - 1;
       runtimeThreshold = d.runtime * thresholdFactor;
 
@@ -320,45 +322,79 @@ function render(loader, d3, SizeService, GradientService) {
       zoomId = d.callId;
       zoomData = findDeep(nestedData, d.callId);
       if (displayView(zoomData)) {
-        setTimeout(function() {
+        window.setTimeout(function() {
           loadChildren(d);
         }, transTime);
       }
     }
 
-    var selectedNodes = [];
+    var clickCount = 0;
+    var clickData, that;
     function selectNode(d) {
-      var n;
-      if (d3.select(this).attr('prev-color') === null) {
-        var currentColor = d3.select(this).attr('fill');
-        d3.select(this).attr('prev-color', currentColor);
-        d3.select(this)
-          .attr('fill', 'grey')
-          .attr('fill-opacity', 0.8);
-        d3.select('#text_' + d.callId)
-          .attr('fill', 'white');
-
-        // add node to selection
-        n = _.findWhere(selectedNodes, {callId: d.callId});
-        if (n === undefined) {
-          selectedNodes.push({
-            type: 'Call',
-            id: d.callId,
-            isMarked: true
-          });
+      clickCount++;
+      clickData = d;
+      that = this;
+      window.setTimeout(function() {
+        if (clickCount === 2) {
+          zoom(clickData);
         }
-      } else {
-        var prevColor = d3.select(this).attr('prev-color');
-        d3.select(this).attr('prev-color', null);
-        d3.select(this).attr('fill', prevColor);
-        d3.select('#text_' + d.callId).attr('fill', 'white');
 
-        // remove node from selection
-        n = _.findWhere(selectedNodes, {id: d.callId});
-        if (n !== undefined) {
-          selectedNodes.splice(selectedNodes.indexOf(n), 1);
+        if (clickCount === 1) { 
+          setSelectedNodes(clickData); 
+        }
+        clickCount = 0;
+      }, 300);
+    }
+
+    function setSelectedNodes(d) {
+      var n;
+      var rectSelect = d3.select(that);
+      if (!rectSelect.empty()) {
+        if (rectSelect.attr('prev-color') === null) {
+          var currentColor = rectSelect.attr('fill');
+          rectSelect
+            .attr('prev-color', currentColor)
+            .attr('fill', 'grey')
+            .attr('fill-opacity', 0.8);
+
+          // add node to selection
+          n = _.findWhere(selectedNodes, {callId: d.callId});
+          if (n === undefined) {
+            selectedNodes.push({
+              type: 'Call',
+              id: d.callId,
+              isMarked: true
+            });
+          }
+        } else {
+          var prevColor = rectSelect.attr('prev-color');
+          rectSelect.attr('prev-color', null);
+          rectSelect.attr('fill', prevColor);
+
+          // remove node from selection
+          n = _.findWhere(selectedNodes, {id: d.callId});
+          if (n !== undefined) {
+            selectedNodes.splice(selectedNodes.indexOf(n), 1);
+          }
         }
       }
+    }
+
+    function displaySelectedNodes() {
+      d3.selectAll('rect')
+        .each(function(d, i) {
+          var selection = d3.select(this);
+          for(var i = 0, len = selectedNodes.length; i < len; i++) {
+            var n = selectedNodes[i];
+            if (n.id === d.callId) {
+              var currentColor = selection.attr('fill');
+              selection
+                .attr('prev-color', currentColor)
+                .attr('fill', 'grey')
+                .attr('fill-opacity', 0.8);
+            }
+          }
+        });
     }
 
     function loadChildren(d) {
