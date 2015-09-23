@@ -40,7 +40,6 @@ function render(loader, d3, SizeService, GradientService) {
     var maxRuntime;
     var selectedNodes = [];
     var profileId = Date.now();
-    var doubleClick = false;
     var nodes;
     var zoomId = null;
     var minToolBoxWidth = 150;
