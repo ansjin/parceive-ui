@@ -86,6 +86,10 @@ function(d3, loader, callgraph, layout, SizeService, GradientService) {
           var node = graph.node(d);
           var add = false;
 
+          if (!node.isCall) {
+            return;
+          }
+
           var child = _.find(data._children, function(c) {
             return c.id === node.id;
           });
@@ -182,6 +186,46 @@ function(d3, loader, callgraph, layout, SizeService, GradientService) {
       parent._children = parent.children;
       update(svg, state, node);
     };
+
+    function clickMemory() {
+      var data = d3.select(this).datum();
+      var promise;
+
+      if (data.isMemoryExpanded) {
+        callgraph.collapseCallMemory(graph, data.call);
+        promise = RSVP.Promise.resolve();
+      } else {
+        promise = callgraph.expandCallMemory(graph, data.call);
+      }
+
+      promise.then(function() {
+        update(svg, state, data);
+      });
+    }
+
+    nodeEnter.append('circle')
+      .classed('memCircle', true)
+      .attr('cx', function(d) {
+        return d.width + 18;
+      })
+      .attr('cy', function(d) {
+        return d.height / 2 + 12;
+      })
+      .attr('r', 8)
+      .attr('stroke', function(d) {
+        return gradient(d.call.duration);
+      })
+      .on('click', clickMemory);
+
+    var memClickNodes = callGroup.selectAll('circle.memCircle');
+
+    memClickNodes.attr('fill', function(d) {
+      if (d.isMemoryExpanded) {
+        return 'yellow';
+      } else {
+        return 'white';
+      }
+    });
 
     nodeEnter.append('circle')
       .classed('labelCircle', true)
@@ -303,6 +347,111 @@ function(d3, loader, callgraph, layout, SizeService, GradientService) {
     nodes.forEach(function(d) {
       d.x0 = d.x;
       d.y0 = d.y;
+    });
+
+    nodes = _.map(graph.nodes(), function(node, index) {
+      node = graph.node(node);
+      node.index = index;
+      return node;
+    });
+
+    var edges = _.map(graph.edges(), function(e) {
+      return _.merge(graph.edge(e), {
+        from: graph.node(e.v),
+        to: graph.node(e.w),
+        source: graph.node(e.v).index,
+        target: graph.node(e.w).index
+      });
+    });
+
+    var edgesNodes = edgeGroup.selectAll('line')
+      .data(_.filter(edges, function(edge) {
+        return edge.to.isReference;
+      }));
+
+    edgesNodes.enter()
+      .append('line')
+      .attr('stroke', 'blue');
+
+    var memNodes =
+      g.selectAll('g.ref')
+      .data(_.filter(nodes, function(node) {
+        return node.isReference;
+      }));
+
+    var memNodesEnter = memNodes.enter()
+      .append('g')
+      .classed('ref', true);
+
+    memNodesEnter.append('circle')
+      .attr('class', 'ref-bg')
+      .attr('cx', 0)
+      .attr('cy', 0)
+      .attr('r', 10);
+
+    memNodesEnter
+      .append('text')
+      .attr('x', 10)
+      .attr('y', function(d) {
+        return d.height;
+      })
+      .text(function(d) {
+        return d.label;
+      });
+
+    var size = SizeService.svgSize(svg);
+
+    var d3cola =
+      d3.layout.force()
+      .linkDistance(100)
+      .linkStrength(0.1)
+      .friction(0.9)
+      .gravity(0)
+      .size([size.height, size.width])
+      .charge(function(d) {
+        if (d.isCall) {
+          return -500;
+        } else {
+          return -100;
+        }
+      });
+
+    _.forEach(nodes, function(node) {
+      if (node.isCall) {
+        node.fixed = true;
+      }
+    });
+
+    d3cola
+      .nodes(nodes)
+      .links(edges)
+      .start();
+
+    d3cola.on('tick', function() {
+      edgesNodes
+        .attr('x1', function(d) {
+          var mid =  d.source.x + d.source.width / 2;
+
+          if (d.target.x > mid) {
+            return d.source.x + d.source.width;
+          } else {
+            return d.source.x;
+          }
+        })
+        .attr('x2', function(d) {
+          return d.target.x;
+        })
+        .attr('y1', function(d) {
+          return d.source.y + d.source.height / 2;
+        })
+        .attr('y2', function(d) {
+          return d.target.y;
+        });
+
+      memNodes
+        .attr('transform', function(d) {
+          return 'translate(' + d.x + ',' + d.y + ')';
+        });
     });
   }
 
