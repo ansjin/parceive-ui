@@ -352,7 +352,13 @@ function(d3, loader, callgraph, layout, SizeService, GradientService) {
     nodes = _.map(graph.nodes(), function(node, index) {
       node = graph.node(node);
       node.index = index;
-      return node;
+
+      var copy = _.clone(node);
+
+      copy.x = node.y;
+      copy.y = node.x;
+
+      return copy;
     });
 
     var edges = _.map(graph.edges(), function(e) {
