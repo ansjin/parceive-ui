@@ -430,23 +430,23 @@ function(d3, loader, callgraph, layout, SizeService, GradientService) {
 
     d3cola.on('tick', function() {
       edgesNodes
-        .attr('y1', function(d) {
-          var mid =  d.source.x + d.source.width / 2;
-
-          if (d.target.x > mid) {
-            return d.source.x + d.source.width;
-          } else {
-            return d.source.x;
-          }
-        })
-        .attr('y2', function(d) {
-          return d.target.x;
-        })
         .attr('x1', function(d) {
-          return d.source.y + d.source.height / 2;
+          var mid =  d.source.y + d.source.width / 2;
+
+          if (d.target.y > mid) {
+            return d.source.y + d.source.width + 20;
+          } else {
+            return d.source.y;
+          }
         })
         .attr('x2', function(d) {
           return d.target.y;
+        })
+        .attr('y1', function(d) {
+          return d.source.x + d.source.height / 2 + 4;
+        })
+        .attr('y2', function(d) {
+          return d.target.x;
         });
 
       memNodes
