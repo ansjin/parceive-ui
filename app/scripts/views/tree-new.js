@@ -353,12 +353,7 @@ function(d3, loader, callgraph, layout, SizeService, GradientService) {
       node = graph.node(node);
       node.index = index;
 
-      var copy = _.clone(node);
-
-      copy.x = node.y;
-      copy.y = node.x;
-
-      return copy;
+      return node;
     });
 
     var edges = _.map(graph.edges(), function(e) {
@@ -435,7 +430,7 @@ function(d3, loader, callgraph, layout, SizeService, GradientService) {
 
     d3cola.on('tick', function() {
       edgesNodes
-        .attr('x1', function(d) {
+        .attr('y1', function(d) {
           var mid =  d.source.x + d.source.width / 2;
 
           if (d.target.x > mid) {
@@ -444,19 +439,19 @@ function(d3, loader, callgraph, layout, SizeService, GradientService) {
             return d.source.x;
           }
         })
-        .attr('x2', function(d) {
+        .attr('y2', function(d) {
           return d.target.x;
         })
-        .attr('y1', function(d) {
+        .attr('x1', function(d) {
           return d.source.y + d.source.height / 2;
         })
-        .attr('y2', function(d) {
+        .attr('x2', function(d) {
           return d.target.y;
         });
 
       memNodes
         .attr('transform', function(d) {
-          return 'translate(' + d.x + ',' + d.y + ')';
+          return 'translate(' + d.y + ',' + d.x + ')';
         });
     });
   }
