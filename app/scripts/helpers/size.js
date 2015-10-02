@@ -17,7 +17,7 @@ angular.module('app')
       test.innerHTML = text;
 
       if (fontSize) {
-        test.style.fontSize = fontSize;
+        test.style.fontSize = fontSize + 'pt';
       } else {
         delete test.style.fontSize;
       }
@@ -34,7 +34,7 @@ angular.module('app')
       test.textContent = text;
 
       if (fontSize) {
-        test.style.fontSize = fontSize;
+        test.style.fontSize = fontSize + 'pt';
       } else {
         delete test.style.fontSize;
       }
