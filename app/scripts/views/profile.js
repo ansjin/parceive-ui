@@ -353,6 +353,7 @@ function render(loader, d3, SizeService, GradientService) {
       runtimeThreshold = maxRuntime * thresholdFactor;
       displayView(nestedData);
       zoomId = null;
+      zoomHistory = [];
     }
 
     var clickCount = 0;
@@ -448,6 +449,14 @@ function render(loader, d3, SizeService, GradientService) {
         maxRuntime = res[0].end - res[0].start;
         getData(res[0].id, 'null', 1);
       });
+
+    // temp solution to set click handler for profiler reset btn
+    window.setTimeout(function() {
+      document.getElementById("profiler-reset")
+      .addEventListener("click", function(){
+        zoomToTop();
+      });
+    }, 1000);
 
   };
 }
