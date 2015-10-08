@@ -305,29 +305,59 @@ function render(loader, d3, SizeService, GradientService) {
     }
 
     var zoomData;
+    var zoomHistory = [];
     function zoom(d) {
-      adjustLevel = d.level - 1;
-      runtimeThreshold = d.runtime * thresholdFactor;
-
+      // zoom to previous parent level
       if (zoomId === d.callId) {
-        adjustLevel = 0;
-        runtimeThreshold = maxRuntime * thresholdFactor;
-        displayView(nestedData);
-        zoomId = null;
+        zoomHistory.pop();
+
+        if(zoomHistory.length > 0) {
+          zoomToLevel(zoomHistory[zoomHistory.length - 1], false);
+        }
+        else {
+          zoomToTop();
+        }
         return;
       }
 
+      // zoom to new child level
+      zoomToLevel(d, true);
+
+      // store parent level of the child level 
+      // you are zooming to, so you can restore zoom
+      zoomHistory.push({
+        level: d.level,
+        callId: d.callId,
+        runtime: d.runtime,
+        name: d.name
+      });
+    }
+
+    function zoomToLevel(d, loadNodeChildren) {
+      adjustLevel = d.level - 1;
+      runtimeThreshold = d.runtime * thresholdFactor;
       zoomId = d.callId;
       zoomData = findDeep(nestedData, d.callId);
+
       if (displayView(zoomData)) {
-        window.setTimeout(function() {
-          loadChildren(d);
-        }, transTime);
+        if (loadNodeChildren) {
+          window.setTimeout(function() {
+            loadChildren(d);
+          }, transTime);
+        }
       }
     }
 
+    function zoomToTop() {
+      adjustLevel = 0;
+      runtimeThreshold = maxRuntime * thresholdFactor;
+      displayView(nestedData);
+      zoomId = null;
+    }
+
     var clickCount = 0;
-    var clickData, that;
+    var clickData;
+    var that;
     function selectNode(d) {
       clickCount++;
       clickData = d;
@@ -337,8 +367,8 @@ function render(loader, d3, SizeService, GradientService) {
           zoom(clickData);
         }
 
-        if (clickCount === 1) { 
-          setSelectedNodes(clickData); 
+        if (clickCount === 1) {
+          setSelectedNodes(clickData);
         }
         clickCount = 0;
       }, 300);
@@ -380,10 +410,10 @@ function render(loader, d3, SizeService, GradientService) {
 
     function displaySelectedNodes() {
       d3.selectAll('rect')
-        .each(function(d, i) {
+        .each(function(d) {
           var selection = d3.select(this);
-          for(var i = 0, len = selectedNodes.length; i < len; i++) {
-            var n = selectedNodes[i];
+          for (var x = 0, len = selectedNodes.length; x < len; x++) {
+            var n = selectedNodes[x];
             if (n.id === d.callId) {
               var currentColor = selection.attr('fill');
               selection
