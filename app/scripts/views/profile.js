@@ -1,5 +1,6 @@
 /* global $ */
 /* global window */
+/* global document */
 
 angular
   .module('profile-view', ['app'])
@@ -241,7 +242,6 @@ function render(loader, d3, SizeService, GradientService) {
 
     function setSvgHeight() {
       var newWidth = rectHeight * (maxLevel - adjustLevel);
-      console.log(newWidth, maxLevel, adjustLevel, (maxLevel - adjustLevel));
       svg.style('height', newWidth + 'px');
     }
 
@@ -320,10 +320,9 @@ function render(loader, d3, SizeService, GradientService) {
       if (zoomId === d.callId) {
         zoomHistory.pop();
 
-        if(zoomHistory.length > 0) {
+        if (zoomHistory.length > 0) {
           zoomToLevel(zoomHistory[zoomHistory.length - 1], false);
-        }
-        else {
+        } else {
           zoomToTop();
         }
         return;
@@ -460,8 +459,8 @@ function render(loader, d3, SizeService, GradientService) {
 
     // temp solution to set click handler for profiler reset btn
     window.setTimeout(function() {
-      document.getElementById("profiler-reset")
-      .addEventListener("click", function(){
+      document.getElementById('profiler-reset')
+      .addEventListener('click', function() {
         zoomToTop();
       });
     }, 1000);
