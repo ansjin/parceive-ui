@@ -135,6 +135,7 @@ function render(loader, d3, SizeService, GradientService) {
     var adjustLevel = 0;
     var transTime = 600;
     var transType = 'elastic';
+    var maxLevel = 1;
 
     var displayView = function(data) {
       var json = $.extend(true, {}, data);
@@ -155,6 +156,7 @@ function render(loader, d3, SizeService, GradientService) {
         .attr('x', function(d) { return myPoint(d.start); })
         .attr('y', function(d) {
           var _y = rectHeight * (d.level - adjustLevel) - rectHeight;
+          if (d.level > maxLevel) { maxLevel = d.level; }
           if (zoomId !== null) { _y = _y - rectHeight; }
           return _y ;
         })
@@ -231,10 +233,17 @@ function render(loader, d3, SizeService, GradientService) {
             return _y + textPadY;
           })
           .attr('fill-opacity', 1);
+        setSvgHeight();
       }
       displaySelectedNodes();
       return true;
     };
+
+    function setSvgHeight() {
+      var newWidth = rectHeight * (maxLevel - adjustLevel);
+      console.log(newWidth, maxLevel, adjustLevel, (maxLevel - adjustLevel));
+      svg.style('height', newWidth + 'px');
+    }
 
     function highlightNode(d) {
       d3.select(this)
@@ -323,8 +332,7 @@ function render(loader, d3, SizeService, GradientService) {
       // zoom to new child level
       zoomToLevel(d, true);
 
-      // store parent level of the child level 
-      // you are zooming to, so you can restore zoom
+      // save parent level for back navigation
       zoomHistory.push({
         level: d.level,
         callId: d.callId,
