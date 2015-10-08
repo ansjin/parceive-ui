@@ -4,30 +4,15 @@
         <link rel="stylesheet" href="style.css">
         <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
             <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css">
+            <link rel="stylesheet" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.7.1/themes/base/jquery-ui.css" type="text/css" />
     </head>
-    <body ng-controller="viewsController">
+    <body ng-controller="viewsController" id="indexBody">
     <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
     <script src="http://netdna.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js"></script>
+
     <!-- Brand and toggle get grouped for better mobile display -->
-    <div id="wrapper">
-      <div id="sidebar-wrapper" style="background-color: #213a53;">
-           <ul class="nav metismenu" id="side-menu">
-               <br>
-               <br>
-               <br>
-                <li class="active">
-                    <a href="#"><i class="fa fa-bar-chart-o"></i> <span class="nav-label">Graphs</span><span class="fa arrow"></span></a>
-                    <ul class="nav nav-second-level">
-                        <li class="active"><a href="graph_flot.html">Souce code</a></li>
-                        <li><a href="graph_morris.html">Abstraction View</a></li>
-                        <li><a href="graph_rickshaw.html">Profiling View</a></li>
-                        <li><a href="graph_chartjs.html">Call Graph View</a></li>
-                    </ul>
-                </li>    
-            </ul>
-      </div>
-      <nav class="navbar navbar-default">
-      <a class="navbar-brand navbar-right" href="#">Parceive</a>
+      <nav id="navbar" class="navbar navbar-default navbar-fixed-top" >
+     
       <div class="container-fluid">
       <div class="navbar-header">
         
@@ -37,66 +22,222 @@
             <span class="icon-bar"></span>
             <span class="icon-bar"></span>
         </button>
+        <a class="navbar-brand" style="color: #55A0B9" href="#">Parceive</a>
       </div>
-      <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+      <div id="navbar" class="collapse navbar-collapse">
       <ul class="nav navbar-nav">
-      <a href="#" class="navbar-minimalize minimalize-styl-2 btn btn-primary" id="menu-toggle"><i class="fa fa-bars"></i></a>
-      &nbsp;
-      &nbsp;
-       <div class="btn-group">
-        <select ng-model="selectedRun" ng-options="run for run in allruns"></select>
-      </div>
-      &nbsp;  
-      <div class="btn-group">
-               <select ng-model="selectedView" ng-options="view.name group by view.group for view in allviews"></select>
-               <button ng-click="addView()">
-            Add view
-          </button>
+      <li class="dropdown">
+               <select ng-model="selectedRun" ng-options="run for run in allruns"></select>
+              </li>
+      </ul>
+      <form class="navbar-form navbar-left">
+          <div class="form-inline">
+        <div class="form-group add-view">
+          <select id="dropdown" ng-model="selectedView" ng-options="view.name group by view.group for view in allviews">
+              </select>
         </div>
+        <button onclick="handleClick()">Add view</button>
+        </div>
+      </form>
+             
       </div><!-- /.navbar-collapse -->
-      </div><!-- /.container-fluid -->
+      </div><!-- /.container -->
       </nav>
 
       <div class="container-fluid" id ="main">
-            <div ng-repeat="view in views track by view.id" class="views" ng-class="{'view-container': true, 'view-container-half': view.halfSize}">
-          
-                <div class="panel" >
-                    <div class="panel-heading">
-                        <span>{{view.type.name}}</span>
-                        <a class="close-link">
-                                <i class="fa fa-times"></i>
-                            </a>
-                            <hr>
-                    </div>
-
-                    <div class="view-header">
-
-                  <button ng-click="removeView(view.id)">
-                    Remove view
-                  </button>
-              <div class="html-header" ng-include="view._views.unsaved.htmlHeader"></div>
-              <d3-visualization class="view" view="{{view.id}}"></d3-visualization>
-              <div class="html-footer" ng-include="view._views.unsaved.htmlFooter"></div>
-                </div>
-            </div>
-            </div>
-        </div>
+              
+      </div>
 
         <script src="deps.js"></script>
         <script src="code.js"></script>
         <script src="templates.js"></script>
-
-        <div id="textSizeTest"></div>
-        <svg id="hiddenSVG">
-            <text id="hiddenSVGTextTest"></text>
-        </svg>
   </div>
   </div>
   <script>
+  	var panelList = [];
+  	var viewList =[]; //view selected by dropdown
+  	var countViews = 0;
     $("#menu-toggle").click(function(e) {
         e.preventDefault();
         $("#wrapper").toggleClass("toggled");
     });
+
+    $(document).ready(function(){
+    	// alert("Does it enter here");
+    	var panelId = "panel"+(countViews+1);
+    	var d3ViewId = 'd3View'+(countViews+1);
+    	countViews++;
+    	addnewpanel(panelId,d3ViewId);
+    	panelList.push(panelId);
+    });
+    function handleClick(){
+    	var scope = angular.element($("#indexBody")).scope();
+		console.log("scope",scope);
+
+    	var panelId = "panel"+(countViews);
+    	var d3ViewId = 'd3View'+(countViews);
+    	
+    	console.log("handleClick()::panelId",panelId);
+    	scope.addView();
+
+    	// addnewpanel(panelId,scope.selectedView.id,d3ViewId);
+    	var view= scope.myFunction(d3ViewId);
+    	viewList.push(view);
+    }
+	function addnewpanel(panelId, /*selectedViewId,*/ d3ViewId) {
+		var queue = '<div id='+panelId+' class="panel">';
+	    queue += '<div class="panel-heading">';
+	    queue += '<a class="collapse-link">';
+	    queue += '<span style="font-size:0.7em;" id="fullscreen1" class="glyphicon glyphicon-resize-full" onclick= fullscreen('+panelId+'); ></span>';
+	    queue += '</a>';
+	    queue += '<select class="btn dropdown-toggle" id="select_menu" ONCHANGE="swapContent(this,'+panelId+')">';
+	    queue += '<option value="">';
+	    queue += '<option value= "Splitright">';
+	    queue += 'Splitright';
+	    queue += '</option>';
+	    queue += '<option value= "Splitdown">Splitdown</option>';
+	    queue += '</select>';
+	    queue += '</div>';
+	    // queue +='<div class="panel-body" id="body"';
+	    queue += '<d3-visualization id='+d3ViewId+/*' view='+selectedViewId+*/' class="view" >';
+	    // queue += '<svg id="svgView"></svg>';
+	     queue += '</d3-visualization>';
+	    $('#main').append(queue);
+		}
+
+		function swapContent(that,panelId) {
+		    console.log("that",that);
+		     console.log("panelId",panelId.id);
+		    if(that.value == "Splitdown"){
+		    	splitVertical(panelId.id);
+		    }
+        else {
+          splitHorizontal(panelId.id);
+        }
+		}
+	function splitVertical(lastPanelId) {
+		var panelId = 'panel'+(countViews+1);
+		var d3ViewId = 'd3View'+(countViews+1);
+		console.log("lastpanelid",lastPanelId);
+		var lastPanel = document.getElementById(lastPanelId);
+		var rect = lastPanel.getBoundingClientRect();
+		console.log("rect=",rect.height);
+		var height = rect.height/2;
+    var width = rect.width/2;
+		console.log("height=",height);
+		lastPanel.setAttribute("style","height:"+height+"px;");
+		addnewpanel(panelId,d3ViewId);
+		countViews++;
+		panelList.push(panelId);
+	    document.getElementById(panelId).style.height=height+"px"; 
+	}
+  function splitHorizontal(lastPanelId) {
+    var panelId = 'panel'+(countViews+1);
+    var d3ViewId = 'd3View'+(countViews+1);
+    console.log("lastpanelid",lastPanelId);
+    var lastPanel = document.getElementById(lastPanelId);
+    var rect = lastPanel.getBoundingClientRect();
+    console.log("rect=",rect.width);
+    var width = rect.width/2;
+    console.log("width=",width);
+    lastPanel.setAttribute("style","width:"+width+"px;");
+    addnewpanel(panelId,d3ViewId);
+    countViews++;
+    panelList.push(panelId);
+      document.getElementById(panelId).style.width=width+"px"; 
+      document.getElementById(panelId).style.cssFloat = "right"; 
+  }
+	// $('#panel2').height(heightC);
+	// 	// var width = container_width;
+	// 	// d1.width = width;
+	// 	//d1.height = height;
+	// 	var h = $('#he1'),
+ //    l = $('#panel'),
+ //    r = $('#panel2'),
+ //    // w = $('body').width() - 18;
+
+// var isDragging = false;
+
+// h.mousedown(function(e){
+//     isDragging = true;
+//     e.preventDefault();
+// });
+// $(document).mouseup(function(){
+//     isDragging = false;
+// }).mousemove(function(e){
+//     if(isDragging){
+//         l.css('height', e.pageY);
+//         r.css('height', w - e.pageY);
+//     }
+// });
+// 	}
+
+	
+
+	function addnewside() {
+		alert("Does it enter here");
+		var d1 = document.getElementById('panel').style;
+		var d2 = document.getElementById('main').style;
+		var container_width = d1.width;
+		var height = d2.height;
+		var width = container_width;
+		d1.width = width;
+		d1.height = height;
+		var queue1 = '<div id="panel1" class="panel">';
+    queue1 += '<div class="panel-heading">';
+    queue1 += '<a class="split-link">';
+    queue1 += '<span id="addnew" style="font-sixe:1.1em;" class="glyphicon glyphicon-new-window" onclick= addnewside();></span>';
+    queue1 += '</a>';
+    queue1 += '<a class="collapse-link">';
+    queue1 += '<span style="font-size:0.7em;" id="fullscreen1" class="glyphicon glyphicon-resize-full" onclick= fullscreen(); ></span>';
+    queue1 += '</a>';
+    queue1 += '</div>';
+    queue1 += '</div>';
+    $('#main').append(queue1);
+    var d1 = document.getElementById('panel1').style;
+		var d2 = document.getElementById('main').style;
+		var d3 = document.getElementById('panel').style;
+		var container_width = d1.width();
+		var height = d2.height() - d3.height();
+		var width = container_width;
+		d1.width = width;
+		d1.height = height;
+    
+	}
+    var isFullscreen = false;  
+     function fullscreen(panelId){
+            var  d = document.getElementById(panelId.id).style;
+            var speed = 900;
+            if(!isFullscreen){ // MAXIMIZATION
+            var main_height = $("main").height;
+            var navbar_height = $('#navbar').height();
+            var height = main_height - navbar_height;
+            var width = $("#main").width();
+            console.log("Main width=" ,width);
+            d.width = width+'px';
+            d.height= height + 'px';                   
+            d.left="0%";
+            d.top="0%";
+            d.margin="0 0 0 0";
+            
+            isFullscreen = true;
+            }else{ // MINIMIZATION
+	            var heightA = $('#main').height();
+				var heightC = heightA * 0.50; // 50%
+				$('#'+panelId.id).height(heightC+'px');
+	            var widthA = $('#main').width();
+				var widthC = widthA * 0.50; // 50%
+				$('#'+panelId.id).width(widthC+'px');
+	            // d.position="relative";
+	            // d.margin="0 auto";
+			            
+            //comment to have smooth minimze transition but not be placed below header 
+            // document.getElementById('panel').style.position= "relative";
+            
+            $("#"+panelId.id).animate(d,speed);
+            isFullscreen = false;
+            }
+  };
 
     </script>
         

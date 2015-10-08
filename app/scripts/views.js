@@ -10,6 +10,7 @@ angular.module('app')
           var svg = d3.select(element[0])
               .append('svg');
 
+
           var bound = stateManager.bindId(attrs.view);
           var view = bound.getData();
 
@@ -23,10 +24,11 @@ angular.module('app')
                                   '$templateCache',
     function($scope, getViews, viewProperties, stateManager, loader,
               $templateCache) {
-      function initView(id) {
+      function initView(id,svg) {
         var bound = stateManager.bindId(id);
         var view = bound.getData();
-
+        
+       
         view._views = {
           unsaved: {
             htmlHeader: 'views/' + view.type.id + '-header.html',
@@ -110,6 +112,31 @@ angular.module('app')
       $scope.allviews = views;
       $scope.allgroups = stateManager.getGroups();
 
+      $scope.myFunction = function(d3ViewId) {
+        console.log("myfunction");
+         
+        for (var i = $scope.allviews.length - 1; i >= 0; i--) {
+
+          if($scope.allviews[i].id==$scope.selectedView.id){
+
+            console.log("found match",$scope.allviews[i].id);
+            // var bound = scope.allviews[i];
+            // console.log("bound",bound);
+            var view = $scope.allviews[i].data;
+            console.log("view",view);
+            console.log("d3",d3);
+            var svg = d3.select('#'+d3ViewId)
+                .append('svg');
+            console.log("svg",svg);
+            view.unsaved = {svg:svg};
+            view.render(svg, stateManager);
+            return view;
+            // scope.allviews[i].data.render(,undefined);
+          }
+        }
+      
+      };
+
       $scope.addGroup = function() {
         stateManager.addGroup($scope.addGroupInput);
         $scope.allgroups = stateManager.getGroups();
@@ -124,7 +151,7 @@ angular.module('app')
         $scope.allgroups = stateManager.getGroups();
       };
 
-      $scope.addView = function() {
+      $scope.addView = function(svg) {
         if (_.isUndefined($scope.selectedView)) {
           return;
         }
@@ -134,7 +161,7 @@ angular.module('app')
 
         newView.type = _.omit(selected, 'data');
 
-        initView(newView.id);
+        initView(newView.id,svg);
 
         stateManager.save();
       };
