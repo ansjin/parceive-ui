@@ -132,22 +132,28 @@ function render(loader, d3, SizeService, GradientService) {
 
     var rectHeight = 22;
     var textPadY = 15;
-    var textPadX = 5;
+    var textPadX = 0.5;
     var adjustLevel = 0;
     var transTime = 600;
     var transType = 'elastic';
     var maxLevel = 1;
+    var svgElem = document.getElementById(profileId);
+    var svgParentElem = document.getElementById(profileId).parentNode;
 
     var displayView = function(data) {
       var json = $.extend(true, {}, data);
       nodes = partition.nodes(json);
+
+      if(svgElem.scrollHeight > svgParentElem.clientHeight) {
+        width = '98%';
+      }
 
       myScale = d3.scale.linear()
         .domain([0, nodes[0].runtime])
         .range([0, width]);
       myPoint = d3.scale.linear()
         .domain([nodes[0].start, nodes[0].end])
-        .range([0, SizeService.svgSize(svg).width]);
+        .range([0, width]);
 
       svg.selectAll('*').remove();
       svg.selectAll('rect')
@@ -191,7 +197,12 @@ function render(loader, d3, SizeService, GradientService) {
         }))
         .enter()
         .append('text')
-        .attr('x', function(d) { return myPoint(d.start) + textPadX; })
+        .attr('x', function(d) { 
+          var _x_old = myPoint(d.start);
+          var _x_sliced = Number(_x_old.slice(0, -1));
+          var _x = Number(_x_sliced + textPadX) + '%';
+          return _x; 
+        })
         .attr('y', function(d) {
           var _y = rectHeight * (d.level - adjustLevel) - rectHeight;
           _y = _y + textPadY;
@@ -203,6 +214,7 @@ function render(loader, d3, SizeService, GradientService) {
           if (zoomId !== null) { _o = 0; }
           return _o;
         })
+        .style('shape-padding', 10)
         .attr('id', function(d) { return 'text_' + d.callId; })
         .attr('font-family', 'Arial')
         .attr('font-size', '14px')
@@ -241,8 +253,8 @@ function render(loader, d3, SizeService, GradientService) {
     };
 
     function setSvgHeight() {
-      var newWidth = rectHeight * (maxLevel - adjustLevel);
-      svg.style('height', newWidth + 'px');
+      var newHeight = rectHeight * (maxLevel - adjustLevel);
+      svg.style('height', newHeight + 'px');
     }
 
     function highlightNode(d) {
