@@ -14,6 +14,7 @@ var instructions = require('./entities/instruction');
 var references = require('./entities/reference');
 var segments = require('./entities/segment');
 var threads = require('./entities/thread');
+var callgroups = require('./entities/callgroup');
 
 router.use('/accesses', accesses.router);
 router.use('/calls', calls.router);
@@ -23,6 +24,7 @@ router.use('/instructions', instructions.router);
 router.use('/references', references.router);
 router.use('/segments', segments.router);
 router.use('/threads', threads.router);
+router.use('/callgroups', callgroups.router);
 
 var dbRouter = express.Router();
 

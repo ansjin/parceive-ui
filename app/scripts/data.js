@@ -601,6 +601,62 @@ var Call = {
 
 /** @class
   * @implements Type */
+var CallGroup = {
+  typeName: 'CallGroup',
+  singular: 'callgroup',
+  plural: 'callgroups',
+  properties: ['function', 'caller', 'count', 'parent'],
+  relationships: {
+    'caller': {
+      type: 'Call'
+    },
+    'parent': {
+      type: 'CallGroup'
+    },
+    'function': {
+      type: 'Function'
+    },
+    'calls': {
+      type: 'Call',
+      many: true,
+      inverse: 'callGroup'
+    },
+    'callgroups': {
+      type: 'CallGroup',
+      many: true,
+      inverse: 'parent'
+    }
+  },
+
+  /** @instance
+    * @return {external:Promise.<Function>} The function that this call calls */
+  getCaller: function() {
+    return this._mapper.getRelationship(this, 'caller');
+  },
+
+  /** @instance
+    * @return {external:Promise.<Function>} The function that this call calls */
+  getFunction: function() {
+    return this._mapper.getRelationship(this, 'function');
+  },
+
+  /** @instance
+    * @return {external:Promise.<Call[]>} the list of calls that this call makes
+    */
+  getCalls: function() {
+    return this._mapper.getRelationship(this, 'calls');
+  },
+
+  /** @instance
+    * @return {external:Promise.<CallGroup[]>} the list of callgroups that this callgroup calls
+    */
+  getCallGroups: function() {
+    return this._mapper.getRelationship(this, 'callgroups');
+  },
+};
+
+/** @class
+  * @implements Type */
 var File = {
   typeName: 'File',
   singular: 'file',
@@ -850,7 +906,8 @@ var loader = {
     Instruction: Instruction,
     Reference: Reference,
     Segment: Segment,
-    Thread: Thread
+    Thread: Thread,
+    CallGroup: CallGroup
   }
 };
 
