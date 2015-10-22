@@ -515,6 +515,9 @@ var Call = {
     'caller': {
       type: 'Call'
     },
+    'callGroup': {
+      type: 'CallGroup'
+    },
     'segments': {
       type: 'Segment',
       many: true,
@@ -553,6 +556,12 @@ var Call = {
     */
   getCalls: function() {
     return this._mapper.getRelationship(this, 'calls');
+  },
+
+  /** @instance
+    * @return {external:Promise.<CallGroup>} The call group of this call */
+  getCallGroup: function() {
+    return this._mapper.getRelationship(this, 'callGroup');
   },
 
   /** @instance
@@ -1014,6 +1023,12 @@ loader.getThread = function(id) {
   * @instance */
 loader.getThreads = function() {
   return loader.getAll(Thread);
+};
+
+/** @return {external:Promise.<CallGroup[]>}
+  * @instance */
+loader.getCallGroups = function() {
+  return loader.getAll(CallGroup);
 };
 
 // fiter functions
