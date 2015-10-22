@@ -6,40 +6,40 @@ var util = require('./util');
 var calls = require('./call');
 
 var mapping = {
-  'ID': 'id',
-  'SIGNATURE': 'signature',
-  'TYPE': 'type',
-  'FILE_ID': 'file',
-  'START_LINE_NO': 'startLine'
+  'Id': 'id',
+  'Signature': 'signature',
+  'Type': 'type',
+  'File': 'file',
+  'Line': 'startLine'
 };
 
 router.get('/', function(req, res) {
-  util.handleAllQuery(req.db, mapping, res, 'SELECT * FROM FUNCTION_TABLE');
+  util.handleAllQuery(req.db, mapping, res, 'SELECT * FROM Function');
 });
 
 router.get('/signature/:sig', function(req, res) {
   util.handleOneQuery(req.db, mapping, res,
-    'SELECT * FROM FUNCTION_TABLE WHERE SIGNATURE=?', req.params.sig);
+    'SELECT * FROM Function WHERE Signature=?', req.params.sig);
 });
 
 router.get('/many/:ids/calls', function(req, res) {
   util.handleManyQuery(req.db, calls.mapping, res, req.params.ids,
-    'CALL_TABLE WHERE FUNCTION_ID');
+    'Call WHERE Function');
 });
 
 router.get('/many/:ids', function(req, res) {
   util.handleManyQuery(req.db, mapping, res, req.params.ids,
-    'FUNCTION_TABLE  WHERE ID');
+    'Function  WHERE Id');
 });
 
 router.get('/:id', function(req, res) {
   util.handleOneQuery(req.db, mapping, res,
-    'SELECT * FROM FUNCTION_TABLE WHERE ID=?', req.params.id);
+    'SELECT * FROM Function WHERE ID=?', req.params.id);
 });
 
 router.get('/:id/calls', function(req, res) {
   util.handleRelationshipQuery(req.db, calls.mapping, res,
-    'SELECT * FROM CALL_TABLE WHERE FUNCTION_ID=?', req.params.id);
+    'SELECT * FROM Call WHERE Function=?', req.params.id);
 });
 
 module.exports = {

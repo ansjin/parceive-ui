@@ -7,45 +7,45 @@ var accesses = require('./access');
 var calls = require('./call');
 
 var mapping = {
-  'ID': 'id',
-  'SEGMENT_ID': 'segment',
-  'INSTRUCTION_TYPE': 'type',
-  'LINE_NUMBER': 'lineNumber'
+  'Id': 'id',
+  'Segment': 'segment',
+  'Type': 'type',
+  'Line': 'lineNumber'
 };
 
 router.get('/', function(req, res) {
-  util.handleAllQuery(req.db, mapping, res, 'SELECT * FROM INSTRUCTION_TABLE');
+  util.handleAllQuery(req.db, mapping, res, 'SELECT * FROM Instruction');
 });
 
 router.get('/many/:ids/accesses', function(req, res) {
   util.handleManyQuery(req.db, accesses.mapping, res, req.params.ids,
-    'ACCESS_TABLE WHERE INSTRUCTION_ID');
+    'Access WHERE Instruction');
 });
 
 router.get('/many/:ids/calls', function(req, res) {
   util.handleManyQuery(req.db, calls.mapping, res, req.params.ids,
-    'CALL_TABLE WHERE INSTRUCTION_ID');
+    'Call WHERE Instruction');
 });
 
 router.get('/many/:ids', function(req, res) {
   util.handleManyQuery(req.db, mapping, res, req.params.ids,
-    'INSTRUCTION_TABLE WHERE ID');
+    'Instruction WHERE Id');
 });
 
 router.get('/:id', function(req, res) {
   util.handleOneQuery(req.db, mapping, res,
-    'SELECT * FROM INSTRUCTION_TABLE WHERE ID=?', req.params.id);
+    'SELECT * FROM Instruction WHERE ID=?', req.params.id);
 
 });
 
 router.get('/:id/accesses', function(req, res) {
   util.handleRelationshipQuery(req.db, accesses.mapping, res,
-    'SELECT * FROM ACCESS_TABLE WHERE INSTRUCTION_ID=?', req.params.id);
+    'SELECT * FROM Access WHERE Instruction=?', req.params.id);
 });
 
 router.get('/:id/calls', function(req, res) {
   util.handleRelationshipQuery(req.db, calls.mapping, res,
-    'SELECT * FROM CALL_TABLE WHERE INSTRUCTION_ID=?', req.params.id);
+    'SELECT * FROM Call WHERE Instruction=?', req.params.id);
 });
 
 module.exports = {

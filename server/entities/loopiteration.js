@@ -5,25 +5,23 @@ var util = require('./util');
 
 var mapping = {
   'Id': 'id',
-  'Instruction': 'instruction',
-  'Position': 'position',
-  'Reference': 'reference',
-  'Type': 'type',
-  'State': 'state'
+  'Execution': 'execution',
+  'Iteration': 'iteration',
+  'Segment': 'segment'
 };
 
 router.get('/', function(req, res) {
-  util.handleAllQuery(req.db, mapping, res, 'SELECT * FROM Access');
+  util.handleAllQuery(req.db, mapping, res, 'SELECT * FROM LoopIteration');
 });
 
 router.get('/many/:ids', function(req, res) {
   util.handleManyQuery(req.db, mapping, res, req.params.ids,
-    'Access WHERE Id');
+    'LoopIteration WHERE Id');
 });
 
 router.get('/:id', function(req, res) {
   util.handleOneQuery(req.db, mapping, res,
-    'SELECT * FROM Access WHERE Id=?', req.params.id);
+    'SELECT * FROM LoopIteration WHERE Id=?', req.params.id);
 });
 
 module.exports = {
