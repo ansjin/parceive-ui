@@ -503,7 +503,7 @@ var Call = {
   typeName: 'Call',
   singular: 'call',
   plural: 'calls',
-  properties: ['process', 'thread', 'function', 'instruction',
+  properties: ['process', 'thread', 'function', 'instruction', 'callGroup',
                 'start', 'end', 'caller', 'callsOthers', 'duration'],
   relationships: {
     'thread': {
