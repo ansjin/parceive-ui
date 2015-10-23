@@ -15,7 +15,7 @@ var connect = require('gulp-connect');
 var jshint = require('gulp-jshint');
 var uglify = require('gulp-uglify');
 var minifyCSS = require('gulp-minify-css');
-var clean = require('gulp-clean');
+var rimraf = require('gulp-rimraf');
 var bower = require('gulp-bower');
 var csslint = require('gulp-csslint');
 var livereload = require('gulp-livereload');
@@ -93,7 +93,7 @@ gulp.task('lint', ['jshint', 'csslint']);
 
 gulp.task('clean', function() {
   return gulp.src(['./build/', './dist/*', './app/bower_components'])
-    .pipe(clean({force: true}));
+    .pipe(rimraf({force: true}));
 });
 
 gulp.task('minify-css', ['bower'], function() {
@@ -155,7 +155,7 @@ gulp.task('html', function() {
 
 gulp.task('doc', function() {
   var cmd = 'node_modules/jsdoc/jsdoc.js -c docconf.json';
-  if(os.platform() === 'win32') {
+  if (os.platform() === 'win32') {
     cmd = 'node node_modules\\jsdoc\\jsdoc.js -c docconf.json';
   }
   return gulp.src('')
