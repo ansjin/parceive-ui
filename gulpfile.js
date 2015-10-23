@@ -185,6 +185,7 @@ gulp.task('test-deps', function() {
   return gulp.src([
       './app/test.html',
       './app/bower_components/mocha/mocha.js',
+      './app/bower_components/mocha/mocha.css',
       './app/bower_components/chai/chai.js',
       './app/bower_components/chai-as-promised/lib/chai-as-promised.js',
     ])
