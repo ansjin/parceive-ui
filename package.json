@@ -30,6 +30,7 @@
     "gulp-sass": "~2.0.1",
     "gulp-shell": "~0.4.2",
     "jsdoc": "~3.3.2",
-    "gulp-rimraf": "~0.2.0"
+    "gulp-rimraf": "~0.2.0",
+    "mocha-phantomjs": "~4.0.1"
   }
 }

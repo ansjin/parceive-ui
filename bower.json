@@ -12,7 +12,10 @@
     "rsvp": "~3.0.18",
     "dagre": "~0.7.2",
     "jquery-hoverIntent": "~1.8.1",
-    "webcola": "~3.1.0"
+    "webcola": "~3.1.0",
+    "chai": "~3.4.0",
+    "mocha": "~2.3.3",
+    "chai-as-promised": "~5.1.0"
   },
   "resolutions": {
     "lodash": "3.8.0"
