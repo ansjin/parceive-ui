@@ -1,3 +1,5 @@
+![](https://api.travis-ci.org/victorsavu3/parceive-ui.svg?branch=master)
+
 Install
 =======
 
