@@ -527,6 +527,11 @@ var Call = {
       type: 'Call',
       many: true,
       inverse: 'caller'
+    },
+    'loops': {
+      type: 'LoopExecution',
+      many: true,
+      inverse: 'call'
     }
   },
 
@@ -556,6 +561,14 @@ var Call = {
     */
   getCalls: function() {
     return this._mapper.getRelationship(this, 'calls');
+  },
+
+  /** @instance
+    * @return {external:Promise.<Call[]>} the loops executed as part of this
+    *                                     call
+    */
+  getLoopExecutions: function() {
+    return this._mapper.getRelationship(this, 'loops');
   },
 
   /** @instance
@@ -787,6 +800,120 @@ var Instruction = {
 
 /** @class
   * @implements Type */
+var Loop = {
+  typeName: 'Loop',
+  singular: 'loop',
+  plural: 'loops',
+  properties: ['line', 'function'],
+  relationships: {
+    'function': {
+      type: 'Functon'
+    },
+    'loopexecutions': {
+      type: 'LoopExecution',
+      many: true,
+      inverse: 'loop'
+    }
+  },
+
+  /** @instance
+    * @return {external:Promise.<LoopExecution[]>} The executions of the loop */
+  getLoopExecutions: function() {
+    return this._mapper.getRelationship(this, 'loopexecutions');
+  },
+
+  /** @instance
+    * @return {external:Promise.<Function>} The function that contains the
+    *         loop */
+  getFunction: function() {
+    return this._mapper.getRelationship(this, 'function');
+  },
+};
+
+/** @class
+  * @implements Type */
+var LoopExecution = {
+  typeName: 'LoopExecution',
+  singular: 'loopexecution',
+  plural: 'loopexecutions',
+  properties: ['loop', 'execution', 'parent', 'duration'],
+  relationships: {
+    'loop': {
+      type: 'Loop'
+    },
+    'parent': {
+      type: 'LoopExecution'
+    },
+    'chilren': {
+      type: 'LoopExecution',
+      many: true,
+      inverse: 'parent'
+    },
+    'iterations': {
+      type: 'LoopIteration',
+      many: true,
+      inverse: 'execution'
+    }
+  },
+
+  /** @instance
+    * @return {external:Promise.<Loop>} The loop of this execution */
+  getLoop: function() {
+    return this._mapper.getRelationship(this, 'loop');
+  },
+
+  /** @instance
+    * @return {external:Promise.<LoopExecution>} The parent of the loop */
+  getParent: function() {
+    return this._mapper.getRelationship(this, 'parent');
+  },
+
+  /** @instance
+    * @return {external:Promise.<LoopExecution[]>} The children of the loop */
+  getChildren: function() {
+    return this._mapper.getRelationship(this, 'chilren');
+  },
+
+  /** @instance
+    * @return {external:Promise.<LoopIteration[]>} The iterations of the loop */
+  getIterations: function() {
+    return this._mapper.getRelationship(this, 'iterations');
+  },
+};
+
+/** @class
+  * @implements Type */
+var LoopIteration = {
+  typeName: 'LoopIteration',
+  singular: 'loopiteration',
+  plural: 'loopiterations',
+  properties: ['execution', 'iteration', 'segment'],
+  relationships: {
+    'execution': {
+      type: 'LoopExecution'
+    },
+    'segment': {
+      type: 'Segment'
+    }
+  },
+
+  /** @instance
+    * @return {external:Promise.<LoopExecution>} The loop execution of this
+    *         iteration */
+  getLoopExecution: function() {
+    return this._mapper.getRelationship(this, 'execution');
+  },
+
+  /** @instance
+    * @return {external:Promise.<Function>} The segment executed by this
+    *         iteration */
+  getSegment: function() {
+    return this._mapper.getRelationship(this, 'segment');
+  },
+};
+
+/** @class
+  * @implements Type */
 var Reference = {
   typeName: 'Reference',
   singular: 'reference',
@@ -825,10 +952,13 @@ var Segment = {
   typeName: 'Segment',
   singular: 'segment',
   plural: 'segments',
-  properties: ['call', 'segmentNumber', 'type', 'loopPointer'],
+  properties: ['call', 'segmentNumber', 'type', 'loop'],
   relationships: {
     'call': {
       type: 'Call'
+    },
+    'loop': {
+      type: 'LoopIteration'
     },
     'instructions': {
       type: 'Instruction',
@@ -841,6 +971,12 @@ var Segment = {
     * @instance */
   getCall: function() {
     return this._mapper.getRelationship(this, 'call');
+  },
+
+  /** @return {external:Promise.<LoopIteration>} The coresponding loop itration
+    * @instance */
+  getLoopIteration: function() {
+    return this._mapper.getRelationship(this, 'loop');
   },
 
   /** @return {external:Promise.<Instruction[]>} The instructions that are part
@@ -910,13 +1046,16 @@ var loader = {
   types: {
     Access: Access,
     Call: Call,
+    CallGroup: CallGroup,
     File: File,
     Function: FunctionType,
     Instruction: Instruction,
+    Loop: Loop,
+    LoopExecution: LoopExecution,
+    LoopIteration: LoopIteration,
     Reference: Reference,
     Segment: Segment,
-    Thread: Thread,
-    CallGroup: CallGroup
+    Thread: Thread
   }
 };
 
@@ -945,6 +1084,19 @@ loader.getCall = function(id) {
   * @instance */
 loader.getCalls = function() {
   return loader.getAll(Call);
+};
+
+/** @return {external:Promise.<CallGroup>}
+  * @param {int|string} id The id of the element
+  * @instance */
+loader.getCallGroup = function(id) {
+  return loader.getSpecific(CallGroup, id);
+};
+
+/** @return {external:Promise.<CallGroup[]>}
+  * @instance */
+loader.getCallGroups = function() {
+  return loader.getAll(CallGroup);
 };
 
 /** @return {external:Promise.<File>}
@@ -986,6 +1138,45 @@ loader.getInstructions = function() {
   return loader.getAll(Instruction);
 };
 
+/** @return {external:Promise.<Loop>}
+  * @param {int|string} id The id of the element
+  * @instance */
+loader.getLoop = function(id) {
+  return loader.getSpecific(Loop, id);
+};
+
+/** @return {external:Promise.<Loop[]>}
+  * @instance */
+loader.getLoops = function() {
+  return loader.getAll(Loop);
+};
+
+/** @return {external:Promise.<LoopExecution>}
+  * @param {int|string} id The id of the element
+  * @instance */
+loader.getLoopEcecution = function(id) {
+  return loader.getSpecific(LoopExecution, id);
+};
+
+/** @return {external:Promise.<LoopExecution[]>}
+  * @instance */
+loader.getLoopExecution = function() {
+  return loader.getAll(LoopExecution);
+};
+
+/** @return {external:Promise.<LoopIteration>}
+  * @param {int|string} id The id of the element
+  * @instance */
+loader.getLoopIteration = function(id) {
+  return loader.getSpecific(LoopIteration, id);
+};
+
+/** @return {external:Promise.<LoopIteration[]>}
+  * @instance */
+loader.getLoopIteration = function() {
+  return loader.getAll(LoopIteration);
+};
+
 /** @return {external:Promise.<Reference>}
   * @param {int|string} id The id of the element
   * @instance */
@@ -1023,12 +1214,6 @@ loader.getThread = function(id) {
   * @instance */
 loader.getThreads = function() {
   return loader.getAll(Thread);
-};
-
-/** @return {external:Promise.<CallGroup[]>}
-  * @instance */
-loader.getCallGroups = function() {
-  return loader.getAll(CallGroup);
 };
 
 // fiter functions

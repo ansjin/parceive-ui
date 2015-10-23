@@ -3,14 +3,15 @@ var router = express.Router();
 
 var util = require('./util');
 
-var loopiterations = require('./loopiterations');
+var loopiterations = require('./loopiteration');
 
 var mapping = {
   'Id': 'id',
   'No': 'loop',
   'Execution': 'execution',
   'Parent': 'parent',
-  'Duration': 'duration'
+  'Duration': 'duration',
+  'Call': 'call'
 };
 
 router.get('/', function(req, res) {
