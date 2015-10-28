@@ -405,6 +405,10 @@ function addToPipeline(type, id, deferred, relationship) {
   * @see loader#getSpecific
   * @memberof client.data */
 function getSpecific(http, manager, type, id) {
+  if (_.isNull(id)) {
+    return RSVP.reject('Relationship undefined');
+  }
+
   var cached = getCache(type.typeName, id);
 
   if (cached) {
