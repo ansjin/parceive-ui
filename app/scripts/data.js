@@ -503,7 +503,7 @@ var Call = {
   typeName: 'Call',
   singular: 'call',
   plural: 'calls',
-  properties: ['process', 'thread', 'function', 'instruction',
+  properties: ['process', 'thread', 'function', 'instruction', 'callGroup',
                 'start', 'end', 'caller', 'callsOthers', 'duration'],
   relationships: {
     'thread': {
@@ -836,7 +836,7 @@ var LoopExecution = {
   typeName: 'LoopExecution',
   singular: 'loopexecution',
   plural: 'loopexecutions',
-  properties: ['loop', 'execution', 'parent', 'duration'],
+  properties: ['loop', 'parent', 'duration'],
   relationships: {
     'loop': {
       type: 'Loop'

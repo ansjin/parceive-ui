@@ -21,6 +21,12 @@
     "app/scripts/**/*.js"
   ],
 
+  "testOrder": [
+    "app/tests/config.js",
+    "app/tests/**/*.js",
+    "app/tests/run.js"
+  ],
+
   "opts": {
     "minify": false,
     "sourcemaps": true,

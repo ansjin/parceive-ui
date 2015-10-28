@@ -1,6 +1,7 @@
 /* global require */
 /* global console */
 /* global -_ */
+/* global process */
 
 // gulp
 var gulp = require('gulp');
@@ -15,7 +16,7 @@ var connect = require('gulp-connect');
 var jshint = require('gulp-jshint');
 var uglify = require('gulp-uglify');
 var minifyCSS = require('gulp-minify-css');
-var clean = require('gulp-clean');
+var rimraf = require('gulp-rimraf');
 var bower = require('gulp-bower');
 var csslint = require('gulp-csslint');
 var livereload = require('gulp-livereload');
@@ -93,7 +94,7 @@ gulp.task('lint', ['jshint', 'csslint']);
 
 gulp.task('clean', function() {
   return gulp.src(['./build/', './dist/*', './app/bower_components'])
-    .pipe(clean({force: true}));
+    .pipe(rimraf({force: true}));
 });
 
 gulp.task('minify-css', ['bower'], function() {
@@ -118,12 +119,22 @@ gulp.task('minify-css', ['bower'], function() {
 
 gulp.task('minify-js', function() {
   return gulp.src(['./app/scripts/**/*.js'])
-    .pipe(order(opts.codeOrder))
+    .pipe(order(env.codeOrder, {base: '.'}))
     .pipe(header('(function(){ "use strict"\n'))
     .pipe(footer('})();'))
     .pipe(gulpif(opts.sourcemaps, sourcemaps.init()))
       .pipe(gulpif(opts.minify, uglify()))
       .pipe(concat('code.js'))
+    .pipe(gulpif(opts.sourcemaps, sourcemaps.write()))
+    .pipe(gulp.dest('./build/'));
+});
+
+gulp.task('minify-js-tests', function() {
+  return gulp.src(['./app/tests/**/*.js'])
+    .pipe(order(env.testOrder, {base: '.'}))
+    .pipe(gulpif(opts.sourcemaps, sourcemaps.init()))
+      .pipe(gulpif(opts.minify, uglify()))
+      .pipe(concat('tests.js'))
     .pipe(gulpif(opts.sourcemaps, sourcemaps.write()))
     .pipe(gulp.dest('./build/'));
 });
@@ -155,7 +166,7 @@ gulp.task('html', function() {
 
 gulp.task('doc', function() {
   var cmd = 'node_modules/jsdoc/jsdoc.js -c docconf.json';
-  if(os.platform() === 'win32') {
+  if (os.platform() === 'win32') {
     cmd = 'node node_modules\\jsdoc\\jsdoc.js -c docconf.json';
   }
   return gulp.src('')
@@ -170,7 +181,45 @@ gulp.task('build', ['bower', 'lint', 'minify-js', 'minify-js-deps',
                     'minify-css-deps', 'minify-css', 'minify-templates',
                     'html', 'db', 'doc']);
 
-gulp.task('server', ['build'], function() {
+gulp.task('test-deps', function() {
+  return gulp.src([
+      './app/test.html',
+      './app/bower_components/mocha/mocha.js',
+      './app/bower_components/mocha/mocha.css',
+      './app/bower_components/chai/chai.js',
+      './app/bower_components/chai-as-promised/lib/chai-as-promised.js',
+    ])
+    .pipe(gulp.dest('./build'));
+});
+
+gulp.task('test-build', ['minify-js-tests', 'test-deps']);
+
+gulp.task('tests', ['build', 'test-build'], function(cb) {
+  var entities = require('./server/entities');
+
+  var app = express();
+
+  app.use(entities);
+
+  var server = app.listen(12345, function() {
+    var exec = require('child_process').exec;
+
+    exec('./node_modules/mocha-phantomjs/bin/mocha-phantomjs ' +
+        'http://localhost:12345/test.html', function(error, stdout/*, stderr*/) {
+      console.log(stdout);
+
+      server.close();
+
+      cb();
+
+      process.nextTick(function() {
+        process.exit(error ? error.code : 0);
+      });
+    });
+  });
+});
+
+gulp.task('server', ['build', 'test-build'], function() {
   //server
   var entities = require('./server/entities');
 
@@ -185,6 +234,8 @@ gulp.task('server', ['build'], function() {
   gulp.watch(['app/style/**/*.css', 'app/style/**/*.scss'], ['minify-css',
                                                              'csslint']);
   gulp.watch(['app/templates/**/*.html'], ['minify-templates']);
+
+  gulp.watch(['app/tests/**/*.js'], ['test-build']);
 
   gulp.watch(['server/**/*.js', 'tutorials/*.md'], ['doc']);
 
