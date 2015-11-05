@@ -405,6 +405,10 @@ function addToPipeline(type, id, deferred, relationship) {
   * @see loader#getSpecific
   * @memberof client.data */
 function getSpecific(http, manager, type, id) {
+  if (_.isNull(id)) {
+    return RSVP.reject('Relationship undefined');
+  }
+
   var cached = getCache(type.typeName, id);
 
   if (cached) {
@@ -836,7 +840,7 @@ var LoopExecution = {
   typeName: 'LoopExecution',
   singular: 'loopexecution',
   plural: 'loopexecutions',
-  properties: ['loop', 'execution', 'parent', 'duration'],
+  properties: ['loop', 'parent', 'duration'],
   relationships: {
     'loop': {
       type: 'Loop'

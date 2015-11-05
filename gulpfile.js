@@ -213,7 +213,11 @@ gulp.task('tests', ['build', 'test-build'], function(cb) {
       cb();
 
       process.nextTick(function() {
+<<<<<<< HEAD
         process.exit(0);
+=======
+        process.exit(error ? error.code : 0);
+>>>>>>> 5463131b75fb187cc8f53dadc111056fa5860236
       });
     });
   });

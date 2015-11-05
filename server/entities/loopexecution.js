@@ -7,8 +7,7 @@ var loopiterations = require('./loopiteration');
 
 var mapping = {
   'Id': 'id',
-  'No': 'loop',
-  'Execution': 'execution',
+  'Loop': 'loop',
   'Parent': 'parent',
   'Duration': 'duration',
   'Call': 'call'
