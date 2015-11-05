@@ -5,6 +5,8 @@ var util = require('./util');
 
 var functions = require('./function');
 
+var fs = require('fs');
+
 var mapping = {
   'Id': 'id',
   'Name': 'name',
@@ -33,6 +35,35 @@ router.get('/:id', function(req, res) {
 router.get('/:id/functions', function(req, res) {
   util.handleRelationshipQuery(req.db, functions.mapping, res,
     'SELECT * FROM Function WHERE File=?', req.params.id);
+});
+
+router.get('/:id/content', function(req, res) {
+  var stmt = req.db.prepare('SELECT * FROM File WHERE Id=?');
+
+  stmt.bind(req.params.id);
+
+  stmt.get(function(err, row) {
+    if (err) {
+      res.type('text/plain');
+      res.status(500);
+      res.send(err);
+      return;
+    }
+
+    fs.readFile(row.Path, function(err, data) {
+      if (err) {
+        res.type('text/plain');
+        res.status(500);
+        res.send(err);
+        return;
+      }
+
+      res.type('text/plain');
+      res.send(data);
+    });
+  });
+
+  stmt.finalize();
 });
 
 module.exports = {

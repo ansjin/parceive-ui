@@ -77,6 +77,7 @@ var getRelationshipTemplate =
   _.template('<%= type %>/<%= id %>/<%= relationship %>');
 var getManyRelationshipTemplate =
   _.template('<%= type %>/many/<%= ids %>/<%= relationship %>');
+var getFileContentTemplate = _.template('files/<%= id %>/content');
 
 /** @private
   * @summary Add element to cache
@@ -701,6 +702,12 @@ var File = {
     *                                          file contains */
   getFunctions: function() {
     return this._mapper.getRelationship(this, 'functions');
+  },
+
+  /** @instance
+    * @return {external:Promise.<string>} The content of the file */
+  getContent: function() {
+    return this._mapper.httpGet(getFileContentTemplate({id: this.id}));
   }
 };
 
@@ -1273,9 +1280,17 @@ angular.module('app')
     /** @method
       * @instance
       * @private
+      * @summary Load data from a URL
+      * @param {string} url the url to use
+      * @return {external:Promise.<string>} the coantent */
+    loader.httpGet = _.partial(httpGet, http);
+
+    /** @method
+      * @instance
+      * @private
       * @summary Load an instance from an URL. This bypasses the cache,
       *          but the run is still prepended.
-      * @param {strng} url the url to use
+      * @param {string} url the url to use
       * @param {Type} type The type to use
       * @return {external:Promise.<Instance>} the instance */
     loader.getOneURL = _.partial(getOneURL, http, loader);
@@ -1285,7 +1300,7 @@ angular.module('app')
       * @private
       * @summary Load many instances from an URL. This bypasses the cache,
       *          but the run is still prepended.
-      * @param {strng} url the url to use
+      * @param {string} url the url to use
       * @param {Type} type The type to use
       * @return {external:Promise.<Instance[]>} the instances */
     loader.getManyURL = _.partial(getManyURL, http, loader);
