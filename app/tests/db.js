@@ -25,4 +25,13 @@ describe('eunit.db', function() {
       return call.getCallGroup();
     }).should.eventually.have.property('count', 1);
   });
+
+  it('CallGroup should have children', function() {
+    return loader.getCall('0_2').then(function(call) {
+      return call.getCallGroup();
+    }).then(function(callgroup) {
+      return callgroup.getCallGroups();
+    })
+    .should.eventually.have.length(1);
+  });
 });
