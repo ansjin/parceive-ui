@@ -35,8 +35,6 @@ function profilerDataHelper(LoaderService) {
         // store call object for later
         self = call;
 
-        console.log(call);
-
         temp.start = Number(call.start);
         temp.end = Number(call.end);
         temp.duration = call.duration;
@@ -74,10 +72,8 @@ function profilerDataHelper(LoaderService) {
         // store call object for later
         self = callGroup;
 
-        console.log(callGroup);
-
-        temp.start = 0;
-        temp.end = 0;
+        temp.start = null;
+        temp.end = null;
         temp.duration = callGroup.duration;
         temp.ancestor = ancestor;
         temp.level = level;

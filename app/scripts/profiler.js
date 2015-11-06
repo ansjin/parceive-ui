@@ -85,7 +85,7 @@ function render(d3, pdh, pvh) {
               continue;
             }
 
-            // use call to build tracing data object
+            // build view data object
             buildViewData(obj);
 
             // add ID to history
@@ -110,10 +110,10 @@ function render(d3, pdh, pvh) {
 
           // display the view when the call queue is empty
           // the call queue is empty when all data has finished loading
-          // if ((isTracing() && callQueue.length === 0) ||
-          //    (!isTracing() && callGroupQueue.length === 0)) {
+          if ((isTracing() && callQueue.length === 0) ||
+            (!isTracing() && callGroupQueue.length === 0)) {
             displayView();
-          // }
+          }
         });
     }
 
@@ -124,6 +124,10 @@ function render(d3, pdh, pvh) {
         if (isTracing()) {
           tracingData = obj;
         } else {
+          // set start and end value for obj
+          obj.start = 0;
+          obj.end = obj.duration;
+
           profilingData = obj;
         }
       } else {
@@ -162,8 +166,20 @@ function render(d3, pdh, pvh) {
         // if data already has the children property, then push item to array
         // otherwise create children property and add as first item
         if (child.hasOwnProperty('children') === true) {
+          if (!isTracing()) {
+            // update start and end value for obj
+            obj.start = child.children[child.children.length - 1].start;
+            obj.end = obj.start + obj.duration;
+          }
+
           child.children.push(obj);
         } else {
+          if (!isTracing()) {
+            // update start and end value for obj
+            obj.start = child.start;
+            obj.end = obj.start + obj.duration;
+          }
+
           child.children = [obj];
         }
       };
