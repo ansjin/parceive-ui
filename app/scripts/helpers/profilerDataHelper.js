@@ -35,13 +35,14 @@ function profilerDataHelper(LoaderService) {
         // store call object for later
         self = call;
 
+        console.log(call);
+
         temp.start = Number(call.start);
         temp.end = Number(call.end);
         temp.duration = call.duration;
         temp.ancestor = ancestor;
         temp.level = level;
-        temp.callId = call.id;
-        temp.callGroupId = call.callGroupId;
+        temp.id = call.id;
 
         return call.getFunction();
       })
@@ -56,6 +57,45 @@ function profilerDataHelper(LoaderService) {
         // append callees for this call
         for (var i = 0, len = calls.length; i < len; i++) {
           temp.calls.push(calls[i].id);
+        }
+
+        return new RSVP.resolve(temp);
+      });
+
+    return promise;
+  }
+
+  function getCallGroup(id, ancestor, level) {
+    var self;
+    var temp = {};
+
+    var promise = LoaderService.getCallGroup(id)
+      .then(function(callGroup) {
+        // store call object for later
+        self = callGroup;
+
+        console.log(callGroup);
+
+        temp.start = 0;
+        temp.end = 0;
+        temp.duration = callGroup.duration;
+        temp.ancestor = ancestor;
+        temp.level = level;
+        temp.id = callGroup.id;
+
+        return callGroup.getFunction();
+      })
+      .then(function(func) {
+        temp.name = func.signature;
+
+        return self.getCalls();
+      })
+      .then(function(callGroups) {
+        temp.calls = [];
+
+        // append callees for this call
+        for (var i = 0, len = callGroups.length; i < len; i++) {
+          temp.calls.push(callGroups[i].id);
         }
 
         return new RSVP.resolve(temp);

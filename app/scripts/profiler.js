@@ -34,7 +34,7 @@ render.$inject = ['d3', 'profilerDataHelper', 'profilerViewHelper'];
 function render(d3, pdh, pvh) {
   return function(svg, stateManager) {
 
-    var viewMode = 'T'; // valid values T = tracing, P = profiling
+    var viewMode = 'P'; // valid values T = tracing, P = profiling
     var profileId = Date.now(); // random ID to differentiate profiling views on DOM
     var mainDuration = null; // runtime of main function
     var mainCallId = null; // ID of main function
@@ -78,47 +78,43 @@ function render(d3, pdh, pvh) {
       pdh.getViewData(ids, ancestor, level, history, viewMode)
         .then(function(data) {
           for (var i = 0, len = data.length; i < len; i++) {
-            var call = data[i];
+            var obj = data[i];
 
             // skip calls that have a runtime lesser than the runtime threshold
-            if (call.duration < runtimeThreshold) {
+            if (obj.duration < runtimeThreshold) {
               continue;
             }
 
             // use call to build tracing data object
-            buildViewData(call);
+            buildViewData(obj);
 
             // add ID to history
             if (isTracing()) {
-              callHistory.push(call.callId);
+              callHistory.push(obj.id);
             } else {
-              callGroupHistory.push(call.callGroupId);
+              callGroupHistory.push(obj.id);
             }
 
-            // call loadTracingView on children of this call
-            if (call.calls.length > 0) {
-              getViewData(call.calls, call.callId, level + 1);
+            // call getViewData on children of obj
+            if (obj.calls.length > 0) {
+              getViewData(obj.calls, obj.id, level + 1);
             }
 
             // remove call id or call group id from queue
             if (isTracing()) {
-              callQueue.splice(callQueue.indexOf(call.callId), 1);
+              callQueue.splice(callQueue.indexOf(obj.id), 1);
             } else {
-              callQueue.splice(callGroupQueue.indexOf(call.callGroupId), 1);
+              callGroupQueue.splice(callGroupQueue.indexOf(obj.id), 1);
             }
           }
 
-          // check if callQueue is empty, if callQueue is empty then
-          // all the calls have completed
-          if (callQueue.length === 0) {
+          // display the view when the call queue is empty
+          // the call queue is empty when all data has finished loading
+          // if ((isTracing() && callQueue.length === 0) ||
+          //    (!isTracing() && callGroupQueue.length === 0)) {
             displayView();
-          }
+          // }
         });
-    }
-
-    // build up the data object for profiling view
-    function loadProfilingView(ids, ancestor, level) {
-
     }
 
     // add an object to the children element of tracing or profiling data
@@ -151,13 +147,7 @@ function render(d3, pdh, pvh) {
     function appendDeep(finalObj, obj) {
       var recurse = function(children, obj) {
         for (var i = 0, len = children.length; i < len; i++) {
-          var id = children[i].callId;
-
-          if (!isTracing()) {
-            id = children[i].callGroupId;
-          }
-
-          if (obj.ancestor === id) {
+          if (obj.ancestor === children[i].id) {
             appendData(children[i], obj);
             break;
           } else {
@@ -179,8 +169,7 @@ function render(d3, pdh, pvh) {
       };
 
       // if object is direct child of first object
-      var id = (isTracing()) ? finalObj.callId : finalObj.callGroupId;
-      if (obj.ancestor === finalObj.callId) {
+      if (obj.ancestor === finalObj.id) {
         appendData(finalObj, obj);
       } else {
         recurse(finalObj.children, obj);
@@ -206,8 +195,6 @@ function render(d3, pdh, pvh) {
         mainDuration = call.duration;
         mainCallId = call.id;
         mainCallGroupId = call.callGroupID;
-
-        console.log(call);
 
         // set runtime threshold
         setRuntimeThreshold(mainDuration);
