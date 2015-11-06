@@ -631,7 +631,7 @@ var CallGroup = {
   typeName: 'CallGroup',
   singular: 'callgroup',
   plural: 'callgroups',
-  properties: ['function', 'caller', 'count', 'parent'],
+  properties: ['function', 'caller', 'count', 'parent', 'duration'],
   relationships: {
     'caller': {
       type: 'Call'
