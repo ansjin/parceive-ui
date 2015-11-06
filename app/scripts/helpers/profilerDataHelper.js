@@ -88,7 +88,7 @@ function profilerDataHelper(LoaderService) {
       .then(function(func) {
         temp.name = func.signature;
 
-        return self.getCalls();
+        return self.getCallGroups();
       })
       .then(function(callGroups) {
         temp.calls = [];
