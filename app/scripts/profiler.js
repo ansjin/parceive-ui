@@ -36,28 +36,31 @@ function render(d3, profilerDataHelper, profilerViewHelper) {
 
     var viewMode = 'T'; // valid values T = tracing, P = profiling
     var profileId = Date.now(); // random ID to differentiate profiling views on DOM
-    var mainRuntime = null; // runtime of main function
-    var mainId = null; // ID of main function
+    var mainDuration = null; // runtime of main function
+    var mainCallId = null; // ID of main function
+    var mainCallGroupId = null; 
     var runtimeThreshold = null; // minimum runtime required for children to load
     var thresholdFactor = 1; // % of runtime required for children to load
     var tracingData = {}; // data object for tracing view
     var profilingData = {}; // data object for profiling view
     var callHistory = []; // stores id's of calls that have been retrieved
     var CallGroupHistory = []; // stores id's of call groups that have been retrieved
+    var callQueue = []; // stores id's of calls currently being made
+    var callGroupQueue = []; // stores id's of call group calls currently being made
 
     // return runtime data property as partition value
     var partition = d3.layout.partition()
       .value(function(d) {
-        return d.runtime;
+        return d.duration;
       });
 
     // load view depending on current view mode
     function loadView() {
-      var ids = [mainId];
+      var ids = [mainCallId];
       var ancestor = 'null';
       var level = 1;
 
-      if (viewMode === 'T') {
+      if (isTracing()) {
         loadTracingView(ids, ancestor, level);
       } else {
         loadProfilingView(ids, ancestor, level);
@@ -66,28 +69,44 @@ function render(d3, profilerDataHelper, profilerViewHelper) {
 
     // build up the data object for tracing view
     function loadTracingView(ids, ancestor, level) {
+      // add call ids' to callQueue
+      _.map(ids, function(i) { 
+        if (isTracing()) {
+          callQueue.push(i);
+        } else {
+          callGroupQueue.push(i);
+        }
+      });
+
       profilerDataHelper.getTracingData(ids, ancestor, level, callHistory)
         .then(function(data) {
-          // add call ID to call history
-          for (var i = 0, len = ids.length; i < len; i++) {
-            callHistory.push(ids[i]);
-          }
-
           for (var i = 0, len = data.length; i < len; i++) {
             var call = data[i];
 
             // skip calls that have a runtime lesser than the runtime threshold
-            if (call.runtime < runtimeThreshold) {
+            if (call.duration < runtimeThreshold) {
               continue;
             }
 
             // use call to build tracing data object
-            buildDataObject(call);
+            buildViewData(call);
+
+            // add call ID to call history
+            callHistory.push(call.callId);
 
             // call loadTracingView on children of this call
             if (call.calls.length > 0) {
               loadTracingView(call.calls, call.callId, level + 1, callHistory);
             }
+
+            // remove call id from call queue
+            callQueue.splice(callQueue.indexOf(call.callId), 1);
+          }
+
+          // check if callQueue is empty, if callQueue is empty then
+          // all the calls have completed
+          if (callQueue.length === 0) {
+            displayView();
           }
         });
     }
@@ -98,30 +117,29 @@ function render(d3, profilerDataHelper, profilerViewHelper) {
     }
 
     // add an object to the children element of tracing or profiling data
-    function buildDataObject(obj) {
-      // obj can either be call or callGroup data
-
-      if (viewMode === 'T') {
-        // add the call to tracingData
-
-        // if the object is first object
-        if (obj.ancestor === 'null') {
+    // obj parameter can either be call or callGroup data
+    function buildViewData(obj) {
+      if (obj.ancestor === 'null') {
+        if (isTracing()) {
           tracingData = obj;
-          return;
-        }
-
-        appendDeep(tracingData, obj);
-
-        console.log('TRACING DATA', tracingData);
-      } else {
-        // add the call to profilingData
-
-        if (obj.ancestor === 'null') {
+        } else {
           profilingData = obj;
-          return;
         }
+      } else {
+        if (isTracing()) {
+          appendDeep(tracingData, obj);
+        } else {
+          appendDeep(profilingData, obj);
+        }
+      }
+    }
 
-        appendDeep(profilingData, obj);
+    // build the profiling or tracing svg, and display it
+    function displayView() {
+      if (isTracing()) {
+        console.log('TRACING', tracingData);
+      } else {
+        console.log('PROFILING', profilingData);
       }
     }
 
@@ -130,7 +148,7 @@ function render(d3, profilerDataHelper, profilerViewHelper) {
         for (var i = 0, len = children.length; i < len; i++) {
           var id = children[i].callId;
 
-          if (viewMode !== 'T') {
+          if (!isTracing()) {
             id = children[i].callGroupId;
           }
 
@@ -156,7 +174,7 @@ function render(d3, profilerDataHelper, profilerViewHelper) {
       };
 
       // if object is direct child of first object
-      var id = (viewMode === 'T') ? finalObj.callId : finalObj.callGroupId;
+      var id = (isTracing()) ? finalObj.callId : finalObj.callGroupId;
       if (obj.ancestor === finalObj.callId) {
         appendData(finalObj, obj);
       } else {
@@ -168,6 +186,10 @@ function render(d3, profilerDataHelper, profilerViewHelper) {
       runtimeThreshold = Math.ceil(runtime * (thresholdFactor / 100));
     }
 
+    function isTracing() {
+      return viewMode === 'T';
+    }
+
     /* SETUP THE VIEW FOR LOADING */
 
     // give this specific view svg element an ID
@@ -176,11 +198,12 @@ function render(d3, profilerDataHelper, profilerViewHelper) {
     // get "main" function data
     profilerDataHelper.getMain()
       .then(function(call) {
-        mainRuntime = Number(call.end) - Number(call.start);
-        mainId = call.id;
+        mainDuration = call.duration;
+        mainCallId = call.id;
+        mainCallGroupId = call.callGroupID;
 
         // set runtime threshold
-        setRuntimeThreshold(mainRuntime);
+        setRuntimeThreshold(mainDuration);
 
         // get data for view mode and display
         loadView();
