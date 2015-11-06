@@ -31,7 +31,7 @@ function hoverCb() {
 render.$inject = ['d3', 'profilerDataHelper', 'profilerViewHelper'];
 
 // render the view
-function render(d3, profilerDataHelper, profilerViewHelper) {
+function render(d3, pdh, pvh) {
   return function(svg, stateManager) {
 
     var viewMode = 'T'; // valid values T = tracing, P = profiling
@@ -56,19 +56,14 @@ function render(d3, profilerDataHelper, profilerViewHelper) {
 
     // load view depending on current view mode
     function loadView() {
-      var ids = [mainCallId];
+      var ids = (isTracing()) ? [mainCallId] : [mainCallGroupId];
       var ancestor = 'null';
       var level = 1;
-
-      if (isTracing()) {
-        loadTracingView(ids, ancestor, level);
-      } else {
-        loadProfilingView(ids, ancestor, level);
-      }
+      getViewData(ids, ancestor, level);
     }
 
     // build up the data object for tracing view
-    function loadTracingView(ids, ancestor, level) {
+    function getViewData(ids, ancestor, level) {
       // add call ids' to callQueue
       _.map(ids, function(i) { 
         if (isTracing()) {
@@ -78,7 +73,9 @@ function render(d3, profilerDataHelper, profilerViewHelper) {
         }
       });
 
-      profilerDataHelper.getTracingData(ids, ancestor, level, callHistory)
+      var func = (isTracing()) ? pdh.getTracingData: pdh.getProfilingData;
+
+      func(ids, ancestor, level, callHistory)
         .then(function(data) {
           for (var i = 0, len = data.length; i < len; i++) {
             var call = data[i];
@@ -96,11 +93,15 @@ function render(d3, profilerDataHelper, profilerViewHelper) {
 
             // call loadTracingView on children of this call
             if (call.calls.length > 0) {
-              loadTracingView(call.calls, call.callId, level + 1, callHistory);
+              getViewData(call.calls, call.callId, level + 1);
             }
 
-            // remove call id from call queue
-            callQueue.splice(callQueue.indexOf(call.callId), 1);
+            // remove call id or call group id from queue
+            if (isTracing()) {
+              callQueue.splice(callQueue.indexOf(call.callId), 1);
+            } else {
+              callQueue.splice(callGroupQueue.indexOf(call.callGroupId), 1);
+            }
           }
 
           // check if callQueue is empty, if callQueue is empty then
@@ -196,7 +197,7 @@ function render(d3, profilerDataHelper, profilerViewHelper) {
     svg.attr('id', profileId);
 
     // get "main" function data
-    profilerDataHelper.getMain()
+    pdh.getMain()
       .then(function(call) {
         mainDuration = call.duration;
         mainCallId = call.id;
