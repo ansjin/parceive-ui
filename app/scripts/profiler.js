@@ -44,7 +44,7 @@ function render(d3, pdh, pvh) {
     var tracingData = {}; // data object for tracing view
     var profilingData = {}; // data object for profiling view
     var callHistory = []; // stores id's of calls that have been retrieved
-    var CallGroupHistory = []; // stores id's of call groups that have been retrieved
+    var callGroupHistory = []; // stores id's of call groups that have been retrieved
     var callQueue = []; // stores id's of calls currently being made
     var callGroupQueue = []; // stores id's of call group calls currently being made
 
@@ -73,9 +73,9 @@ function render(d3, pdh, pvh) {
         }
       });
 
-      var func = (isTracing()) ? pdh.getTracingData: pdh.getProfilingData;
+      var history = (isTracing()) ? callHistory : callGroupHistory;
 
-      func(ids, ancestor, level, callHistory)
+      pdh.getViewData(ids, ancestor, level, history, viewMode)
         .then(function(data) {
           for (var i = 0, len = data.length; i < len; i++) {
             var call = data[i];
@@ -88,8 +88,12 @@ function render(d3, pdh, pvh) {
             // use call to build tracing data object
             buildViewData(call);
 
-            // add call ID to call history
-            callHistory.push(call.callId);
+            // add ID to history
+            if (isTracing()) {
+              callHistory.push(call.callId);
+            } else {
+              callGroupHistory.push(call.callGroupId);
+            }
 
             // call loadTracingView on children of this call
             if (call.calls.length > 0) {
@@ -202,6 +206,8 @@ function render(d3, pdh, pvh) {
         mainDuration = call.duration;
         mainCallId = call.id;
         mainCallGroupId = call.callGroupID;
+
+        console.log(call);
 
         // set runtime threshold
         setRuntimeThreshold(mainDuration);

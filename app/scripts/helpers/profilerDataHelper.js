@@ -9,8 +9,7 @@ profilerDataHelper.$inject = ['LoaderService'];
 function profilerDataHelper(LoaderService) {
   var factory = {
     getMain: getMain,
-    getTracingData: getTracingData,
-    getProfilingData: getProfilingData
+    getViewData: getViewData
   };
 
   return factory;
@@ -65,26 +64,13 @@ function profilerDataHelper(LoaderService) {
     return promise;
   }
 
-  function getTracingData(ids, ancestor, level, callHistory) {
+  function getViewData(ids, ancestor, level, history, type) {
     var promises = [];
+    var func = (type === 'T') ? getCall : getCallGroup;
     for (var i = 0, len = ids.length; i < len; i++) {
-      // make sure you don't call getCall for calls in callHistory
-      if (callHistory.indexOf(ids[i]) === -1) {
-        var promise = getCall(ids[i], ancestor, level);
-        promises.push(promise);
-      }
-    }
-
-    return RSVP.all(promises);
-  }
-
-  function getProfilingData(ids, ancestor, level, callHistory) {
-    console.log(ids);
-    var promises = [];
-    for (var i = 0, len = ids.length; i < len; i++) {
-      // make sure you don't call getCall for calls in callHistory
-      if (callHistory.indexOf(ids[i]) === -1) {
-        var promise = getCall(ids[i], ancestor, level);
+      // make sure you don't call getCall for calls in history
+      if (history.indexOf(ids[i]) === -1) {
+        var promise = func(ids[i], ancestor, level);
         promises.push(promise);
       }
     }
