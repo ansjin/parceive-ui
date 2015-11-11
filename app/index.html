@@ -5,11 +5,14 @@
         <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
             <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.4.0/css/font-awesome.min.css">
             <link rel="stylesheet" href="http://ajax.googleapis.com/ajax/libs/jqueryui/1.7.1/themes/base/jquery-ui.css" type="text/css" />
+
+            <link href="http://code.jquery.com/ui/1.10.4/themes/ui-lightness/jquery-ui.css" rel="stylesheet">  
     </head>
     <body ng-controller="viewsController" id="indexBody">
     <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.2/jquery.min.js"></script>
     <script src="http://netdna.bootstrapcdn.com/bootstrap/3.0.0/js/bootstrap.min.js"></script>
-
+    <script src="http://code.jquery.com/jquery-1.10.2.js"></script>
+      <script src="http://code.jquery.com/ui/1.10.4/jquery-ui.js"></script>
     <!-- Brand and toggle get grouped for better mobile display -->
       <nav id="navbar" class="navbar navbar-default navbar-fixed-top" >
      
@@ -29,23 +32,21 @@
       <li class="dropdown">
                <select ng-model="selectedRun" ng-options="run for run in allruns"></select>
               </li>
-      </ul>
-      <form class="navbar-form navbar-left">
-          <div class="form-inline">
-        <div class="form-group add-view">
-          <select id="dropdown" ng-model="selectedView" ng-options="view.name group by view.group for view in allviews">
-              </select>
-        </div>
-        <button onclick="handleClick()">Add view</button>
-        </div>
-      </form>
-             
+       </ul>
+       <div ng-include = "filePath"></div>
+      <button type="button" ng-click = "nav('horizontal.html')">Split Horizontal </button>
+      <button type="button" ng-click = "nav('vertical.html')">Split Vertical <div ng-include = "vertical.html"></div></button>       
       </div><!-- /.navbar-collapse -->
       </div><!-- /.container -->
       </nav>
 
+
       <div class="container-fluid" id ="main">
-              
+      
+       <mypanel data="data">
+        {{template}}
+        <div ng-include="template">
+      </mypanel>
       </div>
 
         <script src="deps.js"></script>
@@ -54,54 +55,93 @@
   </div>
   </div>
   <script>
-  	var panelList = [];
+  	/*var panelList = [];
   	var viewList =[]; //view selected by dropdown
   	var countViews = 0;
-    $("#menu-toggle").click(function(e) {
-        e.preventDefault();
-        $("#wrapper").toggleClass("toggled");
-    });
-
+    var selectedPanel;
     $(document).ready(function(){
-    	// alert("Does it enter here");
     	var panelId = "panel"+(countViews+1);
     	var d3ViewId = 'd3View'+(countViews+1);
     	countViews++;
     	addnewpanel(panelId,d3ViewId);
+            
     	panelList.push(panelId);
     });
-    function handleClick(){
+    function handleClick(selectedPanel){
     	var scope = angular.element($("#indexBody")).scope();
 		console.log("scope",scope);
-
-    	var panelId = "panel"+(countViews);
-    	var d3ViewId = 'd3View'+(countViews);
+     
+      console.log("SELECTED PANEL",selectedPanel);
+    	var panelId = selectedPanel.id;//"panel"+(countViews);
+      //$( "ul.level-2" ).children().css( "background-color", "red" );
+      console.log("dropdown value ",$( "#"+"dropdown"+panelId).val());
+      var selectedView = $( "#"+"dropdown"+panelId).val();
+       //var selectedView = $("#"+panelId+ " select")[0];
+      console.log("handleClick selectedView", selectedView);
+    	var d3ViewId = $("#"+panelId+" d3-visualization")[0];//'d3View'+(countViews);
+      console.log("d3viewid",d3ViewId);
     	
     	console.log("handleClick()::panelId",panelId);
     	scope.addView();
-
-    	// addnewpanel(panelId,scope.selectedView.id,d3ViewId);
-    	var view= scope.myFunction(d3ViewId);
+    	var view= scope.myFunction(d3ViewId.id,selectedView);
     	viewList.push(view);
     }
-	function addnewpanel(panelId, /*selectedViewId,*/ d3ViewId) {
-		var queue = '<div id='+panelId+' class="panel">';
+    function panelClicked(panelId) {
+      console.log("panelClicked id= ",panelId.id);
+
+      if(selectedPanel != undefined){
+        selectedPanel.style.setProperty('border','thick solid #FFFFFF','');
+      }
+       selectedPanel = $("#"+panelId.id)[0];
+      selectedPanel.style.setProperty('border','thin solid #0000FF','');
+      console.log("Selectedpanel= ",selectedPanel);
+
+    }
+	function addnewpanel(panelId, /*selectedViewId, d3ViewId) {
+    console.log("PANEL ID:",panelId);
+		var queue = '<div id='+panelId+' class="panel" onclick = panelClicked('+panelId+');>';
 	    queue += '<div class="panel-heading">';
+      queue += '<span></span>';
+      queue += '<div class="form-inline">';
+      queue += '<div class="form-group add-view">';
+      queue += '<select id= "dropdown'+panelId+'" ng-model="selectedView" ng-options="view.name group by view.group for view in allviews">';
+      var scope = angular.element($("#indexBody")).scope();
+      var view;
+      var groups = [];
+      for(view in scope.allviews){
+        console.log("VIEW GROUP ",scope.allviews[view].group);
+        if(groups.indexOf(scope.allviews[view].group) == -1){
+            groups.push(scope.allviews[view].group); 
+        } 
+      }
+      for(var group in groups){
+        queue += '<optgroup label= '+groups[group]+'>';
+        for(var view in scope.allviews){
+          if(scope.allviews[view].group == groups[group]){
+            queue += '<option value='+scope.allviews[view].id+' label="'+scope.allviews[view].name+'">'+scope.allviews[view].id+'</option>';
+          }
+        }
+        queue += '</optgroup>';
+      }
+      queue += '</select>';
+      queue += '</div>';
+      queue +='<button onclick="handleClick('+panelId+')">Add view</button>';
+      queue +='</div>';
 	    queue += '<a class="collapse-link">';
 	    queue += '<span style="font-size:0.7em;" id="fullscreen1" class="glyphicon glyphicon-resize-full" onclick= fullscreen('+panelId+'); ></span>';
 	    queue += '</a>';
-	    queue += '<select class="btn dropdown-toggle" id="select_menu" ONCHANGE="swapContent(this,'+panelId+')">';
+	    queue += '<select class="btn dropdown-toggle" id="select_menu" onchange="swapContent(this,'+panelId+')">';
 	    queue += '<option value="">';
 	    queue += '<option value= "Splitright">';
 	    queue += 'Splitright';
 	    queue += '</option>';
 	    queue += '<option value= "Splitdown">Splitdown</option>';
-	    queue += '</select>';
+      queue += '<option value= "Closepanel">Closepanel</option>';
+      queue += '</select>';
 	    queue += '</div>';
-	    // queue +='<div class="panel-body" id="body"';
-	    queue += '<d3-visualization id='+d3ViewId+/*' view='+selectedViewId+*/' class="view" >';
-	    // queue += '<svg id="svgView"></svg>';
-	     queue += '</d3-visualization>';
+	    queue += '<d3-visualization id='+d3ViewId+/*' view='+selectedViewId+' class="d3view" style="margin-top: 30px; ">';
+	    queue += '</d3-visualization>';
+      queue += '</div>';
 	    $('#main').append(queue);
 		}
 
@@ -111,9 +151,13 @@
 		    if(that.value == "Splitdown"){
 		    	splitVertical(panelId.id);
 		    }
-        else {
+        else if(that.value == "Splitright"){
           splitHorizontal(panelId.id);
         }
+        else{
+          closePanel(panelId.id);
+        }
+        $("#"+panelId+ "select").val('');
 		}
 	function splitVertical(lastPanelId) {
 		var panelId = 'panel'+(countViews+1);
@@ -122,88 +166,79 @@
 		var lastPanel = document.getElementById(lastPanelId);
 		var rect = lastPanel.getBoundingClientRect();
 		console.log("rect=",rect.height);
-		var height = rect.height/2;
-    var width = rect.width/2;
+		var height = (rect.height * 0.5) - 20;
 		console.log("height=",height);
-		lastPanel.setAttribute("style","height:"+height+"px;");
+    lastPanel.style.setProperty('height',height+"px",'');
 		addnewpanel(panelId,d3ViewId);
 		countViews++;
 		panelList.push(panelId);
 	    document.getElementById(panelId).style.height=height+"px"; 
+      document.getElementById(panelId).style.width=rect.width+"px"; 
 	}
   function splitHorizontal(lastPanelId) {
     var panelId = 'panel'+(countViews+1);
     var d3ViewId = 'd3View'+(countViews+1);
     console.log("lastpanelid",lastPanelId);
     var lastPanel = document.getElementById(lastPanelId);
+    console.log("lastpanel",lastPanel);
     var rect = lastPanel.getBoundingClientRect();
-    console.log("rect=",rect.width);
-    var width = rect.width/2;
-    console.log("width=",width);
-    lastPanel.setAttribute("style","width:"+width+"px;");
+    var width = (rect.width/2) - 20;
+    lastPanel.style.setProperty('width',width+"px",'');
     addnewpanel(panelId,d3ViewId);
     countViews++;
     panelList.push(panelId);
-      document.getElementById(panelId).style.width=width+"px"; 
-      document.getElementById(panelId).style.cssFloat = "right"; 
+    document.getElementById(panelId).style.width=width+"px";
+    document.getElementById(panelId).style.height=rect.height+"px";
   }
+  function closePanel(lastPanelId){
+    var panelId = 'panel'+(countViews+1);
+    var d3ViewId = 'd3View'+(countViews+1);
+    console.log("lastpanelid",lastPanelId);
+    var lastPanel = document.getElementById(lastPanelId);
+    lastPanel.style.display = "none";
+  }
+  
 	// $('#panel2').height(heightC);
 	// 	// var width = container_width;
 	// 	// d1.width = width;
-	// 	//d1.height = height;
-	// 	var h = $('#he1'),
- //    l = $('#panel'),
- //    r = $('#panel2'),
- //    // w = $('body').width() - 18;
+	/*d1.height = height;
+		var h = $('#he1'),
+     l = $('#panel'),
+     r = $('#panel1'),
+      w = $('body').width() - 18;
 
-// var isDragging = false;
+ var isDragging = false;
 
-// h.mousedown(function(e){
-//     isDragging = true;
-//     e.preventDefault();
-// });
-// $(document).mouseup(function(){
-//     isDragging = false;
-// }).mousemove(function(e){
-//     if(isDragging){
-//         l.css('height', e.pageY);
-//         r.css('height', w - e.pageY);
-//     }
-// });
+ h.mousedown(function(e){
+     isDragging = true;
+     e.preventDefault();
+ });
+ $(document).mouseup(function(){
+  alert("Does it enter here");
+     isDragging = false;
+ }).mousemove(function(e){
+     if(isDragging){
+         l.css('height', e.pageX);
+         r.css('height', w - e.pageX);
+     }
+});
 // 	}
-
-	
-
-	function addnewside() {
-		alert("Does it enter here");
-		var d1 = document.getElementById('panel').style;
-		var d2 = document.getElementById('main').style;
-		var container_width = d1.width;
-		var height = d2.height;
-		var width = container_width;
-		d1.width = width;
-		d1.height = height;
-		var queue1 = '<div id="panel1" class="panel">';
-    queue1 += '<div class="panel-heading">';
-    queue1 += '<a class="split-link">';
-    queue1 += '<span id="addnew" style="font-sixe:1.1em;" class="glyphicon glyphicon-new-window" onclick= addnewside();></span>';
-    queue1 += '</a>';
-    queue1 += '<a class="collapse-link">';
-    queue1 += '<span style="font-size:0.7em;" id="fullscreen1" class="glyphicon glyphicon-resize-full" onclick= fullscreen(); ></span>';
-    queue1 += '</a>';
-    queue1 += '</div>';
-    queue1 += '</div>';
-    $('#main').append(queue1);
-    var d1 = document.getElementById('panel1').style;
-		var d2 = document.getElementById('main').style;
-		var d3 = document.getElementById('panel').style;
-		var container_width = d1.width();
-		var height = d2.height() - d3.height();
-		var width = container_width;
-		d1.width = width;
-		d1.height = height;
-    
-	}
+var i = 0;
+   $('#dragbar').mousedown(function(e){
+       
+        e.preventDefault();
+        $('#mousestatus').html("mousedown" + i++);
+        $(document).mousemove(function(e){
+          $('#position').html(e.pageX +', '+ e.pageY);
+          $('#panel1').css("width",e.pageX+2);
+          $('#panel2').css("left",e.pageX+2);
+       })
+       console.log("leaving mouseDown");
+    });
+   $(document).mouseup(function(e){
+       $('#clickevent').html('in another mouseUp event' + i++);
+       $(document).unbind('mousemove');
+       });
     var isFullscreen = false;  
      function fullscreen(panelId){
             var  d = document.getElementById(panelId.id).style;
@@ -237,8 +272,15 @@
             $("#"+panelId.id).animate(d,speed);
             isFullscreen = false;
             }
-  };
-
+  };*/
+function swapContent(that) {
+    if(that.value == "SplitHorizontal"){
+          $templateCache.get('horizontal.html')
+    }
+        else {
+          console.log(that.value);
+        }
+} 
     </script>
         
     </body>

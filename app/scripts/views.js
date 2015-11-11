@@ -1,4 +1,5 @@
 angular.module('app')
+
   .directive('d3Visualization', ['StateService', 'd3',
     function(stateManager, d3) {
       return {
@@ -19,6 +20,42 @@ angular.module('app')
         }
       };
     }])
+  
+  .directive('mypanel',[function(){
+    console.log('panel');
+    return {
+      restrict: 'E',
+      scope: {
+      },
+      link: function(scope,element,attrs){
+          console.log("attrs",attrs.data[0]);
+        for (var key in attrs.data) {
+          console.log("Key_value",key);
+          scope[key] = attrs.data[key];
+          console.log("scope",attrs.data[key]);
+        }
+
+       // scope = attrs.data;
+
+        /*scope.splitRight = function() {
+          scope.template = "horisontal.html";
+          scope.data1 = scope;
+          scope.data2 = {
+            template: "emptypanel.html"
+          }
+        }
+
+        scope.splitLeft = function() {
+          scope.template = "horisontal.html";
+          scope.data2 = scope;
+          scope.data1 = {
+            template: "empty.html"
+          }
+        }*/
+      }
+    };
+  }])
+  
   .controller('viewsController', ['$scope', 'views', 'viewProperties',
                                   'StateService', 'LoaderService',
                                   '$templateCache',
@@ -28,7 +65,10 @@ angular.module('app')
         var bound = stateManager.bindId(id);
         var view = bound.getData();
         
-       
+        $scope.data = {
+          template: 'emptypanel.html'
+        };
+
         view._views = {
           unsaved: {
             htmlHeader: 'views/' + view.type.id + '-header.html',
@@ -44,7 +84,9 @@ angular.module('app')
             $templateCache.put(template, '');
           }
         });
-
+        $scope.nav = function(path) {
+    $scope.filePath = path;
+}; 
         var data = viewProperties(view.type.id);
 
         view.type.unsaved = _.pick(data, _.isFunction);
@@ -112,19 +154,29 @@ angular.module('app')
       $scope.allviews = views;
       $scope.allgroups = stateManager.getGroups();
 
-      $scope.myFunction = function(d3ViewId) {
+      $scope.myFunction = function(d3ViewId,selectedView) {
         console.log("myfunction");
          
         for (var i = $scope.allviews.length - 1; i >= 0; i--) {
-
-          if($scope.allviews[i].id==$scope.selectedView.id){
+            console.log("myFunction SELECTED VIEW",selectedView);
+          if($scope.allviews[i].id==selectedView){
 
             console.log("found match",$scope.allviews[i].id);
-            // var bound = scope.allviews[i];
-            // console.log("bound",bound);
             var view = $scope.allviews[i].data;
             console.log("view",view);
             console.log("d3",d3);
+            /*if(d3.select('#'+d3ViewId+' svg')!= undefined){
+               d3.select('#'+d3ViewId)
+                .remove('svg');
+              
+            //console.log("svg",svg);
+            }*/
+
+            var oldsvg = d3.select("svg");
+            console.log("oldsvg",oldsvg);
+            if(oldsvg != undefined){
+              oldsvg.remove();
+            }
             var svg = d3.select('#'+d3ViewId)
                 .append('svg');
             console.log("svg",svg);
@@ -136,7 +188,6 @@ angular.module('app')
         }
       
       };
-
       $scope.addGroup = function() {
         stateManager.addGroup($scope.addGroupInput);
         $scope.allgroups = stateManager.getGroups();
@@ -155,8 +206,9 @@ angular.module('app')
         if (_.isUndefined($scope.selectedView)) {
           return;
         }
-
+        
         var selected = $scope.selectedView;
+        console.log("Selectedview",selectedView);
         var newView = stateManager.create();
 
         newView.type = _.omit(selected, 'data');
@@ -172,4 +224,5 @@ angular.module('app')
           return view.id !== id;
         });
       };
-    }]);
+
+    }])

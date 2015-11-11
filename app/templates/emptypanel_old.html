@@ -1,0 +1,38 @@
+<div class="panel panel-default" id="emptypanel">
+  <div class="panel-heading">Panel Heading
+  <select class="btn dropdown-toggle" id="select_menu" onchange="swapContent(this)">;
+		<option value="">
+		<option value="SplitHorizontal">SplitHorizontal </option>
+		<option value="SplitVertical">SplitVertical </option>
+		</option>
+		</select>
+   </div>
+   <div class="panel-body">
+  	  <div ng-show="hasRun">
+				<div ng-model="selectedView" ng-repeat = "view in allviews" class="viewslist">
+				<button type="button" class="btn btn-sm"ng-click="addView()">{{view.name}}
+				</button>
+				
+		</div>
+	  </div>
+	  
+</div>
+
+<script>
+/*function displayview()
+{
+	var button_Val = $('#button1').id;
+	alert("button",button_Val);
+	//<div ng-model="selectedView" ng-repeat = "view in allviews" value={{view.id}} class="viewslist">
+}*/
+</script>
+
+ <script type="text/javascript">
+     $(document).ready(function() {
+         $('#button1').click(function() { 
+        var text = $(this).attr('value'); 
+        console.log("text",text);
+    }); 
+     });
+
+ </script>

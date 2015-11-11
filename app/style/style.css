@@ -48,12 +48,14 @@ html,body {
     height: 100%;
 }
 
-.panel {
+#emptypanel {
 	width: 100%;
-	height: 90%;
-    margin-top: 5px;
-    float: left;
+	height: 530px;
+    padding: 5px;
+    margin-top: 15px;
 }
+
+
 
 #fullscreen1{
 	float:right;
@@ -65,14 +67,10 @@ html,body {
 .split-link {
     float: right;
 }
-.panel-heading {
-	background-color: white;
-	height: 10px;
-}
 #main {
     background-color: #55A0B9;
 	width: 100%;
-    height: 100%;
+    height: 95%;
     position: fixed;
     margin-top: 50px;
 }
@@ -96,4 +94,26 @@ html,body {
 hr{
     margin-top: -5px;
     
+}
+svg {
+    margin-top: 30px;
+}
+.panel-vertical {
+    margin-top: 40px;
+    width: 50%;
+    height: 530px;
+    float: right;
+}
+
+.panel-horizontal {
+    margin-top: 40px;
+    width: 100%;
+    height: 265px;
+
+}
+.btn .btn-primary {
+    background-color: white;
+}
+.viewslist {
+    text-align: center;
 }
