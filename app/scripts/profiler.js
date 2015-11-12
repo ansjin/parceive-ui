@@ -33,26 +33,41 @@ render.$inject = ['d3', 'profilerDataHelper', 'profilerViewHelper'];
 // render the view
 function render(d3, pdh, pvh) {
   return function(svg, stateManager) {
-
     var viewMode = 'P'; // valid values T = tracing, P = profiling
-    var profileId = Date.now(); // random ID to differentiate profiling views on DOM
     var mainDuration = null; // runtime of main function
     var mainCallId = null; // ID of main function
-    var mainCallGroupId = null; 
+    var mainCallGroupId = null; // callGroup ID of main
     var runtimeThreshold = null; // minimum runtime required for children to load
     var thresholdFactor = 1; // % of runtime required for children to load
     var tracingData = {}; // data object for tracing view
     var profilingData = {}; // data object for profiling view
     var callHistory = []; // stores id's of calls that have been retrieved
     var callGroupHistory = []; // stores id's of call groups that have been retrieved
-    var callQueue = []; // stores id's of calls currently being made
-    var callGroupQueue = []; // stores id's of call group calls currently being made
+    var rectHeight = 22; // height of the bars in the profiler
+    var textPadY = 15; // top padding for the text svg
+    var textPadX = 0.5; // left padding for the text svg
+    var adjustLevel = 0; // stores level -1 of bar at the top position of the profiler
+    var transTime = 600; // transition time for appending a bar to profiler
+    var transType = 'elastic'; // type of append transition
+    var maxLevel = 1; // current highest level of bars on the profiler
+    var svgElem = null; // reference to svg element
+    var svgParentElem = null; // reference to svg's parent element
+    var profileId = null; // random ID to differentiate profiling views on DOM
+    var initView = false; // flag to check if view has been initialized before
+    var partition = d3.layout.partition().value(function(d) {
+      return d.duration; // return duration data property as partition value
+    });
 
-    // return runtime data property as partition value
-    var partition = d3.layout.partition()
-      .value(function(d) {
-        return d.duration;
+    function init() {
+      // get "main" function data
+      pdh.getMain().then(function(call) {
+        mainDuration = call.duration;
+        mainCallId = call.id;
+        mainCallGroupId = call.callGroupID;
+        setRuntimeThreshold(mainDuration);
+        loadView();
       });
+    }
 
     // load view depending on current view mode
     function loadView() {
@@ -62,58 +77,42 @@ function render(d3, pdh, pvh) {
       getViewData(ids, ancestor, level);
     }
 
-    // build up the data object for tracing view
     function getViewData(ids, ancestor, level) {
-      // add call ids' to callQueue
-      _.map(ids, function(i) { 
-        if (isTracing()) {
-          callQueue.push(i);
-        } else {
-          callGroupQueue.push(i);
-        }
-      });
+      // add call ids' to history
+      if (isTracing()) {
+        callHistory = _.union(callHistory, ids);
+      } else {
+        callGroupHistory = _.union(callGroupHistory, ids);
+      }
 
-      var history = (isTracing()) ? callHistory : callGroupHistory;
-
-      pdh.getViewData(ids, ancestor, level, history, viewMode)
+      // get remote data
+      pdh.getViewData(ids, ancestor, level, viewMode)
         .then(function(data) {
           for (var i = 0, len = data.length; i < len; i++) {
             var obj = data[i];
 
-            // skip calls that have a runtime lesser than the runtime threshold
+            // skip calls with runtime lesser than runtimeThreshold
             if (obj.duration < runtimeThreshold) {
               continue;
             }
 
-            // build view data object
             buildViewData(obj);
 
-            // add ID to history
-            if (isTracing()) {
-              callHistory.push(obj.id);
-            } else {
-              callGroupHistory.push(obj.id);
-            }
-
             // call getViewData on children of obj
-            if (obj.calls.length > 0) {
-              getViewData(obj.calls, obj.id, level + 1);
-            }
+            var children = [];
+            var history = isTracing() ? callHistory : callGroupHistory;
+            _.map(obj.calls, function(x) {
+              if (history.indexOf(x) === -1) {
+                children.push(x);
+              }
+            });
 
-            // remove call id or call group id from queue
-            if (isTracing()) {
-              callQueue.splice(callQueue.indexOf(obj.id), 1);
-            } else {
-              callGroupQueue.splice(callGroupQueue.indexOf(obj.id), 1);
-            }
+            if (children.length > 0) {
+              getViewData(children, obj.id, level + 1);
+            }      
           }
-
-          // display the view when the call queue is empty
-          // the call queue is empty when all data has finished loading
-          if ((isTracing() && callQueue.length === 0) ||
-            (!isTracing() && callGroupQueue.length === 0)) {
-            displayView();
-          }
+          
+          displayView();
         });
     }
 
@@ -124,72 +123,41 @@ function render(d3, pdh, pvh) {
         if (isTracing()) {
           tracingData = obj;
         } else {
-          // set start and end value for obj
           obj.start = 0;
           obj.end = obj.duration;
-
           profilingData = obj;
         }
       } else {
         if (isTracing()) {
-          appendDeep(tracingData, obj);
+          pvh.appendDeep(tracingData, obj, isTracing());
         } else {
-          appendDeep(profilingData, obj);
+          pvh.appendDeep(profilingData, obj, isTracing());
         }
       }
     }
 
     // build the profiling or tracing svg, and display it
     function displayView() {
-      if (isTracing()) {
-        console.log('TRACING', tracingData);
-      } else {
-        console.log('PROFILING', profilingData);
+      // make a deep copy of tracing or profiling data
+      var viewData = isTracing() 
+        ? $.extend(true, {}, tracingData) 
+        : $.extend(true, {}, profilingData);
+      var nodes = partition.nodes(viewData);
+
+      // initialize some view variables
+      if (initView === false) {
+        initView = true;
+        profileId = Date.now();
+        svg.attr('id', profileId);
+        svgElem = document.getElementById(profileId);
+        svgParentElem = document.getElementById(profileId).parentNode;
       }
-    }
 
-    function appendDeep(finalObj, obj) {
-      var recurse = function(children, obj) {
-        for (var i = 0, len = children.length; i < len; i++) {
-          if (obj.ancestor === children[i].id) {
-            appendData(children[i], obj);
-            break;
-          } else {
-            // if object isn't direct child of first object
-            // then recurse children till you find its parent
-            recurse(children[i].children, obj);
-          }
-        }
-      };
-
-      var appendData = function(child, obj) {
-        // if data already has the children property, then push item to array
-        // otherwise create children property and add as first item
-        if (child.hasOwnProperty('children') === true) {
-          if (!isTracing()) {
-            // update start and end value for obj
-            obj.start = child.children[child.children.length - 1].start;
-            obj.end = obj.start + obj.duration;
-          }
-
-          child.children.push(obj);
-        } else {
-          if (!isTracing()) {
-            // update start and end value for obj
-            obj.start = child.start;
-            obj.end = obj.start + obj.duration;
-          }
-
-          child.children = [obj];
-        }
-      };
-
-      // if object is direct child of first object
-      if (obj.ancestor === finalObj.id) {
-        appendData(finalObj, obj);
-      } else {
-        recurse(finalObj.children, obj);
+      if (svgElem.scrollHeight > svgParentElem.clientHeight) {
+        width = '98%';
       }
+
+      console.log(viewData);
     }
 
     function setRuntimeThreshold(runtime) {
@@ -200,23 +168,6 @@ function render(d3, pdh, pvh) {
       return viewMode === 'T';
     }
 
-    /* SETUP THE VIEW FOR LOADING */
-
-    // give this specific view svg element an ID
-    svg.attr('id', profileId);
-
-    // get "main" function data
-    pdh.getMain()
-      .then(function(call) {
-        mainDuration = call.duration;
-        mainCallId = call.id;
-        mainCallGroupId = call.callGroupID;
-
-        // set runtime threshold
-        setRuntimeThreshold(mainDuration);
-
-        // get data for view mode and display
-        loadView();
-      });
+    init();
   };
 }

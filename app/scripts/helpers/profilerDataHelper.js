@@ -100,15 +100,12 @@ function profilerDataHelper(LoaderService) {
     return promise;
   }
 
-  function getViewData(ids, ancestor, level, history, type) {
+  function getViewData(ids, ancestor, level, viewMode) {
     var promises = [];
-    var func = (type === 'T') ? getCall : getCallGroup;
+    var func = (viewMode === 'T') ? getCall : getCallGroup;
     for (var i = 0, len = ids.length; i < len; i++) {
-      // make sure you don't call getCall for calls in history
-      if (history.indexOf(ids[i]) === -1) {
-        var promise = func(ids[i], ancestor, level);
-        promises.push(promise);
-      }
+      var promise = func(ids[i], ancestor, level);
+      promises.push(promise);
     }
 
     return RSVP.all(promises);
