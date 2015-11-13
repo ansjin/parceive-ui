@@ -10,7 +10,9 @@ var mapping = {
   'Function': 'function',
   'Caller': 'caller',
   'Count': 'count',
-  'Parent': 'parent'
+  'Parent': 'parent',
+  'Start': 'start',
+  'End': 'end'
 };
 
 router.get('/', function(req, res) {

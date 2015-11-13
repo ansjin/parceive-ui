@@ -537,6 +537,11 @@ var Call = {
       type: 'LoopExecution',
       many: true,
       inverse: 'call'
+    },
+    'callgroups': {
+      type: 'CallGroup',
+      many: true,
+      inverse: 'caller'
     }
   },
 
@@ -580,6 +585,13 @@ var Call = {
     * @return {external:Promise.<CallGroup>} The call group of this call */
   getCallGroup: function() {
     return this._mapper.getRelationship(this, 'callGroup');
+  },
+
+  /** @instance
+    * @return {external:Promise.<CallGroup[]>} The CallGroupsCalled by this
+    *         call*/
+  getCallGroups: function() {
+    return this._mapper.getRelationship(this, 'callgroups');
   },
 
   /** @instance
@@ -632,7 +644,7 @@ var CallGroup = {
   typeName: 'CallGroup',
   singular: 'callgroup',
   plural: 'callgroups',
-  properties: ['function', 'caller', 'count', 'parent'],
+  properties: ['function', 'caller', 'count', 'parent', 'end', 'start'],
   relationships: {
     'caller': {
       type: 'Call'

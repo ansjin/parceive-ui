@@ -1,42 +1,39 @@
+function sortByMaxSequence(a, b) {
+  if (a.maxSequence < b.maxSequence) {
+    return 1;
+  } else if (a.maxSequence > b.maxSequence) {
+    return -1;
+  } else {
+    return b.getDuration() - a.getDuration();
+  }
+}
+
+function sortByStartTime(a, b) {
+  return b.start - a.start;
+}
+
 angular.module('app')
   .service('LayoutCallGraphService',
-  ['SizeService', 'dagre',
-function(sizeHelper, dagre) {
+  [function() {
   var conf = {
     horisontalMargin: 20,
     verticalMargin: 0
   };
 
-  function clearLayout(graph) {
-    _.chain(graph.nodes())
-      .map(function(node) {
-        return graph.node(node);
-      })
-      .forEach(function(node) {
-        delete node.x;
-        delete node.y;
-        delete node.rank;
-        delete node.maxSequence;
-      })
-      .value();
+  function clearLayout(callgraph) {
+    function clearNode(call) {
+      delete call.x;
+      delete call.y;
+      delete call.maxSequence;
+      delete call.rank;
+    }
 
-    var g = graph.graph();
-
-    delete g.rank;
+    _.forEach(callgraph.getCalls(), clearNode);
+    _.forEach(callgraph.getReferences(), clearNode);
   }
 
-  function rankCalls(graph) {
-    var roots =
-      _.chain(graph.sources())
-        .map(function(node) {
-          return graph.node(node);
-        })
-        .filter(function(node) {
-          return node.isCall;
-        })
-        .value();
-
-    var rank = [roots];
+  function rankCalls(callgraph, root) {
+    var rank = [[root]];
 
     var index = 0;
     var i;
@@ -47,14 +44,14 @@ function(sizeHelper, dagre) {
       var current = [];
 
       for (i = 0; i < last.length; i++) {
-        var successors = graph.successors(last[i].id);
+        var successors = last[i].children;
+
+        if (_.isUndefined(successors)) {
+          continue;
+        }
 
         for (j = 0; j < successors.length; j++) {
-          var node = graph.node(successors[j]);
-
-          if (node.isCall) {
-            current.push(node);
-          }
+          current.push(successors[j]);
         }
       }
 
@@ -75,51 +72,25 @@ function(sizeHelper, dagre) {
       }
     }
 
-    graph.graph().rank = rank;
+    root.rank = rank;
   }
 
-  function calcMaxSequence(graph) {
-    var i;
-    var j;
+  function calcMaxSequence(callgraph) {
+    function visit(node) {
+      var next;
 
-    var current = graph.sinks();
-    var next = [];
-
-    for (i = 0; i < current.length; i++) {
-      var node = graph.node(current[i]);
-      if (node.isCall) {
-        next.push(current[i]);
-      } else if (node.isReference) {
-        var scall = graph.predecessors(current[i]);
-        for (j = 0; j < scall.length; j++) {
-          if (graph.node(scall[j]).isCall && next.indexOf(scall[j]) === -1) {
-            next.push(scall[j]);
-          }
-        }
+      if (_.isUndefined(node.children) || node.children.length === 0) {
+        next = 0;
+      } else {
+        next = _.max(node.children, visit);
       }
+
+      node.maxSequence = next + 1;
+
+      return node.maxSequence;
     }
 
-    current = next;
-
-    var at = 0;
-    do {
-      next = [];
-
-      for (i = 0; i < current.length; i++) {
-        graph.node(current[i]).maxSequence = at;
-
-        var pred = graph.predecessors(current[i]);
-
-        for (j = 0; j < pred.length; j++) {
-          if (graph.node(pred[j]).isCall && next.indexOf(pred[j]) === -1) {
-            next.push(pred[j]);
-          }
-        }
-      }
-
-      at++;
-      current = next;
-    } while (current.length > 0);
+    _.forEach(callgraph.getRoots(), visit);
   }
 
   function maxWidth(nodes) {
@@ -134,27 +105,27 @@ function(sizeHelper, dagre) {
     return max;
   }
 
-  function layoutCalls(graph) {
+  function layoutCalls(callgraph, root) {
     var i;
     var j;
 
     var x = 0;
     var y = 0;
 
-    var rank = graph.graph().rank;
+    var rank = root.rank;
+    var sort;
 
-    function sortByMaxSequence(a, b) {
-      if (a.maxSequence < b.maxSequence) {
-        return 1;
-      } else if (a.maxSequence > b.maxSequence) {
-        return -1;
-      } else {
-        return b.call.duration - a.call.duration;
-      }
+    switch (callgraph.conf.sorting) {
+      case 'Importance':
+        sort = sortByMaxSequence;
+        break;
+      case 'Time':
+        sort = sortByStartTime;
+        break;
     }
 
     for (i = 0; i < rank.length; i++) {
-      rank[i].sort(sortByMaxSequence);
+      rank[i].sort(sort);
     }
 
     for (i = 0; i < rank.length; i++) {
@@ -197,123 +168,64 @@ function(sizeHelper, dagre) {
     }
   }
 
-  function layout(graph) {
-    clearLayout(graph);
-    rankCalls(graph);
-    calcMaxSequence(graph);
-    layoutCalls(graph);
-  }
+  function layoutRoots(callgraph) {
+    var roots = callgraph.getRoots();
 
-  function groupRefs(graph, ret) {
-    var groups = [];
+    roots.sort(sortByStartTime);
 
-    function addToGroup(node) {
-      var group = _.find(groups, function(group) {
-        return _.isEqual(group.inbound, graph.predecessors(node.id));
-      });
+    var y = 0;
 
-      if (group) {
-        group.elements.push(node);
-      } else {
-        group = {
-          isGroup: true,
-          elements: [node],
-          inbound: graph.predecessors(node.id),
-          id: 'group:ref:' + groups.length,
-          label: 'Grouped references',
-          height: 50,
-          width: 150
-        };
+    _.forEach(roots, function(root, index) {
+      root.y = y;
 
-        groups.push(group);
-      }
-    }
+      if (index > 0) {
+        var intermediate = _.find(root.rank, function(level) {
+          var max = _.max(level, function(node) {
+            return node.end;
+          });
 
-    _.chain(graph.nodes())
-      .map(function(node) {
-        return graph.node(node);
-      })
-      .filter(function(node) {
-        return node.isReference;
-      })
-      .forEach(function(node) {
-        addToGroup(node);
-      })
-      .value();
+          return root.start > max;
+        });
 
-    _.forEach(groups, function(group) {
-      if (group.elements.length > 1) {
-        ret.setNode(group.id, group);
-      } else {
-        ret.setNode(group.elements[0].id, group.elements[0]);
-      }
-
-    });
-
-    ret.graph().refGroups = groups;
-  }
-
-  function groupCalls(graph, ret) {
-    _.chain(graph.nodes())
-      .map(function(node) {
-        return graph.node(node);
-      })
-      .filter(function(node) {
-        return node.isCall;
-      })
-      .forEach(function(node) {
-        ret.setNode(node.id, node);
-      })
-      .value();
-  }
-
-  function addEdges(graph, ret) {
-    var groups = ret.graph().refGroups;
-
-    _.forEach(groups, function(group) {
-      if (group.elements.length > 1) {
-        var preds = group.inbound;
-
-        for (var i = 0; i < preds.length; i++) {
-          ret.setEdge(preds[i], group.id, {});
+        if (intermediate) {
+          root.x = roots[index - 1].x + intermediate[0].x;
+        } else {
+          root.x = roots[index - 1].x + roots[index - 1].width;
         }
+      } else {
+        root.x = 0;
       }
+
+      y += root.height;
     });
 
-    _.chain(ret.nodes())
-      .map(function(node) {
-        return ret.node(node);
-      })
-      .filter(function(node) {
-        return node.isReference || node.isCall;
-      })
-      .forEach(function(node) {
-        var preds = graph.predecessors(node.id);
+    _.forEach(roots, function(root) {
+      function visit(node) {
+        node.x += root.x;
+        node.y += root.y;
 
-        for (var i = 0; i < preds.length; i++) {
-          ret.setEdge(preds[i], node.id, graph.edge(preds[i], node.id));
-        }
-      })
-      .value();
+        _.forEach(node.chilren, visit);
+      }
+
+      root.x /= 2;
+      root.y /= 2;
+
+      visit(root);
+    });
   }
 
-  function group(graph) {
-    var ret = new dagre.graphlib.Graph({
-      directed: true
+  function layout(callgraph) {
+    clearLayout(callgraph);
+    calcMaxSequence(callgraph);
+
+    _.forEach(callgraph.getRoots(), function(root) {
+      rankCalls(callgraph, root);
+      layoutCalls(callgraph, root);
     });
 
-    ret.setGraph(graph.graph());
-
-    groupRefs(graph, ret);
-    groupCalls(graph, ret);
-    addEdges(graph, ret);
-
-    return ret;
+    layoutRoots(callgraph);
   }
 
-  return {
-    layout: layout,
-    group: group
-  };
+  return layout;
 
 }]);

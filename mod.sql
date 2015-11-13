@@ -17,8 +17,8 @@ CREATE INDEX IF NOT EXISTS CALL_TABLE_CALLER ON Call(Caller);
 
 -- Group calls by Function and Caller so we don't have to do it in javascript
 DROP TABLE IF EXISTS CallGroup;
-CREATE TABLE "CallGroup"(Id INT PRIMARY KEY NOT NULL, Function INT NOT NULL,Caller CHAR(50),Count INT NOT NULL,Parent INT, Duration INT);
-INSERT INTO CallGroup SELECT ROWID, Function, Caller, COUNT(*), NULL, SUM(End - Start) FROM Call GROUP BY Function, Caller;
+CREATE TABLE "CallGroup"(Id INT PRIMARY KEY NOT NULL, Function INT NOT NULL,Caller CHAR(50),Count INT NOT NULL,Parent INT, Duration, INT Start, End INT);
+INSERT INTO CallGroup SELECT ROWID, Function, Caller, COUNT(*), NULL, SUM(End - Start), MIN(Start), MAX(End) FROM Call GROUP BY Function, Caller;
 
 -- intermediary index for performance reasons
 

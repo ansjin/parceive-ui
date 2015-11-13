@@ -1,224 +1,343 @@
+function removeFromArray(array, element) {
+  var index = array.indexOf(element);
+
+  if (index > -1) {
+    array.splice(index, 1);
+  }
+}
+
 angular.module('app')
   .service('CallGraphDataService',
-  ['LoaderService', 'dagre', 'SizeService',
-  function(loader, dagre, sizeHelper) {
-    function setNodeSize(data) {
-      var text = data.label;
+  ['LayoutCallGraphService', function(layout) {
+    function CallGraph() {
+      this.roots = [];
+      this.references = [];
 
-      var size = sizeHelper.svgTextSize(text);
-
-      data.width = size.width;
-      data.height = size.height;
-    }
-
-    function addReferences(graph, call) {
-      return call.getReferences().then(function(refs) {
-        _.forEach(refs, function(ref) {
-          if (!graph.hasNode('ref:' + ref.id)) {
-            var data = {
-              label: ref.name,
-              reference: ref,
-              isReference: true,
-              id: 'ref:' + ref.id
-            };
-
-            setNodeSize(data);
-
-            graph.setNode('ref:' + ref.id, data);
-          }
-        });
-
-        return call.getAccesses();
-      }).then(function(accesses) {
-        return RSVP.all(_.map(accesses, function(access) {
-          return access.getReference().then(function(ref) {
-            var data = graph.edge('call:' + call.id, 'ref:' + ref.id);
-            if (!data) {
-              data = {
-                reads: 0,
-                writes: 0
-              };
-              graph.setEdge('call:' + call.id, 'ref:' + ref.id, data);
-            }
-
-            if (access.type === 'READ') {
-              data.reads++;
-            } else if (access.type === 'WRITE') {
-              data.writes++;
-            }
-          });
-        }));
-      });
-    }
-
-    function addCallChildren(graph, node) {
-      var self = node.call;
-
-      var childrenPromise;
-
-      if (!_.includes(graph.graph().expanded, self.id)) {
-        childrenPromise = RSVP.Promise.resolve();
-      } else {
-        childrenPromise = self.getCalls().then(function(calls) {
-          var promises = _.map(calls, function(call) {
-            return addCall(graph, call, node.level + 1);
-          });
-
-          return RSVP.all(promises).then(function() {
-            return calls;
-          });
-        }).then(function(calls) {
-          _.forEach(calls, function(call) {
-            if (self.id !== call.id) {
-              graph.setEdge('call:' + self.id, 'call:' + call.id, {});
-            }
-          });
-        });
-      }
-
-      var refPromise;
-
-      if (node.isMemoryExpanded) {
-        refPromise = addReferences(graph, self);
-      } else {
-        refPromise = RSVP.Promise.resolve();
-      }
-
-      return RSVP.all([childrenPromise, refPromise]);
-    }
-
-    function addCall(graph, self, level) {
-      if (graph.hasNode('call:' + self.id)) {
-        return RSVP.Promise.resolve();
-      }
-
-      var data = {
-        call: self,
-        level: level,
-        isCall: true,
-        id: 'call:' + self.id
+      this.conf = {
+        sorting: 'Importance'
       };
 
-      graph.setNode(data.id, data);
+      this.layout = function() {
+        layout(this);
+      };
 
-      var fctPromise = self.getFunction().then(function(fct) {
-        data.fct = fct;
-        data.label = fct.signature;
+      this.addCallRoot = function(callgroup) {
+        this.roots.push(this.addCall(callgroup));
+      };
 
-        setNodeSize(data);
-      });
+      this.addCallGroupRoot = function(callgroup) {
+        this.roots.push(this.addCallGroup(callgroup));
+      };
 
-      return RSVP.all([fctPromise, addCallChildren(graph, data)]);
+      this.addCall = function(call, parent) {
+        var existing = _.find(this.getCalls(), function(node) {
+          return call === node.call;
+        });
+
+        if (existing) {
+          return existing;
+        } else {
+          return new Call(this, call, parent);
+        }
+      };
+
+      this.addCallGroup = function(callgroup, parent) {
+        var existing = _.find(this.getCalls(), function(node) {
+          return callgroup === node.callgroup;
+        });
+
+        if (existing) {
+          return existing;
+        } else {
+          return new CallGroup(this, callgroup, parent);
+        }
+      };
+
+      this.addReference = function(reference) {
+        var existing = _.find(this.references, function(node) {
+          return reference === node.reference;
+        });
+
+        if (existing) {
+          return existing;
+        } else {
+          return new Reference(this, reference);
+        }
+      };
+
+      this.getCalls = function() {
+        var callgroups = [];
+
+        function callCalls(callgroup) {
+          callgroups.push(callgroup);
+
+          _.forEach(callgroup.children, callCalls);
+        }
+
+        _.forEach(this.roots, callCalls);
+
+        return callgroups;
+      };
+
+      this.getReferences = function() {
+        return this.references;
+      };
+
+      this.getRoots = function() {
+        return this.roots;
+      };
     }
 
-    return {
-      createGraph: function(root, expanded, expandedMemory) {
-        var g = new dagre.graphlib.Graph({
-          directed: true
+    function Call(callgraph, call, callgroup) {
+      this.call = call;
+      this.callgraph = callgraph;
+      this.callgroup = callgroup;
+
+      this.type = 'Call';
+
+      this.getDuration = function() {
+        return this.call.duration;
+      };
+
+      this.loadReferences = function() {
+        var self = this;
+        return self.call.getReferences().then(function(references) {
+          self.references = _.map(references, function(reference) {
+            return callgraph.addReference(reference);
+          });
+
+          _.forEach(self.references, function(reference) {
+            reference.addCall(self);
+          });
+
+          return self.children;
         });
-        g.setGraph({
-          rankdir: 'LR',
-          root: root,
-          expandedMemory: expandedMemory,
-          expanded: expanded,
-          nodesep: 5,
-          edgesep: 1,
-          ranksep: 20
+      };
+
+      this.loadChildren = function() {
+        var self = this;
+
+        return self.call.getCallGroups().then(function(children) {
+          self.children = _.map(children, function(child) {
+            return self.callgraph.addCallGroup(child, self);
+          });
+
+          return self.children;
         });
+      };
 
-        return addCall(g, root, 0).then(function() {
-          return g;
+      this.loadParent = function() {
+        var self = this;
+
+        return self.call.getCaller().then(function(caller) {
+          self.parent = self.callgraph.addCall(caller);
+
+          removeFromArray(self.callgraph.roots, self);
+          self.callgraph.roots.push(self.parent);
+
+          return self.parent;
         });
-      },
+      };
 
-      expandCall: function(graph, call) {
-        graph.graph().expanded.push(call.id);
-
-        var data = graph.node('call:' + call.id);
-        data.isExpanded = true;
-
-        return addCallChildren(graph, data);
-      },
-
-      expandCallMemory: function(graph, call) {
-        graph.graph().expandedMemory.push(call.id);
-
-        var data = graph.node('call:' + call.id);
-        data.isMemoryExpanded = true;
-
-        return addReferences(graph, call);
-      },
-
-      collapseCallMemory: function(graph, call) {
-        var expanded = graph.graph().expandedMemory;
-
-        var index = expanded.indexOf(call.id);
-        if (index > -1) {
-          expanded.splice(index, 1);
-        } else {
+      this.unloadParent = function() {
+        if (_.isUndefined(this.parent)) {
           return;
         }
 
-        graph.node('call:' + call.id).isMemoryExpanded = false;
+        this.parent.unloadParent();
+        this.parent.unloadAssociations();
 
-        _.forEach(graph.successors('call:' + call.id), function(child) {
-          if (graph.node(child).isReference) {
-            graph.removeEdge('call:' + call.id, child);
-          }
-        });
+        removeFromArray(this.callgraph.roots, this.parent);
+        this.callgraph.roots.push(this);
 
-        _.chain(graph.nodes())
-          .map(function(node) {
-            return graph.node(node);
-          })
-          .filter(function(node) {
-            return node.isReference;
-          })
-          .filter(function(node) {
-            var into = graph.predecessors(node.id);
-            return into.length === 0;
-          })
-          .forEach(function(node) {
-            graph.removeNode(node.id);
-          })
-          .value();
-      },
+        delete this.parent;
+      };
 
-      collapseCall: function collapseCall(graph, call, leaveRefs) {
-        var expanded = graph.graph().expanded;
-
-        var index = expanded.indexOf(call.id);
-        if (index > -1) {
-          expanded.splice(index, 1);
-        } else {
+      this.unloadChildren = function() {
+        if (_.isUndefined(this.children)) {
           return;
         }
 
-        graph.node('call:' + call.id).isExpanded = false;
-        _.forEach(graph.successors('call:' + call.id), function(child) {
-          if (graph.node(child).isCall) {
-            collapseCall(graph, graph.node(child).call, true);
-            graph.removeNode(child);
-          }
+        _.forEach(this.chilren, function(child) {
+          child.unloadChildren();
+          child.unloadAssociations();
         });
 
-        if (!leaveRefs) {
-          _.chain(graph.nodes())
-            .map(function(node) {
-              return graph.node(node);
-            })
-            .filter(function(node) {
-              return node.isReference;
-            })
-            .filter(function(node) {
-              var into = graph.predecessors(node.id);
-              return into.length === 0;
-            })
-            .forEach(function(node) {
-              graph.removeNode(node.id);
-            })
-            .value();
+        delete this.chilren;
+      };
+
+      this.unloadReferences = function() {
+        if (_.isUndefined(this.references)) {
+          return;
         }
-      }
+
+        var self = this;
+        _.forEach(self.references, function(reference) {
+          reference.unloadCall(self);
+        });
+
+        delete self.references;
+      };
+
+      this.unloadAssociations = function() {
+        this.unloadReferences();
+      };
+
+      this.unload = function() {
+        this.unloadAssociations();
+        this.unloadChildren();
+        this.unloadParent();
+      };
+    }
+
+    function Reference(callgraph, ref) {
+      this.ref = ref;
+      this.callgraph = callgraph;
+
+      this.type = 'Reference';
+
+      this.calls = [];
+
+      callgraph.references.push(this);
+
+      this.checkUnload = function() {
+        if (this.calls.length === 0 && this.callgroups.length) {
+          this.unload();
+        }
+      };
+
+      this.unloadCall = function(call) {
+        removeFromArray(this.calls, call);
+        this.checkUnload();
+      };
+
+      this.unload = function() {
+        var self = this;
+
+        _.forEach(self.calls, function(call) {
+          removeFromArray(call.references, self);
+        });
+
+        removeFromArray(callgraph.references, self);
+      };
+
+      this.addCall = function(call) {
+        this.calls.push(call);
+      };
+    }
+
+    function CallGroup(callgraph, callgroup, parent) {
+      this.callgroup = callgroup;
+      this.callgraph = callgraph;
+      this.parent = parent;
+
+      this.type = 'CallGroup';
+
+      this.getDuration = function() {
+        return this.callgroup.duration;
+      };
+
+      this.loadChildren = function() {
+        var self = this;
+
+        return self.call.getCallGroups().then(function(children) {
+          self.children = _.map(children, function(child) {
+            return self.callgraph.addCallGroup(child, self);
+          });
+
+          return self.children;
+        });
+      };
+
+      this.loadParent = function() {
+        var self = this;
+
+        return self.call.getCaller().then(function(caller) {
+          self.parent = self.callgraph.addCall(caller);
+
+          removeFromArray(self.callgraph.roots, self);
+          self.callgraph.roots.push(self.parent);
+
+          return self.parent;
+        });
+      };
+
+      this.unloadParent = function() {
+        if (_.isUndefined(this.parent)) {
+          return;
+        }
+
+        this.parent.unloadParent();
+        this.parent.unloadAssociations();
+
+        removeFromArray(this.callgraph.roots, this.parent);
+        this.callgraph.roots.push(this);
+
+        delete this.parent;
+      };
+
+      this.unloadChildren = function() {
+        if (_.isUndefined(this.children)) {
+          return;
+        }
+
+        _.forEach(this.chilren, function(child) {
+          child.unloadChildren();
+          child.unloadAssociations();
+        });
+
+        delete this.chilren;
+      };
+
+      this.unloadReferences = function() {
+        if (_.isUndefined(this.references)) {
+          return;
+        }
+
+        var self = this;
+        _.forEach(self.references, function(reference) {
+          reference.unloadCall(self);
+        });
+
+        delete self.references;
+      };
+
+      this.unloadAssociations = function() {
+        this.unloadReferences();
+      };
+
+      this.unload = function() {
+        this.unloadAssociations();
+        this.unloadChildren();
+        this.unloadParent();
+      };
+
+      this.loadCall = function() {
+        var self = this;
+
+        return self.callgroup.getCalls().then(function(calls) {
+          self.unloadAssociations();
+
+          if (self.parent) {
+            removeFromArray(self.parent.children, self);
+
+            _.forEach(calls, function(call) {
+              self.parent.children.push(
+                self.callgraph.addCall(call, self.parent));
+            });
+          } else {
+            removeFromArray(self.callgraph.roots, self);
+
+            _.forEach(calls, function(call) {
+              self.callgraph.roots.push(
+                self.callgraph.addCall(call));
+            });
+          }
+        });
+      };
+    }
+
+    return function() {
+      return new CallGraph();
     };
   }]);
