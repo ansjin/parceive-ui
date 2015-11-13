@@ -4,11 +4,12 @@ angular
   .factory('profilerViewHelper', profilerViewHelper);
 
 // inject dependencies
-profilerViewHelper.$inject = ['d3', 'SizeService', 'GradientService'];
+profilerViewHelper.$inject = [];
 
-function profilerViewHelper(d3, SizeService, GradientService) {
+function profilerViewHelper() {
   var factory = {
-    appendDeep: appendDeep
+    appendDeep: appendDeep,
+    findDeep: findDeep
   };
 
   return factory;
@@ -51,5 +52,26 @@ function profilerViewHelper(d3, SizeService, GradientService) {
     } else {
       recurse(finalObj.children, obj);
     }
+  }
+
+  function findDeep(obj, id) {
+    function recurse(children, id) {
+      for (var i = children.length - 1; i >= 0; i--) {
+        if (children[i].id === id) {
+          return children[i];
+        }
+        if (children[i].hasOwnProperty('children') === true) {
+          recurse(children[i].children, id);
+        }
+      }
+    }
+
+    if (obj.id === id) {
+      return obj;
+    } else {
+      recurse(obj.children, id);
+    }
+
+    return {};
   }
 }
