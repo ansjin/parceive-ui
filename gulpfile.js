@@ -174,7 +174,11 @@ gulp.task('doc', function() {
 });
 
 gulp.task('db', function(cb) {
-  processDB.all('./import/', './data/', cb);
+  processDB.all('./import/', './data/', './tmp/databases').then(function(){
+    cb();
+  }, function(err) {
+    cb(err);
+  });
 });
 
 gulp.task('build', ['bower', 'lint', 'minify-js', 'minify-js-deps',
