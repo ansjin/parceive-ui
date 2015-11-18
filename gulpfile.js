@@ -174,7 +174,7 @@ gulp.task('doc', function() {
 });
 
 gulp.task('db', function(cb) {
-  processDB.all('./import/', './data/', './tmp/databases').then(function(){
+  processDB.all('./import/', './data/', './tmp/databases/').then(function(){
     cb();
   }, function(err) {
     cb(err);
