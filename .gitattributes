@@ -1,7 +1,1 @@
-examples/cppunit_1.db filter=lfs diff=lfs merge=lfs -text
-examples/cppunit_2.db filter=lfs diff=lfs merge=lfs -text
-examples/cppunit_3.db filter=lfs diff=lfs merge=lfs -text
-examples/cppunit_4.db filter=lfs diff=lfs merge=lfs -text
-examples/cppunit_5.db filter=lfs diff=lfs merge=lfs -text
-examples/cppunit_6.db filter=lfs diff=lfs merge=lfs -text
-examples/cppunit_7.db filter=lfs diff=lfs merge=lfs -text
+examples/*.db filter=lfs diff=lfs merge=lfs -text
