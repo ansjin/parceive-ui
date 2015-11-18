@@ -208,7 +208,7 @@ gulp.task('tests', ['build', 'test-build'], function(cb) {
   var server = app.listen(12345, function() {
     var exec = require('child_process').exec;
 
-    exec('./node_modules/mocha-phantomjs/bin/mocha-phantomjs ' +
+    exec('./node_modules/mocha-phantomjs/bin/mocha-phantomjs --timeout 5000 ' +
         'http://localhost:12345/test.html', function(error, stdout/*, stderr*/) {
       console.log(stdout);
 
