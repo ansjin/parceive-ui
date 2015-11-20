@@ -67,7 +67,8 @@ function render(d3, pdh, pvh, size, grad) {
     var partition = null; // holds modified d3 partition value function
     var zoomId = null; // id of call or callGroup that is currently zoomed to top
     var zoomHistory = []; // stores previously zoomed nodes
-    var selectedNodes = []; // stores selected nodes
+    var selectedTracingNodes = []; // stores selected nodes for tracing
+    var selectedProfilingNodes = []; // stores selected nodes for profiling
     var minTooltipWidth = 150; // minimun width of the tooltip
     var gradient = null; // holds gradient function
     var widthScale = null; // holds function to calculate width of call
@@ -262,8 +263,14 @@ function render(d3, pdh, pvh, size, grad) {
       }
 
       // highlight selected nodes if any are present
-      if (selectedNodes.length > 0) {
-        displaySelectedNodes(svg.selectAll('rect'));
+      if (isTracing()) {
+        if (selectedTracingNodes.length > 0) {
+          displaySelectedNodes(svg.selectAll('rect'));
+        }
+      } else {
+        if (selectedProfilingNodes.length > 0) {
+          displaySelectedNodes(svg.selectAll('rect'));
+        }
       }
     }
 
@@ -347,6 +354,8 @@ function render(d3, pdh, pvh, size, grad) {
     function setSelectedNodes(d, obj) {
       var node;
       var rectSelect = d3.select(obj);
+      var selectedNodes = isTracing()
+        ? selectedTracingNodes : selectedProfilingNodes;
 
       if (!rectSelect.empty()) {
         if (rectSelect.attr('prev-color') === null) {
@@ -359,11 +368,19 @@ function render(d3, pdh, pvh, size, grad) {
           // add node to selection
           node = _.findWhere(selectedNodes, {id: d.id});
           if (node === undefined) {
-            selectedNodes.push({
-              type: 'Call',
-              id: d.id,
-              isMarked: true
-            });
+            if (isTracing()) {
+              selectedTracingNodes.push({
+                type: 'Call',
+                id: d.id,
+                isMarked: true
+              });
+            } else {
+              selectedProfilingNodes.push({
+                type: 'CallGroup',
+                id: d.id,
+                isMarked: true
+              });
+            }
           }
         } else {
           var prevColor = rectSelect.attr('prev-color');
@@ -373,13 +390,20 @@ function render(d3, pdh, pvh, size, grad) {
           // remove node from selection
           node = _.findWhere(selectedNodes, {id: d.id});
           if (node !== undefined) {
-            selectedNodes.splice(selectedNodes.indexOf(node), 1);
+            if (isTracing()) {
+              selectedTracingNodes.splice(selectedNodes.indexOf(node), 1);
+            } else {
+              selectedProfilingNodes.splice(selectedNodes.indexOf(node), 1);
+            }
           }
         }
       }
     }
 
     function displaySelectedNodes(selection) {
+      var selectedNodes = isTracing()
+        ? selectedTracingNodes : selectedProfilingNodes;
+
       selection
         .each(function(d) {
           var selected = d3.select(this);
