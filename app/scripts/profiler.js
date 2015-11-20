@@ -39,7 +39,9 @@ render.$inject = [
 // render the view
 function render(d3, pdh, pvh, size, grad) {
   return function(svg, stateManager) {
-    var viewMode = 'P'; // valid values T = tracing, P = profiling
+    var viewMode = 'T'; // valid values T = tracing, P = profiling
+    var initTracingMode = true; // checks if tracing view has been loaded before
+    var initProfilingMode = false; // checks if profiling view has been loaded before
     var mainDuration = null; // runtime of main function
     var mainCallId = null; // ID of main function
     var mainCallGroupId = null; // callGroup ID of main
@@ -47,7 +49,7 @@ function render(d3, pdh, pvh, size, grad) {
     var thresholdFactor = 1; // % of runtime required for children to load
     var tracingData = {}; // data object for tracing view
     var profilingData = {}; // data object for profiling view
-    var viewData = {};
+    var viewData = {}; // store the current data used to display profiler
     var callHistory = []; // stores id's of calls that have been retrieved
     var callGroupHistory = []; // stores id's of call groups that have been retrieved
     var rectHeight = 22; // height of the bars in the profiler
@@ -93,12 +95,40 @@ function render(d3, pdh, pvh, size, grad) {
       return viewMode === 'T';
     }
 
+    function toggleViewMode() {
+      viewMode = viewMode === 'T' ? 'P' : 'T';
+      adjustLevel = 0;
+      zoomId = isTracing() ? mainCallId : mainCallGroupId;
+      zoomHistory = [];
+
+      if (isTracing()) {
+        if (initTracingMode) {
+          displayView();
+        } else {
+          zoomId = null;
+          loadView();
+          initTracingMode = true;
+        }
+      } else {
+        if (initProfilingMode) {
+          displayView();
+        } else {
+          zoomId = null;
+          loadView();
+          initProfilingMode = true;
+        }
+      }
+
+      // update toggle button
+      var state = !isTracing() ? 'Tracing' : 'Profiling';
+      $('#profiler-view-toggle').text('Switch to ' + state);
+    }
+
     // load view depending on current view mode
     function loadView() {
       var ids = (isTracing()) ? [mainCallId] : [mainCallGroupId];
       var ancestor = 'null';
       var level = 1;
-      resetZoom();
       setRuntimeThreshold(mainDuration);
       getViewData(ids, ancestor, level);
     }
@@ -195,8 +225,6 @@ function render(d3, pdh, pvh, size, grad) {
         viewData = isTracing() 
         ? tracingData : profilingData;
       }
-
-      console.log(viewData);
       
       // partition view data using d3's parition layout function
       var nodes = partition.nodes(viewData);
@@ -282,7 +310,8 @@ function render(d3, pdh, pvh, size, grad) {
       tooltip.classed('hidden', false);
 
       // broadcast hover action through state manager
-      stateManager.hover([{type: 'Call', id: d.id}]);
+      var hoverType = isTracing() ? 'Call' : 'CallGroup';
+      stateManager.hover([{type: hoverType, id: d.id}]);
     }
 
     function removeNodeHighlight() {
@@ -505,16 +534,24 @@ function render(d3, pdh, pvh, size, grad) {
 
     function zoomToTop() {
       adjustLevel = 0;
-      setRuntimeThreshold(mainDuration);
       zoomId = isTracing() ? mainCallId : mainCallGroupId;
+      zoomHistory = [];
+      setRuntimeThreshold(mainDuration);
       displayView();
     }
 
-    function resetZoom() {
-      // reset zoom variables
-      zoomId = null;
-      zoomHistory = [];
-    }
+    // temp solution to set click handler for profiler reset btn
+    window.setTimeout(function() {
+      document.getElementById('profiler-reset')
+      .addEventListener('click', function() {
+        zoomToTop();
+      });
+
+      document.getElementById('profiler-view-toggle')
+      .addEventListener('click', function() {
+        toggleViewMode();
+      });
+    }, 1000);
 
     // start the view
     init();
