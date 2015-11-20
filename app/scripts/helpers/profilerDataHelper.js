@@ -95,9 +95,6 @@ function profilerDataHelper(LoaderService) {
         }
 
         return new RSVP.resolve(temp);
-      }, function(err) {
-        // error handler
-        console.log(err);
       });
 
     return promise;

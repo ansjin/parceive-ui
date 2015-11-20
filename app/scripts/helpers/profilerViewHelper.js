@@ -16,14 +16,16 @@ function profilerViewHelper() {
 
   function appendDeep(finalObj, obj, isTracing) {
     var recurse = function(children, obj) {
-      for (var i = 0, len = children.length; i < len; i++) {
+      for (var i = 0, len = children.length || 0; i < len; i++) {
         if (obj.ancestor === children[i].id) {
           appendData(children[i], obj);
           break;
         } else {
           // if object isn't direct child of first object
           // then recurse children till you find its parent
-          recurse(children[i].children, obj);
+          if (children.hasOwnProperty('children') === true) {
+            recurse(children[i].children, obj);
+          }
         }
       }
     };
@@ -55,10 +57,12 @@ function profilerViewHelper() {
   }
 
   function findDeep(obj, id) {
+    var val = {};
+
     function recurse(children, id) {
       for (var i = children.length - 1; i >= 0; i--) {
         if (children[i].id === id) {
-          return children[i];
+          val = children[i];
         }
         if (children[i].hasOwnProperty('children') === true) {
           recurse(children[i].children, id);
@@ -67,11 +71,11 @@ function profilerViewHelper() {
     }
 
     if (obj.id === id) {
-      return obj;
+      val = obj;
     } else {
       recurse(obj.children, id);
     }
 
-    return {};
+    return val;
   }
 }
