@@ -102,7 +102,7 @@ function profilerDataHelper(LoaderService) {
 
   function getViewData(ids, ancestor, level, viewMode) {
     var promises = [];
-    var func = (viewMode === 'T') ? getCall : getCallGroup;
+    var func = viewMode === 'T' ? getCall : getCallGroup;
     for (var i = 0, len = ids.length; i < len; i++) {
       var promise = func(ids[i], ancestor, level);
       promises.push(promise);

@@ -1,7 +1,4 @@
-/* global $ */
-/* global window */
-/* global document */
-/* global console */
+/* global $, window, document */
 
 angular
   .module('profile-view', ['app'])
@@ -29,10 +26,10 @@ function hoverCb() {
 
 // inject view dependencies
 render.$inject = [
-  'd3', 
-  'profilerDataHelper', 
-  'profilerViewHelper', 
-  'SizeService', 
+  'd3',
+  'profilerDataHelper',
+  'profilerViewHelper',
+  'SizeService',
   'GradientService'
 ];
 
@@ -89,7 +86,6 @@ function render(d3, pdh, pvh, size, grad) {
 
     function setRuntimeThreshold(runtime) {
       runtimeThreshold = Math.ceil(runtime * (thresholdFactor / 100));
-      console.log(runtimeThreshold.toLocaleString(), mainDuration.toLocaleString());
     }
 
     function isTracing() {
@@ -128,7 +124,7 @@ function render(d3, pdh, pvh, size, grad) {
 
     // load view depending on current view mode
     function loadView() {
-      var ids = (isTracing()) ? [mainCallId] : [mainCallGroupId];
+      var ids = isTracing() ? [mainCallId] : [mainCallGroupId];
       var ancestor = 'null';
       var level = 1;
       setRuntimeThreshold(mainDuration);
@@ -216,19 +212,17 @@ function render(d3, pdh, pvh, size, grad) {
       }
 
       // if scrollbar is present, reduce the svg width a bit
-      svgWidth = svgElem.scrollHeight > svgParentElem.clientHeight
-        ? '98%' : '100%';
+      svgWidth = svgElem.scrollHeight > svgParentElem.clientHeight ?
+      '98%' : '100%';
 
       if (zoomId !== null) {
         // if we're zooming, retrieve zoomed sub section of view data
-        viewData = isTracing() 
-        ? pvh.findDeep(tracingData, zoomId)
-        : pvh.findDeep(profilingData, zoomId);
+        viewData = isTracing() ?
+        pvh.findDeep(tracingData, zoomId) : pvh.findDeep(profilingData, zoomId);
       } else {
-        viewData = isTracing() 
-        ? tracingData : profilingData;
+        viewData = isTracing() ? tracingData : profilingData;
       }
-      
+
       // partition view data using d3's parition layout function
       var nodes = partition.nodes(viewData);
 
@@ -236,7 +230,7 @@ function render(d3, pdh, pvh, size, grad) {
       widthScale = d3.scale.linear()
         .domain([0, nodes[0].duration])
         .range([0, svgWidth]);
-      
+
       // define scale for x coordinate values
       xScale = d3.scale.linear()
         .domain([nodes[0].start, nodes[0].end])
@@ -293,7 +287,7 @@ function render(d3, pdh, pvh, size, grad) {
       var svgWidthPixels = size.svgSizeById(profileId).width;
       var tooltipPadding = 20;
       var tooltipWidth = _.max([
-        minTooltipWidth, 
+        minTooltipWidth,
         size.textSize(d.name, 14).width
       ]);
 
@@ -335,7 +329,7 @@ function render(d3, pdh, pvh, size, grad) {
       clickThis = this;
       clickData = d;
       clickCount++;
-      
+
       // evaluate click count after defined time
       window.setTimeout(function() {
         // for two clicks, zoom to node
@@ -356,8 +350,8 @@ function render(d3, pdh, pvh, size, grad) {
     function setSelectedNodes(d, obj) {
       var node;
       var rectSelect = d3.select(obj);
-      var selectedNodes = isTracing()
-        ? selectedTracingNodes : selectedProfilingNodes;
+      var selectedNodes = isTracing() ?
+      selectedTracingNodes : selectedProfilingNodes;
 
       if (!rectSelect.empty()) {
         if (rectSelect.attr('prev-color') === null) {
@@ -403,8 +397,8 @@ function render(d3, pdh, pvh, size, grad) {
     }
 
     function displaySelectedNodes(selection) {
-      var selectedNodes = isTracing()
-        ? selectedTracingNodes : selectedProfilingNodes;
+      var selectedNodes = isTracing() ?
+      selectedTracingNodes : selectedProfilingNodes;
 
       selection
         .each(function(d) {
@@ -431,13 +425,13 @@ function render(d3, pdh, pvh, size, grad) {
         .attr('stroke-opacity', 1)
         .attr('stroke-width', 2)
         .attr('id', function(d) {
-          return d.id; 
+          return d.id;
         })
-        .attr('fill', function(d) { 
-          return gradient(d.duration); 
+        .attr('fill', function(d) {
+          return gradient(d.duration);
         })
-        .attr('x', function(d) { 
-          return xScale(d.start); 
+        .attr('x', function(d) {
+          return xScale(d.start);
         })
         .attr('width', function(d) {
           return widthScale(d.duration);
@@ -466,8 +460,8 @@ function render(d3, pdh, pvh, size, grad) {
         .duration(transTime)
         .ease(transType)
         .attr('fill-opacity', 1)
-        .attr('height', function() { 
-          return rectHeight; 
+        .attr('height', function() {
+          return rectHeight;
         })
         .attr('y', function(d) {
           return rectHeight * (d.level - adjustLevel) - rectHeight;
