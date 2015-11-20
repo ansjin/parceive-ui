@@ -39,7 +39,7 @@ render.$inject = [
 // render the view
 function render(d3, pdh, pvh, size, grad) {
   return function(svg, stateManager) {
-    var viewMode = 'T'; // valid values T = tracing, P = profiling
+    var viewMode = 'P'; // valid values T = tracing, P = profiling
     var mainDuration = null; // runtime of main function
     var mainCallId = null; // ID of main function
     var mainCallGroupId = null; // callGroup ID of main
@@ -506,9 +506,8 @@ function render(d3, pdh, pvh, size, grad) {
     function zoomToTop() {
       adjustLevel = 0;
       setRuntimeThreshold(mainDuration);
-      resetZoom();
+      zoomId = isTracing() ? mainCallId : mainCallGroupId;
       displayView();
-      //loadChildren(d.id, d.calls, d.level);
     }
 
     function resetZoom() {
