@@ -101,6 +101,7 @@ function render(d3, pdh, pvh, size, grad) {
       adjustLevel = 0;
       zoomId = isTracing() ? mainCallId : mainCallGroupId;
       zoomHistory = [];
+      maxLevel = 1;
 
       if (isTracing()) {
         if (initTracingMode) {
@@ -158,6 +159,9 @@ function render(d3, pdh, pvh, size, grad) {
 
             // call getViewData on children of obj
             loadChildren(obj.id, obj.calls, level);
+
+            // update the display
+            displayView();
           }
         });
     }
@@ -174,8 +178,6 @@ function render(d3, pdh, pvh, size, grad) {
       if (children.length > 0) {
         getViewData(children, id, level + 1);
       }
-
-      displayView();
     }
 
     // add an object to the children element of tracing or profiling data
@@ -252,14 +254,14 @@ function render(d3, pdh, pvh, size, grad) {
       // set click/dblClick handlers for rect and text
       svgClickHander(svg.selectAll('rect, text'));
 
+      // adjust svg height, so scrollbars appear if any
+      var newSvgHeight = rectHeight * (maxLevel - adjustLevel);
+      svg.style('height', newSvgHeight + 'px');
+
       // if we are zooming a node to top
       if (zoomId !== null) {
         drawRectSvgZoom(svg.selectAll('rect'));
         drawTextSvgZoom(svg.selectAll('text'));
-        
-        // re-calculate svg height, so scrollbars appear if any
-        var newSvgHeight = rectHeight * (maxLevel - adjustLevel);
-        svg.style('height', newSvgHeight + 'px');
       }
 
       // highlight selected nodes if any are present
@@ -428,7 +430,7 @@ function render(d3, pdh, pvh, size, grad) {
         .attr('stroke', 'white')
         .attr('stroke-opacity', 1)
         .attr('stroke-width', 2)
-        .attr('id', function(d) { 
+        .attr('id', function(d) {
           return d.id; 
         })
         .attr('fill', function(d) { 
@@ -560,11 +562,12 @@ function render(d3, pdh, pvh, size, grad) {
       adjustLevel = 0;
       zoomId = isTracing() ? mainCallId : mainCallGroupId;
       zoomHistory = [];
+      maxLevel = 1;
       setRuntimeThreshold(mainDuration);
       displayView();
     }
 
-    // temp solution to set click handler for profiler reset btn
+    // temp solution to set click handler for profiler btns
     window.setTimeout(function() {
       document.getElementById('profiler-reset')
       .addEventListener('click', function() {
