@@ -133,7 +133,7 @@ function wrap(data, type, mapper) {
   for (var relationshipName in type.relationships) {
     var relationshipMeta = type.relationships[relationshipName];
 
-    if (!relationshipMeta.many && !relationshipMeta.manyToMany) {
+    if (!relationshipMeta.many) {
       obj[relationshipName + 'ID'] = data[relationshipName];
     }
   }
@@ -437,11 +437,7 @@ function getRelationship(http, manager, instance, relationship) {
   var promise;
 
   var relationMeta = type.relationships[relationship];
-  if (relationMeta.manyToMany) {
-    promise =  getManyURL(http, manager, getRelationshipTemplate(
-      {type: type.plural, id: instance.id,
-      relationship: relationship}), manager.types[relationMeta.type]);
-  } else if (relationMeta.many) {
+  if (relationMeta.many) {
     var deferred = RSVP.defer();
 
     addToPipeline(type, instance.id, deferred, relationship);
@@ -449,6 +445,10 @@ function getRelationship(http, manager, instance, relationship) {
 
     promise = deferred.promise;
   } else {
+    if (_.isUndefined(instance[relationship])) {
+      return RSVP.Promise.resolve(instance[relationship]);
+    }
+
     var relationType = manager.types[relationMeta.type];
 
     promise = getSpecific(http, manager, relationType, instance[relationship]);
@@ -507,7 +507,7 @@ var Call = {
   typeName: 'Call',
   singular: 'call',
   plural: 'calls',
-  properties: ['process', 'thread', 'function', 'instruction', 'callGroup',
+  properties: ['thread', 'function', 'instruction', 'callGroup',
                 'start', 'end', 'caller', 'callsOthers', 'duration'],
   relationships: {
     'thread': {
@@ -997,16 +997,10 @@ var Thread = {
   typeName: 'Thread',
   singular: 'thread',
   plural: 'threads',
-  properties: ['instruction', 'parent', 'child'],
+  properties: ['instruction', 'process'],
   relationships: {
     'instruction': {
       type: 'Instruction'
-    },
-    'parent': {
-      type: 'Thread'
-    },
-    'child': {
-      type: 'Thread'
     },
     'calls': {
       type: 'Call',
@@ -1025,13 +1019,11 @@ var Thread = {
   /** @return {external:Promise.<Thread>} The parent thread
     * @instance */
   getParent: function ThreadGetParent() {
-    return this._mapper.getRelationship(this, 'parent');
-  },
-
-  /** @return {external:Promise.<Thread>} The child thread
-    * @instance */
-  getChild: function() {
-    return this._mapper.getRelationship(this, 'child');
+    return this.getInstruction().then(function(instruction) {
+      return instruction.getCall();
+    }).then(function(call) {
+      return call.getThread();
+    });
   },
 
   /** @return {external:Promise.<Call[]>} Calls made by this thread

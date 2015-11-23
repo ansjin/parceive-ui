@@ -8,7 +8,6 @@ var loopexecutions = require('./loopexecution');
 
 var mapping = {
   'Id': 'id',
-  'Process': 'process',
   'Thread': 'thread',
   'Function': 'function',
   'Instruction': 'instruction',

@@ -6,10 +6,9 @@ var util = require('./util');
 var calls = require('./call');
 
 var mapping = {
-  'ID': 'id',
-  'INSTRUCTION_ID': 'instruction',
-  'PARENT_THREAD_ID': 'parent',
-  'CHILD_THREAD_ID': 'child'
+  'Id': 'id',
+  'Instruction': 'instruction',
+  'Process': 'process'
 };
 
 router.get('/', function(req, res) {
