@@ -10,7 +10,8 @@ var mapping = {
   'Function': 'function',
   'Caller': 'caller',
   'Count': 'count',
-  'Parent': 'parent'
+  'Parent': 'parent',
+  'Duration': 'duration'
 };
 
 router.get('/', function(req, res) {
@@ -22,7 +23,7 @@ router.get('/many/:ids/calls', function(req, res) {
     'Call WHERE CallGroup');
 });
 
-router.get('/many/:ids/groups', function(req, res) {
+router.get('/many/:ids/callgroups', function(req, res) {
   util.handleManyQuery(req.db, mapping, res, req.params.ids,
     'CallGroup WHERE Parent');
 });
@@ -37,7 +38,7 @@ router.get('/:id/calls', function(req, res) {
     'SELECT * FROM Call WHERE CallGroup=?', req.params.id);
 });
 
-router.get('/:id/groups', function(req, res) {
+router.get('/:id/callgroups', function(req, res) {
   util.handleRelationshipQuery(req.db, mapping, res,
     'SELECT * FROM CallGroup WHERE Parent=?', req.params.id);
 });
