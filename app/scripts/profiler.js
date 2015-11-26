@@ -74,6 +74,15 @@ function render(d3, pdh, pvh, size, grad) {
     var clickData = null; // clicked node data
     var clickThis = null; // reference to the 'this' for the clicked node
 
+    var zoomTracingId = null;
+    var zoomProfilingId = null;
+    var zoomTracingHistory = [];
+    var zoomProfilingHistory = [];
+    var zoomTracingAdjustment = 0;
+    var zoomProfilingAdjustment = 0;
+    var zoomTracingMaxLevel = 1;
+    var zoomProfilingMaxLevel = 1;
+
     function init() {
       // get "main" function data
       pdh.getMain().then(function(call) {
@@ -93,13 +102,26 @@ function render(d3, pdh, pvh, size, grad) {
     }
 
     function toggleViewMode() {
+      if (isTracing()) {
+        zoomTracingId = zoomId;
+        zoomTracingHistory = zoomHistory;
+        zoomTracingAdjustment = adjustLevel;
+        zoomTracingMaxLevel = maxLevel;
+      } else {
+        zoomProfilingId = zoomId;
+        zoomProfilingHistory = zoomHistory;
+        zoomProfilingAdjustment = adjustLevel;
+        zoomProfilingMaxLevel = maxLevel;
+      }
+
       viewMode = viewMode === 'T' ? 'P' : 'T';
-      adjustLevel = 0;
-      zoomId = isTracing() ? mainCallId : mainCallGroupId;
-      zoomHistory = [];
-      maxLevel = 1;
 
       if (isTracing()) {
+        zoomId = zoomTracingId === null ? mainCallId : zoomTracingId;
+        zoomHistory = zoomTracingHistory.length === 0 ? [] : zoomTracingHistory;
+        adjustLevel = zoomTracingAdjustment > 0 ? zoomTracingAdjustment : 0;
+        maxLevel = zoomTracingMaxLevel > 1 ? zoomTracingMaxLevel : 1;
+
         if (initTracingMode) {
           displayView();
         } else {
@@ -108,6 +130,11 @@ function render(d3, pdh, pvh, size, grad) {
           initTracingMode = true;
         }
       } else {
+        zoomId = zoomProfilingId === null ? mainCallGroupId : zoomProfilingId;
+        zoomHistory = zoomProfilingHistory.length === 0 ? [] : zoomProfilingHistory;
+        adjustLevel = zoomProfilingAdjustment > 0 ? zoomProfilingAdjustment : 0;
+        maxLevel = zoomProfilingMaxLevel > 1 ? zoomProfilingMaxLevel : 1;
+
         if (initProfilingMode) {
           displayView();
         } else {
