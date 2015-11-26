@@ -1,1 +1,32 @@
-123454
+<div class="panel panel-default" id="{{::uniqueId}}">
+  <div class="panel-heading">Views
+
+	<select  id="selectview" name="views "ng-model="selectedId" ng-change="myFunction(uniqueId, selectedId)">
+		<option selected="selected" disabled="disabled">Views</option>
+      <option ng-repeat="view in allviews" value="{{view.id}}">{{view.name}}</option>
+    </select>
+	<select id="selectalignment"class="btn dropdown-toggle" id="select_menu" onchange="swapContent(this)">;
+		<option selected="selected" disabled="disabled">Split option</option>
+		<option value="SplitHorizontal">SplitHorizontal </option>
+		<option value="SplitVertical">SplitVertical </option>
+	</select>
+   </div>
+   <div class="panel-body">
+
+		<div  ng-show="hasRun && !({{uniqueId}}.viewLoaded)"  ng-model="selectedView" ng-repeat = "view in allviews" class="viewslist">
+				<button type="button" class="btn btn-sm" ng-click="myFunction(uniqueId,view.id)">{{view.name}}
+				</button>
+				
+		</div>
+	  <d3Visualization id="{{::uniqueId}}" class="d3view"/>
+	  
+    </div>
+    <script type="text/javascript">
+     $(document).ready(function(){
+     	var scope = angular.element($("#indexBody")).scope();
+		console.log("scope",scope);
+    	console.log("scope.uniqueId",scope.uniqueId);
+    });
+
+    </script>
+

@@ -3,7 +3,7 @@ angular.module('app')
   .directive('d3Visualization', ['StateService', 'd3',
     function(stateManager, d3) {
       return {
-        restrict: 'E',
+
         scope: {
           data: '='
         },
@@ -21,20 +21,19 @@ angular.module('app')
       };
     }])
   
-  .directive('mypanel',[function(){
-    console.log('panel');
+  .directive('mypanel',function(){
+    console.log('mypanel directive');
+    var uniqueId = 1;
     return {
-      restrict: 'E',
-      scope: {
-      },
-      link: function(scope,element,attrs){
-          console.log("attrs",attrs.data[0]);
-        for (var key in attrs.data) {
-          console.log("Key_value",key);
-          scope[key] = attrs.data[key];
-          console.log("scope",attrs.data[key]);
-        }
+      templateUrl: 'emptypanel.html',
+      scope: false,
+      link: function(scope, elem, attrs) {
+            scope.uniqueId = "panel"+uniqueId++;
+            scope[scope.uniqueId] = {};
+            scope[scope.uniqueId].viewLoaded = false;
+            console.log('linking scope.uniqueId',scope.uniqueId);
 
+        }
        // scope = attrs.data;
 
         /*scope.splitRight = function() {
@@ -52,9 +51,8 @@ angular.module('app')
             template: "empty.html"
           }
         }*/
-      }
-    };
-  }])
+      };
+  })
   
   .controller('viewsController', ['$scope', 'views', 'viewProperties',
                                   'StateService', 'LoaderService',
@@ -64,7 +62,7 @@ angular.module('app')
       function initView(id,svg) {
         var bound = stateManager.bindId(id);
         var view = bound.getData();
-        
+        $scope.viewLoaded = [];
         $scope.data = {
           template: 'emptypanel.html'
         };
@@ -129,6 +127,7 @@ angular.module('app')
         }
 
         $scope.hasRun = ok;
+
       }
 
       $scope.$watch('allruns', runsUpdate);
@@ -155,8 +154,8 @@ angular.module('app')
       $scope.allgroups = stateManager.getGroups();
 
       $scope.myFunction = function(d3ViewId,selectedView) {
-        console.log("myfunction");
-         
+        console.log("myfunction d3ViewId",d3ViewId);
+        console.log("myfunction d3ViewId",selectedView);
         for (var i = $scope.allviews.length - 1; i >= 0; i--) {
             console.log("myFunction SELECTED VIEW",selectedView);
           if($scope.allviews[i].id==selectedView){
@@ -182,6 +181,8 @@ angular.module('app')
             console.log("svg",svg);
             view.unsaved = {svg:svg};
             view.render(svg, stateManager);
+            
+            $scope[d3ViewId].viewLoaded = true;
             return view;
             // scope.allviews[i].data.render(,undefined);
           }

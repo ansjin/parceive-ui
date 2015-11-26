@@ -117,3 +117,13 @@ svg {
 .viewslist {
     text-align: center;
 }
+#selectview {
+    width: 120px;
+    height: 30px;
+    float: right;
+}
+#selectalignment {
+    float: right;
+    width: 120px;
+    height: 30px;
+}

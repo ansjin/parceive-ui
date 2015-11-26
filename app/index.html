@@ -33,9 +33,7 @@
                <select ng-model="selectedRun" ng-options="run for run in allruns"></select>
               </li>
        </ul>
-       <div ng-include = "filePath"></div>
-      <button type="button" ng-click = "nav('horizontal.html')">Split Horizontal </button>
-      <button type="button" ng-click = "nav('vertical.html')">Split Vertical <div ng-include = "vertical.html"></div></button>       
+         
       </div><!-- /.navbar-collapse -->
       </div><!-- /.container -->
       </nav>
@@ -43,11 +41,11 @@
 
       <div class="container-fluid" id ="main">
       
-       <mypanel data="data">
-        {{template}}
-        <div ng-include="template">
-      </mypanel>
-      </div>
+       <!--<mypanel data="data">
+        {{template}}-->
+       <!-- <div ng-include src="'emptypanel_old.html'">-->
+       <div mypanel></div>
+      
 
         <script src="deps.js"></script>
         <script src="code.js"></script>
