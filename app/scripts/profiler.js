@@ -73,6 +73,14 @@ function render(d3, pdh, pvh, size, grad) {
     var clickCount = 0; // click counter for determining double or single click
     var clickData = null; // clicked node data
     var clickThis = null; // reference to the 'this' for the clicked node
+    var zoomTracingId = null; // hold value of zoomId in trace view on mode switch
+    var zoomProfilingId = null; // hold value of zoomId in profiling view on mode switch
+    var zoomTracingHistory = []; // hold trace view zoom history on mode switch
+    var zoomProfilingHistory = []; // hold profiling view zoom history on mode switch
+    var zoomTracingAdjustment = 0; // "adjustLevel" value for tracing on mode switch
+    var zoomProfilingAdjustment = 0; // "adjustLevel" value for profiling on mode switch
+    var zoomTracingMaxLevel = 1; // "maxLevel" value for tracing on mode switch
+    var zoomProfilingMaxLevel = 1; // "maxLevel" value for profiling on mode switch
 
     function init() {
       // get "main" function data
@@ -93,13 +101,31 @@ function render(d3, pdh, pvh, size, grad) {
     }
 
     function toggleViewMode() {
-      viewMode = viewMode === 'T' ? 'P' : 'T';
-      adjustLevel = 0;
-      zoomId = isTracing() ? mainCallId : mainCallGroupId;
-      zoomHistory = [];
-      maxLevel = 1;
-
+      // store some variables for use when returning back to the 
+      // view we are toggling out of
       if (isTracing()) {
+        zoomTracingId = zoomId;
+        zoomTracingHistory = zoomHistory;
+        zoomTracingAdjustment = adjustLevel;
+        zoomTracingMaxLevel = maxLevel;
+      } else {
+        zoomProfilingId = zoomId;
+        zoomProfilingHistory = zoomHistory;
+        zoomProfilingAdjustment = adjustLevel;
+        zoomProfilingMaxLevel = maxLevel;
+      }
+
+      // change view mode
+      viewMode = viewMode === 'T' ? 'P' : 'T';
+
+      // set values for variables used in view we are toggling into
+      // if the variables had a previously saved value, retrieve them.
+      if (isTracing()) {
+        zoomId = zoomTracingId === null ? mainCallId : zoomTracingId;
+        zoomHistory = zoomTracingHistory.length === 0 ? [] : zoomTracingHistory;
+        adjustLevel = zoomTracingAdjustment > 0 ? zoomTracingAdjustment : 0;
+        maxLevel = zoomTracingMaxLevel > 1 ? zoomTracingMaxLevel : 1;
+
         if (initTracingMode) {
           displayView();
         } else {
@@ -108,6 +134,11 @@ function render(d3, pdh, pvh, size, grad) {
           initTracingMode = true;
         }
       } else {
+        zoomId = zoomProfilingId === null ? mainCallGroupId : zoomProfilingId;
+        zoomHistory = zoomProfilingHistory.length === 0 ? [] : zoomProfilingHistory;
+        adjustLevel = zoomProfilingAdjustment > 0 ? zoomProfilingAdjustment : 0;
+        maxLevel = zoomProfilingMaxLevel > 1 ? zoomProfilingMaxLevel : 1;
+
         if (initProfilingMode) {
           displayView();
         } else {
@@ -561,16 +592,22 @@ function render(d3, pdh, pvh, size, grad) {
       displayView();
     }
 
-    // temp solution to set click handler for profiler btns
     window.setTimeout(function() {
+      // add click handler to zoom view to top
       document.getElementById('profiler-reset')
       .addEventListener('click', function() {
         zoomToTop();
       });
 
+      // add click handler to toggle view modes
       document.getElementById('profiler-view-toggle')
       .addEventListener('click', function() {
         toggleViewMode();
+      });
+
+      // add click handler to re-render view on window resize
+      window.addEventListener('resize', function() {
+        displayView();
       });
     }, 1000);
 
