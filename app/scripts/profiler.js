@@ -73,15 +73,14 @@ function render(d3, pdh, pvh, size, grad) {
     var clickCount = 0; // click counter for determining double or single click
     var clickData = null; // clicked node data
     var clickThis = null; // reference to the 'this' for the clicked node
-
-    var zoomTracingId = null;
-    var zoomProfilingId = null;
-    var zoomTracingHistory = [];
-    var zoomProfilingHistory = [];
-    var zoomTracingAdjustment = 0;
-    var zoomProfilingAdjustment = 0;
-    var zoomTracingMaxLevel = 1;
-    var zoomProfilingMaxLevel = 1;
+    var zoomTracingId = null; // hold value of zoomId in trace view on mode switch
+    var zoomProfilingId = null; // hold value of zoomId in profiling view on mode switch
+    var zoomTracingHistory = []; // hold trace view zoom history on mode switch
+    var zoomProfilingHistory = []; // hold profiling view zoom history on mode switch
+    var zoomTracingAdjustment = 0; // "adjustLevel" value for tracing on mode switch
+    var zoomProfilingAdjustment = 0; // "adjustLevel" value for profiling on mode switch
+    var zoomTracingMaxLevel = 1; // "maxLevel" value for tracing on mode switch
+    var zoomProfilingMaxLevel = 1; // "maxLevel" value for profiling on mode switch
 
     function init() {
       // get "main" function data
@@ -102,6 +101,8 @@ function render(d3, pdh, pvh, size, grad) {
     }
 
     function toggleViewMode() {
+      // store some variables for use when returning back to the 
+      // view we are toggling out of
       if (isTracing()) {
         zoomTracingId = zoomId;
         zoomTracingHistory = zoomHistory;
@@ -114,8 +115,11 @@ function render(d3, pdh, pvh, size, grad) {
         zoomProfilingMaxLevel = maxLevel;
       }
 
+      // change view mode
       viewMode = viewMode === 'T' ? 'P' : 'T';
 
+      // set values for variables used in view we are toggling into
+      // if the variables had a previously saved value, retrieve them.
       if (isTracing()) {
         zoomId = zoomTracingId === null ? mainCallId : zoomTracingId;
         zoomHistory = zoomTracingHistory.length === 0 ? [] : zoomTracingHistory;
@@ -588,16 +592,22 @@ function render(d3, pdh, pvh, size, grad) {
       displayView();
     }
 
-    // temp solution to set click handler for profiler btns
     window.setTimeout(function() {
+      // add click handler to zoom view to top
       document.getElementById('profiler-reset')
       .addEventListener('click', function() {
         zoomToTop();
       });
 
+      // add click handler to toggle view modes
       document.getElementById('profiler-view-toggle')
       .addEventListener('click', function() {
         toggleViewMode();
+      });
+
+      // add click handler to re-render view on window resize
+      window.addEventListener('resize', function() {
+        displayView();
       });
     }, 1000);
 
