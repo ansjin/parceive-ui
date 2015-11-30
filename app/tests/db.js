@@ -1,5 +1,5 @@
 describe('Databases', function() {
-  it('contain all databases', function() {
+  it('contains all databases', function() {
     return loader.getRuns().then(function(runs) {
       var i;
       for (i = 1; i <= 7; i++) {
@@ -13,6 +13,30 @@ function checkFunctionCallOnce(name) {
   it('should call ' + name + ' once', function() {
     return loader.getFunctionBySignature(name).then(function(fct) {
       return fct.getCalls().should.eventually.have.length(1);
+    });
+  });
+}
+
+function checkFunctionCaledBy(name, by) {
+  it(by + ' should call ' + name, function() {
+    return loader.getFunctionBySignature(name).then(function(fct) {
+      return fct.getCalls();
+    }).then(function(calls) {
+      calls.should.have.length(1);
+      return RSVP.hash({
+        caller: calls[0].getCaller(),
+        callgroup: calls[0].getCallGroup()
+      });
+    }).then(function(call) {
+      return RSVP.hash({
+        callgroup: call.callgroup,
+        fct: call.caller.getFunction(),
+        callgroupParent: call.callgroup.getParent()
+      });
+    }).then(function(result) {
+      result.fct.signature.should.be.equal(by);
+      result.callgroup.getCallGroups()
+        .should.eventually.contain(result.callgroupParent);
     });
   });
 }
@@ -83,8 +107,8 @@ describe('Unit Test Databases', function() {
 
     genericDBTests();
 
-    checkFunctionCallOnce('foo');
-    checkFunctionCallOnce('bar');
+    checkFunctionCaledBy('foo', 'main');
+    checkFunctionCaledBy('bar', 'main');
   });
 
   describe('cppunit_2', function() {
@@ -125,6 +149,9 @@ describe('Unit Test Databases', function() {
     });
 
     genericDBTests();
+
+    checkFunctionCaledBy('foo', 'main');
+    checkFunctionCaledBy('bar', 'main');
   });
 
   describe('cppunit_7', function() {

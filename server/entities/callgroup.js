@@ -46,7 +46,7 @@ router.get('/:id/callgroups', function(req, res) {
 });
 
 router.get('/:id', function(req, res) {
-  util.handleOneQuery(req.db, mapping, res,
+  util.handleOneQuery(req.db, calls.mapping, res,
     'SELECT * FROM CallGroup WHERE Id=?', req.params.id);
 });
 

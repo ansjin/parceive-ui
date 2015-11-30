@@ -73,8 +73,6 @@ var cache = {};
 var getOneTemplate = _.template('<%= type %>/<%= id %>');
 var getManyTemplate = _.template('<%= type %>/many/<%= ids %>');
 var getAllTemplate = _.template('<%= type %>');
-var getRelationshipTemplate =
-  _.template('<%= type %>/<%= id %>/<%= relationship %>');
 var getManyRelationshipTemplate =
   _.template('<%= type %>/many/<%= ids %>/<%= relationship %>');
 var getFileContentTemplate = _.template('files/<%= id %>/content');
@@ -533,11 +531,25 @@ var Call = {
       many: true,
       inverse: 'caller'
     },
-    'loops': {
+    'loopexecutions': {
       type: 'LoopExecution',
       many: true,
       inverse: 'call'
+    },
+    'callgroups': {
+      type: 'CallGroup',
+      many: true,
+      inverse: 'caller'
+    },
+    'instruction': {
+      type: 'Instruction'
     }
+  },
+
+  /** @instance
+    * @return {external:Promise.<Call>} The parent call */
+  getCaller: function() {
+    return this._mapper.getRelationship(this, 'caller');
   },
 
   /** @instance
@@ -573,13 +585,20 @@ var Call = {
     *                                     call
     */
   getLoopExecutions: function() {
-    return this._mapper.getRelationship(this, 'loops');
+    return this._mapper.getRelationship(this, 'loopexecutions');
   },
 
   /** @instance
     * @return {external:Promise.<CallGroup>} The call group of this call */
   getCallGroup: function() {
     return this._mapper.getRelationship(this, 'callGroup');
+  },
+
+  /** @instance
+    * @return {external:Promise.<CallGroup[]>} The CallGroupsCalled by this
+    *         call*/
+  getCallGroups: function() {
+    return this._mapper.getRelationship(this, 'callgroups');
   },
 
   /** @instance
@@ -632,7 +651,9 @@ var CallGroup = {
   typeName: 'CallGroup',
   singular: 'callgroup',
   plural: 'callgroups',
-  properties: ['function', 'caller', 'count', 'parent', 'duration'],
+  properties: ['function', 'caller', 'count', 'parent', 'end', 'start',
+                'duration'],
+
   relationships: {
     'caller': {
       type: 'Call'
@@ -653,6 +674,12 @@ var CallGroup = {
       many: true,
       inverse: 'parent'
     }
+  },
+
+  /** @instance
+    * @return {external:Promise.<Function>} The function that this call calls */
+  getParent: function() {
+    return this._mapper.getRelationship(this, 'parent');
   },
 
   /** @instance
@@ -847,7 +874,7 @@ var LoopExecution = {
   typeName: 'LoopExecution',
   singular: 'loopexecution',
   plural: 'loopexecutions',
-  properties: ['loop', 'parent', 'duration'],
+  properties: ['loop', 'parent', 'duration', 'call'],
   relationships: {
     'loop': {
       type: 'Loop'
@@ -855,12 +882,15 @@ var LoopExecution = {
     'parent': {
       type: 'LoopExecution'
     },
-    'chilren': {
+    'call': {
+      type: 'Call'
+    },
+    'children': {
       type: 'LoopExecution',
       many: true,
       inverse: 'parent'
     },
-    'iterations': {
+    'loopiterations': {
       type: 'LoopIteration',
       many: true,
       inverse: 'execution'
@@ -882,13 +912,52 @@ var LoopExecution = {
   /** @instance
     * @return {external:Promise.<LoopExecution[]>} The children of the loop */
   getChildren: function() {
-    return this._mapper.getRelationship(this, 'chilren');
+    return this._mapper.getRelationship(this, 'children');
   },
 
   /** @instance
     * @return {external:Promise.<LoopIteration[]>} The iterations of the loop */
-  getIterations: function() {
-    return this._mapper.getRelationship(this, 'iterations');
+  getLoopIterations: function() {
+    return this._mapper.getRelationship(this, 'loopiterations');
+  },
+
+  /** @instance
+    * @return {external:Promise.<Call[]>} The calls that are made as part of
+              this execution */
+  getCalls: function() {
+    return this.getLoopIterations().then(function(iterations) {
+      return RSVP.all(_.map(iterations, function(iteration) {
+        return iteration.getCalls();
+      }));
+    }).then(function(array) {
+      return _.unique(_.flatten(array));
+    });
+  },
+
+  /** @instance
+    * @return {external:Promise.<Reference>} The references that are accessed by
+              this execution */
+  getReferences: function() {
+    return this.getLoopIterations().then(function(iterations) {
+      return RSVP.all(_.map(iterations, function(iteration) {
+        return iteration.getReferences();
+      }));
+    }).then(function(array) {
+      return _.unique(_.flatten(array));
+    });
+  },
+
+  /** @instance
+    * @return {external:Promise.<CallGroup[]>} The call groups that are called
+              by this execution */
+  getCallGroups: function() {
+    return this.getLoopIterations().then(function(iterations) {
+      return RSVP.all(_.map(iterations, function(iteration) {
+        return iteration.getCallGroups();
+      }));
+    }).then(function(array) {
+      return _.unique(_.flatten(array));
+    });
   },
 };
 
@@ -916,10 +985,41 @@ var LoopIteration = {
   },
 
   /** @instance
-    * @return {external:Promise.<Function>} The segment executed by this
+    * @return {external:Promise.<Segment>} The segment executed by this
     *         iteration */
   getSegment: function() {
     return this._mapper.getRelationship(this, 'segment');
+  },
+
+  /** @instance
+    * @return {external:Promise.<Call[]>} The calls that are made as part of
+              this iteration */
+  getCalls: function() {
+    return this.getSegment().then(function(segment) {
+      return segment.getCalls();
+    });
+  },
+
+  /** @instance
+    * @return {external:Promise.<Reference>} The references that are accessed by
+              this iteration */
+  getReferences: function() {
+    return this.getSegment().then(function(segment) {
+      return segment.getReferences();
+    });
+  },
+
+  /** @instance
+    * @return {external:Promise.<CallGroup[]>} The call groups that are called
+              by this iteration */
+  getCallGroups: function() {
+    return this.getCalls().then(function(calls) {
+      return RSVP.all(_.map(calls, function(call) {
+        return call.getCallGroup();
+      }));
+    }).then(function(array) {
+      return _.unique(_.flatten(array));
+    });
   },
 };
 
@@ -995,6 +1095,31 @@ var Segment = {
     * @instance */
   getInstructions: function() {
     return this._mapper.getRelationship(this, 'instructions');
+  },
+
+  /** @instance
+    * @return {external:Promise.<Call[]>} The calls made by this segment */
+  getCalls: function() {
+    return this.getInstructions().then(function(instructions) {
+      return RSVP.all(_.map(instructions, function(instruction) {
+        return instruction.getCalls();
+      }));
+    }).then(function(array) {
+      return _.unique(_.flatten(array));
+    });
+  },
+
+  /** @instance
+    * @return {external:Promise.<Reference[]>} The references accessed by this
+              segment */
+  getReferences: function() {
+    return this.getInstructions().then(function(instructions) {
+      return RSVP.all(_.map(instructions, function(instruction) {
+        return instruction.getReferences();
+      }));
+    }).then(function(array) {
+      return _.unique(_.flatten(array));
+    });
   }
 };
 

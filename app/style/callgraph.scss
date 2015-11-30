@@ -1,54 +1,17 @@
 @import "colors";
 
 g.callgraph {
-  line.edge {
-    opacity: 0.2;
-  }
-
-  line.edge-call {
-    opacity: 0.4;
-    stroke: $red;
-  }
-
-  line.edge-ref {
-    stroke: $blue;
-  }
-
-  g.call {
+  g.node {
     rect.call-bg {
       fill: $base2;
       stroke: $base1;
     }
-
-    rect.call-refs {
-      fill: $green;
-    }
-
-    rect.call-calls {
-      fill: $green;
-    }
   }
 
-  g.expanded-call {
-    rect.call-calls {
-      fill: $red;
-    }
-  }
-
-  g.memory-expanded-call {
-    rect.call-refs {
-      fill: $red;
-    }
-  }
-
-  g.ref {
-    circle.ref-bg {
-      fill: $base02;
-      stroke: $base1;
-    }
-
-    text {
-      fill: $base0;
+  g.call {
+    rect.call-bg {
+      fill: $base3;
+      stroke: $base2;
     }
   }
 }
