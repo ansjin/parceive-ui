@@ -17,6 +17,7 @@ install:
   - npm install
   - gulp bower
 script:
+  - cp examples/*.db import/
   - gulp db
   - mv data/*.db import/
   - gulp db

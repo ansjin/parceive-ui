@@ -3,13 +3,20 @@ var router = express.Router();
 
 var util = require('./util');
 
-var functions = require('./function');
+var fs = require('fs');
 
 var mapping = {
   'Id': 'id',
   'Name': 'name',
   'Path': 'path'
 };
+
+module.exports = {
+  router: router,
+  mapping: mapping
+};
+
+var functions = require('./function');
 
 router.get('/', function(req, res) {
   util.handleAllQuery(req.db, mapping, res, 'SELECT * FROM File');
@@ -35,7 +42,31 @@ router.get('/:id/functions', function(req, res) {
     'SELECT * FROM Function WHERE File=?', req.params.id);
 });
 
-module.exports = {
-  router: router,
-  mapping: mapping
-};
+router.get('/:id/content', function(req, res) {
+  var stmt = req.db.prepare('SELECT * FROM File WHERE Id=?');
+
+  stmt.bind(req.params.id);
+
+  stmt.get(function(err, row) {
+    if (err) {
+      res.type('text/plain');
+      res.status(500);
+      res.send(err);
+      return;
+    }
+
+    fs.readFile(row.Path, function(err, data) {
+      if (err) {
+        res.type('text/plain');
+        res.status(500);
+        res.send(err);
+        return;
+      }
+
+      res.type('text/plain');
+      res.send(data);
+    });
+  });
+
+  stmt.finalize();
+});

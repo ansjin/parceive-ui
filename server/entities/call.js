@@ -3,23 +3,31 @@ var router = express.Router();
 
 var util = require('./util');
 
-var segments = require('./segment');
-var loopexecutions = require('./loopexecution');
-
 var mapping = {
   'Id': 'id',
-  'Process': 'process',
   'Thread': 'thread',
   'Function': 'function',
   'Instruction': 'instruction',
   'Start': 'start',
   'End': 'end',
   'Caller': 'caller',
+  'CallerExecution': 'callerexecution',
+  'CallerIteration': 'calleriteration',
   'CallsOthers': 'callsOthers',
   'Duration': 'duration',
   'CallGroup': 'callGroup',
   'LoopCount': 'loopCount'
 };
+
+module.exports = {
+  router: router,
+  mapping: mapping
+};
+
+var segments = require('./segment');
+var loopexecutions = require('./loopexecution');
+var callgroups = require('./callgroup');
+var callreferences = require('./callreference');
 
 router.get('/', function(req, res) {
   util.handleAllQuery(req.db, mapping, res, 'SELECT * FROM Call');
@@ -38,6 +46,26 @@ router.get('/many/:ids/calls', function(req, res) {
 router.get('/many/:ids/loopexecutions', function(req, res) {
   util.handleManyQuery(req.db, loopexecutions.mapping, res, req.params.ids,
     'LoopExecution WHERE Call');
+});
+
+router.get('/many/:ids/directloopexecutions', function(req, res) {
+  util.handleManyQuery(req.db, loopexecutions.mapping, res, req.params.ids,
+    'LoopExecution WHERE Caller', 'AND ParentIteration IS NULL');
+});
+
+router.get('/many/:ids/directcalls', function(req, res) {
+  util.handleManyQuery(req.db, mapping, res, req.params.ids,
+    'Call WHERE Caller', 'AND CallerExecution IS NULL');
+});
+
+router.get('/many/:ids/callreferences', function(req, res) {
+  util.handleManyQuery(req.db, callreferences.mapping, res, req.params.ids,
+    'CallReference WHERE Call');
+});
+
+router.get('/many/:ids/callgroups', function(req, res) {
+  util.handleManyQuery(req.db, callgroups.mapping, res, req.params.ids,
+    'CallGroup WHERE Caller');
 });
 
 router.get('/many/:ids', function(req, res) {
@@ -60,12 +88,12 @@ router.get('/:id/loopexecutions', function(req, res) {
     'SELECT * FROM LoopExecution WHERE Call=?', req.params.id);
 });
 
+router.get('/:id/callgroups', function(req, res) {
+  util.handleRelationshipQuery(req.db, callgroups.mapping, res,
+    'SELECT * FROM CallGroup WHERE Caller=?', req.params.id);
+});
+
 router.get('/:id', function(req, res) {
   util.handleOneQuery(req.db, mapping, res,
     'SELECT * FROM Call WHERE Id=?', req.params.id);
 });
-
-module.exports = {
-  router: router,
-  mapping: mapping
-};

@@ -123,7 +123,7 @@ function handleManyQuery(db, mapping, res, ids, table, ending) {
 
   var prep = prepareDBArgs(ids);
 
-  var stmt = db.prepare('SELECT * FROM ' + table + ' IN' + prep + ending);
+  var stmt = db.prepare('SELECT * FROM ' + table + ' IN' + prep + ' ' + ending);
 
   sendAll(stmt, mapping, res);
 }
