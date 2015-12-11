@@ -3,9 +3,6 @@ var router = express.Router();
 
 var util = require('./util');
 
-var calls = require('./call');
-var loops = require('./loop');
-
 var mapping = {
   'Id': 'id',
   'Signature': 'signature',
@@ -13,6 +10,14 @@ var mapping = {
   'File': 'file',
   'Line': 'startLine'
 };
+
+module.exports = {
+  router: router,
+  mapping: mapping
+};
+
+var calls = require('./call');
+var loops = require('./loop');
 
 router.get('/', function(req, res) {
   util.handleAllQuery(req.db, mapping, res, 'SELECT * FROM Function');
@@ -52,8 +57,3 @@ router.get('/:id/loops', function(req, res) {
   util.handleRelationshipQuery(req.db, loops.mapping, res,
     'SELECT * FROM Loop WHERE Function=?', req.params.id);
 });
-
-module.exports = {
-  router: router,
-  mapping: mapping
-};

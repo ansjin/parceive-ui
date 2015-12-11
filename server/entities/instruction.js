@@ -3,15 +3,20 @@ var router = express.Router();
 
 var util = require('./util');
 
-var accesses = require('./access');
-var calls = require('./call');
-
 var mapping = {
   'Id': 'id',
   'Segment': 'segment',
   'Type': 'type',
   'Line': 'lineNumber'
 };
+
+module.exports = {
+  router: router,
+  mapping: mapping
+};
+
+var accesses = require('./access');
+var calls = require('./call');
 
 router.get('/', function(req, res) {
   util.handleAllQuery(req.db, mapping, res, 'SELECT * FROM Instruction');
@@ -47,8 +52,3 @@ router.get('/:id/calls', function(req, res) {
   util.handleRelationshipQuery(req.db, calls.mapping, res,
     'SELECT * FROM Call WHERE Instruction=?', req.params.id);
 });
-
-module.exports = {
-  router: router,
-  mapping: mapping
-};

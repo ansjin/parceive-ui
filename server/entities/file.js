@@ -3,8 +3,6 @@ var router = express.Router();
 
 var util = require('./util');
 
-var functions = require('./function');
-
 var fs = require('fs');
 
 var mapping = {
@@ -12,6 +10,13 @@ var mapping = {
   'Name': 'name',
   'Path': 'path'
 };
+
+module.exports = {
+  router: router,
+  mapping: mapping
+};
+
+var functions = require('./function');
 
 router.get('/', function(req, res) {
   util.handleAllQuery(req.db, mapping, res, 'SELECT * FROM File');
@@ -65,8 +70,3 @@ router.get('/:id/content', function(req, res) {
 
   stmt.finalize();
 });
-
-module.exports = {
-  router: router,
-  mapping: mapping
-};

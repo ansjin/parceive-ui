@@ -80,7 +80,7 @@ describe('Callgraph', function() {
       return addMainRoot(callgraph).then(function() {
         return callgraph.getRoots()[0].loadReferences();
       }).then(function() {
-        callgraph.getRoots()[0].references.should.have.length(1);
+        callgraph.getRoots()[0].references.should.have.length(4);
 
         _.forEach(callgraph.getReferences(), function(reference) {
           reference.calls.should.contain(callgraph.getRoots()[0]);

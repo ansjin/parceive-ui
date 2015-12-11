@@ -11,6 +11,8 @@ var mapping = {
   'Start': 'start',
   'End': 'end',
   'Caller': 'caller',
+  'CallerExecution': 'callerexecution',
+  'CallerIteration': 'calleriteration',
   'CallsOthers': 'callsOthers',
   'Duration': 'duration',
   'CallGroup': 'callGroup',
@@ -25,6 +27,7 @@ module.exports = {
 var segments = require('./segment');
 var loopexecutions = require('./loopexecution');
 var callgroups = require('./callgroup');
+var callreferences = require('./callreference');
 
 router.get('/', function(req, res) {
   util.handleAllQuery(req.db, mapping, res, 'SELECT * FROM Call');
@@ -43,6 +46,21 @@ router.get('/many/:ids/calls', function(req, res) {
 router.get('/many/:ids/loopexecutions', function(req, res) {
   util.handleManyQuery(req.db, loopexecutions.mapping, res, req.params.ids,
     'LoopExecution WHERE Call');
+});
+
+router.get('/many/:ids/directloopexecutions', function(req, res) {
+  util.handleManyQuery(req.db, loopexecutions.mapping, res, req.params.ids,
+    'LoopExecution WHERE Caller', 'AND ParentIteration IS NULL');
+});
+
+router.get('/many/:ids/directcalls', function(req, res) {
+  util.handleManyQuery(req.db, mapping, res, req.params.ids,
+    'Call WHERE Caller', 'AND CallerExecution IS NULL');
+});
+
+router.get('/many/:ids/callreferences', function(req, res) {
+  util.handleManyQuery(req.db, callreferences.mapping, res, req.params.ids,
+    'CallReference WHERE Call');
 });
 
 router.get('/many/:ids/callgroups', function(req, res) {

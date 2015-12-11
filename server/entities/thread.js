@@ -3,13 +3,18 @@ var router = express.Router();
 
 var util = require('./util');
 
-var calls = require('./call');
-
 var mapping = {
   'Id': 'id',
   'Instruction': 'instruction',
   'Process': 'process'
 };
+
+module.exports = {
+  router: router,
+  mapping: mapping
+};
+
+var calls = require('./call');
 
 router.get('/', function(req, res) {
   util.handleAllQuery(req.db, mapping, res, 'SELECT * FROM Thread');
@@ -34,8 +39,3 @@ router.get('/:id/calls', function(req, res) {
   util.handleRelationshipQuery(req.db, calls.mapping, res,
     'SELECT * FROM Call WHERE Thread=?', req.params.id);
 });
-
-module.exports = {
-  router: router,
-  mapping: mapping
-};

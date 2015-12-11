@@ -35,8 +35,9 @@ function checkFunctionCaledBy(name, by) {
       });
     }).then(function(result) {
       result.fct.signature.should.be.equal(by);
-      result.callgroup.getCallGroups()
-        .should.eventually.contain(result.callgroupParent);
+      return result.callgroupParent.getCallGroups().then(function(callgroups) {
+        callgroups.should.contain(result.callgroup);
+      });
     });
   });
 }

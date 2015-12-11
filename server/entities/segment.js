@@ -3,14 +3,19 @@ var router = express.Router();
 
 var util = require('./util');
 
-var instructions = require('./instruction');
-
 var mapping = {
   'Id': 'id',
   'Call': 'call',
   'Type': 'type',
-  'Loop': 'loop'
+  'LoopIteration': 'loop'
 };
+
+module.exports = {
+  router: router,
+  mapping: mapping
+};
+
+var instructions = require('./instruction');
 
 router.get('/', function(req, res) {
   util.handleAllQuery(req.db, mapping, res, 'SELECT * FROM Segment');
@@ -35,8 +40,3 @@ router.get('/:id/instructions', function(req, res) {
   util.handleRelationshipQuery(req.db, instructions.mapping, res,
     'SELECT * FROM Instruction WHERE Segment=?', req.params.id);
 });
-
-module.exports = {
-  router: router,
-  mapping: mapping
-};

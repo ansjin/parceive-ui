@@ -11,8 +11,8 @@ INSERT INTO LoopExecution SELECT
   Loop,
   ParentIteration,
   Duration,
-  (SELECT c.Id FROM Call c, Segment s, LoopIteration i WHERE c.Id = s.Call AND s.Id = i.Segment)
-AS CALL FROM Temporary;
+  (SELECT c.Id FROM Call c, Segment s, LoopIteration i WHERE c.Id = s.Call AND s.Id = i.Segment AND i.Execution = t.Id) AS CALL
+FROM Temporary t;
 DROP TABLE Temporary;
 
 CREATE INDEX IF NOT EXISTS LOOP_TABLE_ID ON Loop(Id);

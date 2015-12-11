@@ -543,6 +543,21 @@ var Call = {
     },
     'instruction': {
       type: 'Instruction'
+    },
+    'directloopexecutions': {
+      type: 'LoopExecution',
+      many: true,
+      inverse: 'call'
+    },
+    'directcalls': {
+      type: 'Call',
+      many: true,
+      inverse: 'caller'
+    },
+    'callreferences': {
+      type: 'CallReference',
+      many: true,
+      inverse: 'call'
     }
   },
 
@@ -595,10 +610,24 @@ var Call = {
   },
 
   /** @instance
-    * @return {external:Promise.<CallGroup[]>} The CallGroupsCalled by this
-    *         call*/
+    * @return {external:Promise.<CallGroup[]>} The CallGroups called by this
+    *         call */
   getCallGroups: function() {
     return this._mapper.getRelationship(this, 'callgroups');
+  },
+
+  /** @instance
+    * @return {external:Promise.<Call[]>} The calls made by this call outside
+    *         any loops */
+  getDirectCalls: function() {
+    return this._mapper.getRelationship(this, 'directcalls');
+  },
+
+  /** @instance
+    * @return {external:Promise.<LoopExecution[]>} Get the loopexecutions made
+    *         directly by the call (not inside another loop) */
+  getDirectLoopExecutions: function() {
+    return this._mapper.getRelationship(this, 'directloopexecutions');
   },
 
   /** @instance
@@ -632,14 +661,19 @@ var Call = {
   },
 
   /** @instance
-    * @summary Internally this goes trough segments, instructions, accesses
+    * @return {external:Promise.<CallReference[]>} */
+  getCallReferences: function() {
+    return this._mapper.getRelationship(this, 'callreferences');
+  },
+
+  /** @instance
     * @return {external:Promise.<Reference[]>} the list of references that
     *                                          the call accesses */
   getReferences: function() {
-    return this.getAccesses()
-      .then(function(accesses) {
-        return RSVP.all(_.map(accesses, function(access) {
-          return access.getReference();
+    return this.getCallReferences()
+      .then(function(callreferences) {
+        return RSVP.all(_.map(callreferences, function(callreference) {
+          return callreference.getReference();
         }));
       });
   }
@@ -673,6 +707,11 @@ var CallGroup = {
       type: 'CallGroup',
       many: true,
       inverse: 'parent'
+    },
+    'callgroupreferences': {
+      type: 'CallGroupReference',
+      many: true,
+      inverse: 'callgroup'
     }
   },
 
@@ -707,6 +746,25 @@ var CallGroup = {
   getCallGroups: function() {
     return this._mapper.getRelationship(this, 'callgroups');
   },
+
+  /** @instance
+    * @return {external:Promise.<CallGroupReferences[]>} */
+  getCallGroupReferences: function() {
+    return this._mapper.getRelationship(this, 'callgroupreferences');
+  },
+
+  /** @instance
+    * @return {external:Promise.<Reference[]>} the list of references that
+    *                                          the CallGroup accesses */
+  getReferences: function() {
+    return this.getCallGroupReferences()
+      .then(function(callgroupreferences) {
+        return RSVP.all(_.map(callgroupreferences,
+          function(callgroupreference) {
+            return callgroupreference.getReference();
+          }));
+      });
+  }
 };
 
 /** @class
@@ -880,7 +938,7 @@ var LoopExecution = {
       type: 'Loop'
     },
     'parent': {
-      type: 'LoopExecution'
+      type: 'LoopIteration'
     },
     'call': {
       type: 'Call'
@@ -894,6 +952,16 @@ var LoopExecution = {
       type: 'LoopIteration',
       many: true,
       inverse: 'execution'
+    },
+    'calls': {
+      type: 'Call',
+      many: true,
+      parent: 'callerexecution'
+    },
+    'loopexecutionreferences': {
+      type: 'LoopExecutionReference',
+      many: true,
+      parent: 'loopexecution'
     }
   },
 
@@ -925,38 +993,23 @@ var LoopExecution = {
     * @return {external:Promise.<Call[]>} The calls that are made as part of
               this execution */
   getCalls: function() {
-    return this.getLoopIterations().then(function(iterations) {
-      return RSVP.all(_.map(iterations, function(iteration) {
-        return iteration.getCalls();
-      }));
-    }).then(function(array) {
-      return _.unique(_.flatten(array));
-    });
+    return this._mapper.getRelationship(this, 'calls');
+  },
+
+  /** @instance
+    * @return {external:Promise.<LoopExecutionReference[]>} */
+  getLoopExecutionReferences: function() {
+    return this._mapper.getRelationship(this, 'loopexecutionreferences');
   },
 
   /** @instance
     * @return {external:Promise.<Reference>} The references that are accessed by
-              this execution */
+    *         this execution */
   getReferences: function() {
-    return this.getLoopIterations().then(function(iterations) {
-      return RSVP.all(_.map(iterations, function(iteration) {
-        return iteration.getReferences();
+    return this.getLoopExecutionReferences().then(function(refs) {
+      return RSVP.all(_.map(refs, function(ref) {
+        return ref.getReference();
       }));
-    }).then(function(array) {
-      return _.unique(_.flatten(array));
-    });
-  },
-
-  /** @instance
-    * @return {external:Promise.<CallGroup[]>} The call groups that are called
-              by this execution */
-  getCallGroups: function() {
-    return this.getLoopIterations().then(function(iterations) {
-      return RSVP.all(_.map(iterations, function(iteration) {
-        return iteration.getCallGroups();
-      }));
-    }).then(function(array) {
-      return _.unique(_.flatten(array));
     });
   },
 };
@@ -967,13 +1020,25 @@ var LoopIteration = {
   typeName: 'LoopIteration',
   singular: 'loopiteration',
   plural: 'loopiterations',
-  properties: ['execution', 'iteration', 'segment'],
+  properties: ['execution', 'iteration'],
   relationships: {
     'execution': {
       type: 'LoopExecution'
     },
-    'segment': {
-      type: 'Segment'
+    'calls': {
+      type: 'Call',
+      many: true,
+      inverse: 'calleriteration'
+    },
+    'loopiterationreferences': {
+      type: 'LoopIterationReference',
+      many: true,
+      inverse: 'loopiteration'
+    },
+    'segments': {
+      type: 'Segment',
+      many: true,
+      inverse: 'loop'
     }
   },
 
@@ -985,40 +1050,26 @@ var LoopIteration = {
   },
 
   /** @instance
-    * @return {external:Promise.<Segment>} The segment executed by this
-    *         iteration */
-  getSegment: function() {
-    return this._mapper.getRelationship(this, 'segment');
-  },
-
-  /** @instance
     * @return {external:Promise.<Call[]>} The calls that are made as part of
               this iteration */
   getCalls: function() {
-    return this.getSegment().then(function(segment) {
-      return segment.getCalls();
-    });
+    return this._mapper.getRelationship(this, 'calls');
+  },
+
+  /** @instance
+    * @return {external:Promise.<LoopIterationReference[]>} */
+  getLoopIterationReferences: function() {
+    return this._mapper.getRelationship(this, 'loopiterationreferences');
   },
 
   /** @instance
     * @return {external:Promise.<Reference>} The references that are accessed by
-              this iteration */
+    *         this iteration */
   getReferences: function() {
-    return this.getSegment().then(function(segment) {
-      return segment.getReferences();
-    });
-  },
-
-  /** @instance
-    * @return {external:Promise.<CallGroup[]>} The call groups that are called
-              by this iteration */
-  getCallGroups: function() {
-    return this.getCalls().then(function(calls) {
-      return RSVP.all(_.map(calls, function(call) {
-        return call.getCallGroup();
+    return this.getLoopIterationReferences().then(function(refs) {
+      return RSVP.all(_.map(refs, function(ref) {
+        return ref.getReference();
       }));
-    }).then(function(array) {
-      return _.unique(_.flatten(array));
     });
   },
 };
@@ -1055,6 +1106,122 @@ var Reference = {
   getAccesses: function() {
     return this._mapper.getRelationship(this, 'accesses');
   }
+};
+
+/** @class
+  * @implements Type */
+var CallReference = {
+  typeName: 'CallReference',
+  singular: 'callreference',
+  plural: 'callreferences',
+  properties: ['reference', 'call', 'reads', 'writes'],
+  relationships: {
+    'reference': {
+      type: 'Reference'
+    },
+    'call': {
+      type: 'Call'
+    }
+  },
+
+  /** @instance
+    * @return {external:Promise.<Call>} The Call */
+  getCall: function() {
+    return this._mapper.getRelationship(this, 'call');
+  },
+
+  /** @instance
+    * @return {external:Promise.<Call>} The Reference */
+  getReference: function() {
+    return this._mapper.getRelationship(this, 'reference');
+  },
+};
+
+/** @class
+  * @implements Type */
+var CallGroupReference = {
+  typeName: 'CallGroupReference',
+  singular: 'callgroupreference',
+  plural: 'callgroupreferences',
+  properties: ['reference', 'callgroup', 'reads', 'writes'],
+  relationships: {
+    'reference': {
+      type: 'Reference'
+    },
+    'call': {
+      type: 'CallGroup'
+    }
+  },
+
+  /** @instance
+    * @return {external:Promise.<Call>} The Call */
+  getCallGroup: function() {
+    return this._mapper.getRelationship(this, 'callgroup');
+  },
+
+  /** @instance
+    * @return {external:Promise.<Call>} The Reference */
+  getReference: function() {
+    return this._mapper.getRelationship(this, 'reference');
+  },
+};
+
+/** @class
+  * @implements Type */
+var LoopExecutionReference = {
+  typeName: 'LoopExecutionReference',
+  singular: 'loopexecutionreference',
+  plural: 'loopexecutionreferences',
+  properties: ['reference', 'loopexecution', 'reads', 'writes'],
+  relationships: {
+    'loopexecution': {
+      type: 'LoopExecution'
+    },
+    'call': {
+      type: 'CallGroup'
+    }
+  },
+
+  /** @instance
+    * @return {external:Promise.<Call>} The Call */
+  getLoopExecution: function() {
+    return this._mapper.getRelationship(this, 'loopexecution');
+  },
+
+  /** @instance
+    * @return {external:Promise.<Call>} The Reference */
+  getReference: function() {
+    return this._mapper.getRelationship(this, 'reference');
+  },
+};
+
+/** @class
+  * @implements Type */
+var LoopIterationReference = {
+  typeName: 'LoopIterationReference',
+  singular: 'loopiterationreference',
+  plural: 'loopiterationreferences',
+  properties: ['reference', 'loopiteration', 'reads', 'writes'],
+  relationships: {
+    'loopiteration': {
+      type: 'LoopIteration'
+    },
+    'call': {
+      type: 'CallGroup'
+    }
+  },
+
+  /** @instance
+    * @return {external:Promise.<Call>} The Call */
+  getLoopIteration: function() {
+    return this._mapper.getRelationship(this, 'loopiteration');
+  },
+
+  /** @instance
+    * @return {external:Promise.<Call>} The Reference */
+  getReference: function() {
+    return this._mapper.getRelationship(this, 'reference');
+  },
 };
 
 /** @class
@@ -1182,6 +1349,10 @@ var loader = {
     LoopExecution: LoopExecution,
     LoopIteration: LoopIteration,
     Reference: Reference,
+    CallReference: CallReference,
+    CallGroupReference: CallGroupReference,
+    LoopExecutionReference: LoopExecutionReference,
+    LoopIterationReference: LoopIterationReference,
     Segment: Segment,
     Thread: Thread
   }

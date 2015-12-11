@@ -3,13 +3,18 @@ var router = express.Router();
 
 var util = require('./util');
 
-var loopexecutions = require('./loopexecution');
-
 var mapping = {
   'No': 'id',
   'Line': 'line',
   'Function': 'function'
 };
+
+module.exports = {
+  router: router,
+  mapping: mapping
+};
+
+var loopexecutions = require('./loopexecution');
 
 router.get('/', function(req, res) {
   util.handleAllQuery(req.db, mapping, res, 'SELECT * FROM Loop');
@@ -34,8 +39,3 @@ router.get('/:id/loopexecutions', function(req, res) {
   util.handleRelationshipQuery(req.db, loopexecutions.mapping, res,
     'SELECT * FROM LoopExecution WHERE No=?', req.params.id);
 });
-
-module.exports = {
-  router: router,
-  mapping: mapping
-};
