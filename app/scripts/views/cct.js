@@ -68,7 +68,7 @@ function(CallGraphDataService, loader, d3) {
     var calls = callgraph.getNodes();
 
     var callNodes = callGroup.selectAll('g.node')
-      .data(calls);
+      .data(calls, function(d) { return d.type + d.data.id; });
 
     callNodes
       .exit()
