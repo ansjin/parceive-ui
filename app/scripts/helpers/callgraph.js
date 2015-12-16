@@ -175,7 +175,7 @@ angular.module('app')
 
       return self.data.getDirectCalls().then(function(children) {
         self.children = _.map(children, function(child) {
-          return self.callgraph.addCallGroup(child, self);
+          return self.callgraph.addCall(child, self);
         });
 
         return RSVP.all(_.map(self.children, function(child) {
