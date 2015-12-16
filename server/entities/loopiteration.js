@@ -42,8 +42,3 @@ router.get('/many/:ids/loopexecutions', function(req, res) {
   util.handleManyQuery(req.db, loopexecutions.mapping, res, req.params.ids,
     'LoopExecution WHERE ParentIteration');
 });
-
-router.get('/:id', function(req, res) {
-  util.handleOneQuery(req.db, mapping, res,
-    'SELECT * FROM LoopIteration WHERE Id=?', req.params.id);
-});

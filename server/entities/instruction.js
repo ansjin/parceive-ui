@@ -36,19 +36,3 @@ router.get('/many/:ids', function(req, res) {
   util.handleManyQuery(req.db, mapping, res, req.params.ids,
     'Instruction WHERE Id');
 });
-
-router.get('/:id', function(req, res) {
-  util.handleOneQuery(req.db, mapping, res,
-    'SELECT * FROM Instruction WHERE ID=?', req.params.id);
-
-});
-
-router.get('/:id/accesses', function(req, res) {
-  util.handleRelationshipQuery(req.db, accesses.mapping, res,
-    'SELECT * FROM Access WHERE Instruction=?', req.params.id);
-});
-
-router.get('/:id/calls', function(req, res) {
-  util.handleRelationshipQuery(req.db, calls.mapping, res,
-    'SELECT * FROM Call WHERE Instruction=?', req.params.id);
-});

@@ -72,28 +72,3 @@ router.get('/many/:ids', function(req, res) {
   util.handleManyQuery(req.db, mapping, res, req.params.ids,
     'Call WHERE Id');
 });
-
-router.get('/:id/segments', function(req, res) {
-  util.handleRelationshipQuery(req.db, segments.mapping, res,
-    'SELECT * FROM Segment WHERE Call=?', req.params.id);
-});
-
-router.get('/:id/calls', function(req, res) {
-  util.handleRelationshipQuery(req.db, mapping, res,
-    'SELECT * FROM Call WHERE Caller=?', req.params.id);
-});
-
-router.get('/:id/loopexecutions', function(req, res) {
-  util.handleRelationshipQuery(req.db, loopexecutions.mapping, res,
-    'SELECT * FROM LoopExecution WHERE Call=?', req.params.id);
-});
-
-router.get('/:id/callgroups', function(req, res) {
-  util.handleRelationshipQuery(req.db, callgroups.mapping, res,
-    'SELECT * FROM CallGroup WHERE Caller=?', req.params.id);
-});
-
-router.get('/:id', function(req, res) {
-  util.handleOneQuery(req.db, mapping, res,
-    'SELECT * FROM Call WHERE Id=?', req.params.id);
-});

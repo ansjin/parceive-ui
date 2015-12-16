@@ -32,16 +32,6 @@ router.get('/many/:ids', function(req, res) {
     'File WHERE Id');
 });
 
-router.get('/:id', function(req, res) {
-  util.handleOneQuery(req.db, mapping, res,
-    'SELECT * FROM File WHERE Id=?', req.params.id);
-});
-
-router.get('/:id/functions', function(req, res) {
-  util.handleRelationshipQuery(req.db, functions.mapping, res,
-    'SELECT * FROM Function WHERE File=?', req.params.id);
-});
-
 router.get('/:id/content', function(req, res) {
   var stmt = req.db.prepare('SELECT * FROM File WHERE Id=?');
 

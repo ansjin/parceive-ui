@@ -29,13 +29,3 @@ router.get('/many/:ids', function(req, res) {
   util.handleManyQuery(req.db, mapping, res, req.params.ids,
     'Thread WHERE Id');
 });
-
-router.get('/:id', function(req, res) {
-  util.handleOneQuery(req.db, mapping, res,
-    'SELECT * FROM Thread WHERE Id=?', req.params.id);
-});
-
-router.get('/:id/calls', function(req, res) {
-  util.handleRelationshipQuery(req.db, calls.mapping, res,
-    'SELECT * FROM Call WHERE Thread=?', req.params.id);
-});

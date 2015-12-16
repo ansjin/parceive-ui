@@ -31,13 +31,3 @@ router.get('/many/:ids', function(req, res) {
   util.handleManyQuery(req.db, mapping, res, req.params.ids,
     'Reference WHERE Id');
 });
-
-router.get('/:id', function(req, res) {
-  util.handleOneQuery(req.db, mapping, res,
-    'SELECT * FROM Reference WHERE Id=?', req.params.id);
-});
-
-router.get('/:id/accesses', function(req, res) {
-  util.handleRelationshipQuery(req.db, accesses.mapping, res,
-    'SELECT * FROM Access WHERE Id=?', req.params.id);
-});

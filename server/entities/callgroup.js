@@ -45,18 +45,3 @@ router.get('/many/:ids', function(req, res) {
   util.handleManyQuery(req.db, mapping, res, req.params.ids,
     'CallGroup WHERE Id');
 });
-
-router.get('/:id/calls', function(req, res) {
-  util.handleRelationshipQuery(req.db, calls.mapping, res,
-    'SELECT * FROM Call WHERE CallGroup=?', req.params.id);
-});
-
-router.get('/:id/callgroups', function(req, res) {
-  util.handleRelationshipQuery(req.db, mapping, res,
-    'SELECT * FROM CallGroup WHERE Parent=?', req.params.id);
-});
-
-router.get('/:id', function(req, res) {
-  util.handleOneQuery(req.db, calls.mapping, res,
-    'SELECT * FROM CallGroup WHERE Id=?', req.params.id);
-});

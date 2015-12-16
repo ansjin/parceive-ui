@@ -30,13 +30,3 @@ router.get('/many/:ids', function(req, res) {
   util.handleManyQuery(req.db, mapping, res, req.params.ids,
     'Segment WHERE Id');
 });
-
-router.get('/:id', function(req, res) {
-  util.handleOneQuery(req.db, mapping, res,
-    'SELECT * FROM Segment WHERE ID=?', req.params.id);
-});
-
-router.get('/:id/instructions', function(req, res) {
-  util.handleRelationshipQuery(req.db, instructions.mapping, res,
-    'SELECT * FROM Instruction WHERE Segment=?', req.params.id);
-});
