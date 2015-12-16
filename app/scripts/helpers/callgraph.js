@@ -381,7 +381,7 @@ angular.module('app')
        LoopExecution.prototype.loadReferences,
        LoopExecution.prototype.unloadReferences);
     LoopExecution.prototype.toggleLoopIterations = toggleFunction
-     ('loopExecutions',
+     ('loopIterations',
       LoopExecution.prototype.loadLoopIterations,
       LoopExecution.prototype.unloadLoopIterations);
 
