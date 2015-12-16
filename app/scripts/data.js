@@ -507,7 +507,8 @@ var Call = {
   singular: 'call',
   plural: 'calls',
   properties: ['thread', 'function', 'instruction', 'callGroup',
-                'start', 'end', 'caller', 'callsOthers', 'duration'],
+                'start', 'end', 'caller', 'callsOthers', 'duration',
+                'callerexecution', 'calleriteration'],
   relationships: {
     'thread': {
       type: 'Thread'
@@ -520,6 +521,12 @@ var Call = {
     },
     'callGroup': {
       type: 'CallGroup'
+    },
+    'callerexecution': {
+      type: 'LoopExecution'
+    },
+    'calleriteration': {
+      type: 'LoopIteration'
     },
     'segments': {
       type: 'Segment',
@@ -956,12 +963,12 @@ var LoopExecution = {
     'calls': {
       type: 'Call',
       many: true,
-      parent: 'callerexecution'
+      inverse: 'callerexecution'
     },
     'loopexecutionreferences': {
       type: 'LoopExecutionReference',
       many: true,
-      parent: 'loopexecution'
+      inverse: 'loopexecution'
     }
   },
 

@@ -50,7 +50,7 @@ router.get('/many/:ids/loopexecutions', function(req, res) {
 
 router.get('/many/:ids/directloopexecutions', function(req, res) {
   util.handleManyQuery(req.db, loopexecutions.mapping, res, req.params.ids,
-    'LoopExecution WHERE Caller', 'AND ParentIteration IS NULL');
+    'LoopExecution WHERE Call', 'AND ParentIteration IS NULL');
 });
 
 router.get('/many/:ids/directcalls', function(req, res) {
