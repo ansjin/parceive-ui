@@ -110,7 +110,7 @@ function(CallGraphDataService, loader, d3) {
       .attr('x', 0)
       .attr('y', 0)
       .attr('width', function(d) {
-        return d.width + 20;
+        return d.width + 10;
       })
       .attr('height', function(d) {
         return d.height + 10;
