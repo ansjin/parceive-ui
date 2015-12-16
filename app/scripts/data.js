@@ -683,7 +683,30 @@ var Call = {
           return callreference.getReference();
         }));
       });
-  }
+  },
+
+  /**
+    * The result of a recursive query
+    * @typedef {Object} Call.RecursiveCallResult
+    * @property {number} depth the depth
+    * @property {Call} call The Call at this depth
+    */
+
+  /** @instance
+    * @return {external:Promise.<Call.RecursiveCallResult[]>} */
+  getRecursiveCalls: function() {
+    var self = this;
+
+    return self._mapper.httpGet('calls/' + self.id + '/recursivecalls')
+      .then(function(datas) {
+        return _.map(datas, function(data) {
+            return {
+              depth: data.depth,
+              call: wrap(data, Call, self._mapper)
+            };
+          });
+      });
+  },
 };
 
 /** @class
@@ -771,7 +794,31 @@ var CallGroup = {
             return callgroupreference.getReference();
           }));
       });
-  }
+  },
+
+  /**
+    * The result of a recursive query
+    * @typedef {Object} CallGroup.RecursiveCallGroupResult
+    * @property {number} depth the depth
+    * @property {CallGroup} callgroup The CallGroup at this depth
+    */
+
+  /** @instance
+    * @return {external:Promise.<CallGroup.RecursiveCallGroupResult[]>} */
+  getRecursiveCallGroups: function() {
+    var self = this;
+
+    return self._mapper.httpGet
+      ('callgroups/' + self.id + '/recursivecallgroups')
+      .then(function(datas) {
+        return _.map(datas, function(data) {
+            return {
+              depth: data.depth,
+              callgroup: wrap(data, Call, self._mapper)
+            };
+          });
+      });
+  },
 };
 
 /** @class

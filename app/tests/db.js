@@ -141,6 +141,52 @@ describe('Unit Test Databases', function() {
       loader.setRun('cppunit_5');
     });
 
+    it('must have 6 levels of calls', function() {
+      return loader.getFunctionBySignature('main').then(function(fct) {
+        return fct.getCalls();
+      }).then(function(calls) {
+        return calls[0];
+      }).then(function(call) {
+        return call.getRecursiveCalls();
+      }).then(function(calls) {
+        assert(_.some(calls, function(call) {
+          return call.depth === 6;
+        }), 'result does not contain call of level 6');
+
+        assert(_.all(calls, function(call) {
+          return call.depth <= 6;
+        }), 'result contains a call of level greater than 6');
+
+        assert(_.all(calls, function(call) {
+          return _.isObject(call.call);
+        }), 'call is not an object');
+      });
+    });
+
+    it('must have 6 levels of callgroups', function() {
+      return loader.getFunctionBySignature('main').then(function(fct) {
+        return fct.getCalls();
+      }).then(function(calls) {
+        return calls[0];
+      }).then(function(call) {
+        return call.getCallGroup();
+      }).then(function(callgroup) {
+        return callgroup.getRecursiveCallGroups();
+      }).then(function(calls) {
+        assert(_.some(calls, function(call) {
+          return call.depth === 6;
+        }), 'result does not contain call of level 6');
+
+        assert(_.all(calls, function(call) {
+          return call.depth <= 6;
+        }), 'result contains a call of level greater than 6');
+
+        assert(_.all(calls, function(call) {
+          return _.isObject(call.callgroup);
+        }), 'callgroup is not an object');
+      });
+    });
+
     genericDBTests();
   });
 

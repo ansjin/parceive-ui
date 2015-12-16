@@ -1,4 +1,6 @@
 var express = require('express');
+var _ = require('lodash');
+
 var router = express.Router();
 
 var util = require('./util');
@@ -44,4 +46,14 @@ router.get('/many/:ids/callgroupferences', function(req, res) {
 router.get('/many/:ids', function(req, res) {
   util.handleManyQuery(req.db, mapping, res, req.params.ids,
     'CallGroup WHERE Id');
+});
+
+var treeMapping = _.extend(mapping, {
+  'Depth': 'depth'
+});
+
+router.get('/:id/recursivecallgroups', function(req, res) {
+  util.handleRelationshipQuery(req.db, treeMapping, res,
+    'SELECT * FROM CallGroup, CallGroupTree WHERE Descendant=Id AND Ancestor=?',
+    req.params.id);
 });
