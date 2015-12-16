@@ -116,7 +116,9 @@ angular.module('app')
     function Node(callgraph, data, parent) {
       this.callgraph = callgraph;
       this.data = data;
-      this.parent = parent;
+      if (parent) {
+        this.parent = parent;
+      }
     }
 
     Node.prototype.getDuration = function() {
