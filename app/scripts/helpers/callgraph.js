@@ -415,10 +415,39 @@ angular.module('app')
       this.unloadReferences();
     };
 
+    LoopIteration.prototype.loadLoopExecutions = function() {
+      var self = this;
+
+      self.unloadChildren();
+
+      return self.data.getLoopExecutions().then(function(loopExecutions) {
+        self.loopExecutions = _.map(loopExecutions, function(loopExecution) {
+          return new LoopExecution(self.callgraph, loopExecution, self);
+        });
+
+        return self.loopExecutions;
+      });
+    };
+
+    LoopIteration.prototype.unloadLoopExecutions = function() {
+      this.unloadChildren();
+
+      _.forEach(this.loopExecutions, function(loopExecution) {
+        loopExecution.unloadChildren();
+        loopExecution.unloadAssociations();
+      });
+
+      delete this.loopExecutions;
+    };
+
     LoopIteration.prototype.toggleChildren = toggleFunction
       ('children',
        LoopIteration.prototype.loadChildren,
        LoopIteration.prototype.unloadChildren);
+    LoopIteration.prototype.toggleLoopExecutions = toggleFunction
+      ('loopExecutions',
+       LoopIteration.prototype.loadLoopExecutions,
+       LoopIteration.prototype.unloadLoopExecutions);
     LoopIteration.prototype.toggleReferences = toggleFunction
       ('references',
        LoopIteration.prototype.loadReferences,

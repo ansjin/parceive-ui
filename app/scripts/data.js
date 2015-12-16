@@ -1046,6 +1046,11 @@ var LoopIteration = {
       type: 'Segment',
       many: true,
       inverse: 'loop'
+    },
+    'loopexecutions': {
+      type: 'LoopExecution',
+      many: true,
+      inverse: 'parent'
     }
   },
 
@@ -1067,6 +1072,12 @@ var LoopIteration = {
     * @return {external:Promise.<LoopIterationReference[]>} */
   getLoopIterationReferences: function() {
     return this._mapper.getRelationship(this, 'loopiterationreferences');
+  },
+
+  /** @instance
+    * @return {external:Promise.<LoopExecution[]>} */
+  getLoopExecutions: function() {
+    return this._mapper.getRelationship(this, 'loopexecutions');
   },
 
   /** @instance

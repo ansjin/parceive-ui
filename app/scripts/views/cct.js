@@ -57,6 +57,9 @@ function(CallGraphDataService, loader, d3) {
           case 'LoopExecution':
             d.toggleLoopIterations().then(rerender, fail);
             break;
+          case 'LoopIteration':
+            d.toggleLoopExecutions().then(rerender, fail);
+            break;
         }
       } else if (d3.event.altKey) {
         d.toggleReferences().then(rerender, fail);
