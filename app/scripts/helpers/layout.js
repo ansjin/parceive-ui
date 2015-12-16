@@ -32,6 +32,54 @@ angular.module('app')
     _.forEach(callgraph.getReferences(), clearNode);
   }
 
+  function rankExecutions(rank) {
+    var last = rank[rank.length - 1];
+
+    var rankLoopExecutions = [];
+
+    for (var i = 0; i < last.length; i++) {
+      var loopExecutions = last[i].loopExecutions;
+
+      if (_.isUndefined(loopExecutions)) {
+        continue;
+      }
+
+      for (var j = 0; j < loopExecutions.length; j++) {
+        rankLoopExecutions.push(loopExecutions[j]);
+      }
+    }
+
+    if (rankLoopExecutions.length > 0) {
+      rank.push(rankLoopExecutions);
+
+      rankIterations(rank);
+    }
+  }
+
+  function rankIterations(rank) {
+    var last = rank[rank.length - 1];
+
+    var rankLoopIterations = [];
+
+    for (var i = 0; i < last.length; i++) {
+      var loopIterations = last[i].loopIterations;
+
+      if (_.isUndefined(loopIterations)) {
+        continue;
+      }
+
+      for (var j = 0; j < loopIterations.length; j++) {
+        rankLoopIterations.push(loopIterations[j]);
+      }
+    }
+
+    if (rankLoopIterations.length > 0) {
+      rank.push(rankLoopIterations);
+
+      rankExecutions(rank);
+    }
+  }
+
   function rankCalls(callgraph, root) {
     var rank = [[root]];
 
@@ -39,45 +87,9 @@ angular.module('app')
     var j;
 
     while (true) {
+      rankExecutions(rank);
+
       var last = rank[rank.length - 1];
-
-      var rankLoopExecutions = [];
-
-      for (i = 0; i < last.length; i++) {
-        var loopExecutions = last[i].loopExecutions;
-
-        if (_.isUndefined(loopExecutions)) {
-          continue;
-        }
-
-        for (j = 0; j < loopExecutions.length; j++) {
-          rankLoopExecutions.push(loopExecutions[j]);
-        }
-      }
-
-      if (rankLoopExecutions.length > 0) {
-        rank.push(rankLoopExecutions);
-
-        var rankLoopIterations = [];
-
-        for (i = 0; i < rankLoopExecutions.length; i++) {
-          var loopIterations = rankLoopExecutions[i].loopIterations;
-
-          if (_.isUndefined(loopIterations)) {
-            continue;
-          }
-
-          for (j = 0; j < loopIterations.length; j++) {
-            rankLoopIterations.push(loopIterations[j]);
-          }
-        }
-
-        if (rankLoopIterations.length > 0) {
-          rank.push(rankLoopIterations);
-        }
-      }
-
-      last = rank[rank.length - 1];
       var current = [];
 
       for (i = 0; i < last.length; i++) {
