@@ -45,5 +45,14 @@ angular.module('app')
         height: bbox.height,
         width: bbox.width
       };
+    },
+
+    svgSizeById: function(id) {
+      var doc = document.getElementById(id);
+      var bbox = doc.getBBox();
+      return {
+        height: bbox.height,
+        width: bbox.width
+      };
     }
   });
