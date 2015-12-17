@@ -242,10 +242,6 @@ function render(d3, pdh, pvh, size, grad) {
         });
       }
 
-      // if scrollbar is present, reduce the svg width a bit
-      svgWidth = svgElem.scrollHeight > svgParentElem.clientHeight ?
-      '98%' : '100%';
-
       if (zoomId !== null) {
         // if we're zooming, retrieve zoomed sub section of view data
         viewData = isTracing() ?

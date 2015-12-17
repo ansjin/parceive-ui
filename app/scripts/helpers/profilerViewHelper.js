@@ -23,7 +23,7 @@ function profilerViewHelper() {
         } else {
           // if object isn't direct child of first object
           // then recurse children till you find its parent
-          if (children.hasOwnProperty('children') === true) {
+          if (children[i].hasOwnProperty('children') === true) {
             recurse(children[i].children, obj);
           }
         }
@@ -35,7 +35,8 @@ function profilerViewHelper() {
       // otherwise create children property and add as first item
       if (child.hasOwnProperty('children') === true) {
         if (!isTracing) {
-          obj.start = child.children[child.children.length - 1].end;
+          var ends = _.pluck(_.sortBy(child.children, 'end'), 'end');
+          obj.start = ends[ends.length - 1];
           obj.end = obj.start + obj.duration;
         }
         child.children.push(obj);
