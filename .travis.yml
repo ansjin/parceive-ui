@@ -3,26 +3,24 @@ notifications:
   email: false
 node_js:
   - "5"
-  - "5.3"
-  - "5.2"
-  - "4"
-  - "4.2"
-  - "0.12"
+#  - "5.3"
+#  - "5.2"
+#  - "4"
+#  - "4.2"
+#  - "0.12"
   - "0.10"
 before_install:
   - npm install -g gulp@3.9
-  - mkdir -p $HOME/bin/$HOME/bin/
-  - wget https://github.com/github/git-lfs/releases/download/v1.0.1/git-lfs-linux-amd64-1.0.1.tar.gz
-  - tar xvfz git-lfs-linux-amd64-1.0.1.tar.gz
-  - mv git-lfs-1.0.1/git-lfs $HOME/bin/git-lfs
-  - export PATH=$PATH:$HOME/bin/
+  - install/install.sh
+  - source install/env.sh
 install:
   - git lfs fetch
   - git lfs checkout
   - npm install
   - gulp bower
 script:
-  - cp examples/*.db import/
+  - ( cd examples && make )
+  - mv examples/*.db import/
   - gulp db
   - mv data/*.db import/
   - gulp db

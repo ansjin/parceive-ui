@@ -1,0 +1,5 @@
+<filter>
+	<region>
+		<exclude>*std::.*</exclude>
+	</region>
+</filter>
