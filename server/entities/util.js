@@ -139,10 +139,10 @@ function handleManyQuery(db, mapping, res, ids, table, ending) {
     @param {String} sql The query
     @param {String} id The id of the entity
 */
-function handleRelationshipQuery(db, mapping, res, sql, id) {
+function handleRelationshipQuery(db, mapping, res, sql, id, param) {
   var stmt = db.prepare(sql);
 
-  stmt.bind(id);
+  stmt.bind(id, param);
 
   sendAll(stmt, mapping, res);
 }

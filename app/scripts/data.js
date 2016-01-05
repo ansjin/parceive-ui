@@ -693,11 +693,14 @@ var Call = {
     */
 
   /** @instance
+    * @param {int} minDuration Optional. Returns only those functions with a duration longer than this.
     * @return {external:Promise.<Call.RecursiveCallResult[]>} */
-  getRecursiveCalls: function() {
+  getRecursiveCalls: function(minDuration) {
     var self = this;
 
-    return self._mapper.httpGet('calls/' + self.id + '/recursivecalls')
+    minDuration = minDuration ? minDuration : 0;
+
+    return self._mapper.httpGet('calls/' + self.id + '/recursivecalls?duration=' + minDuration)
       .then(function(datas) {
         return _.map(datas, function(data) {
             return {
@@ -804,12 +807,15 @@ var CallGroup = {
     */
 
   /** @instance
+    * @param {int} minDuration Optional. Returns only those functions with a duration longer than this.
     * @return {external:Promise.<CallGroup.RecursiveCallGroupResult[]>} */
-  getRecursiveCallGroups: function() {
+  getRecursiveCallGroups: function(minDuration) {
     var self = this;
 
+    minDuration = minDuration ? minDuration : 0;
+
     return self._mapper.httpGet
-      ('callgroups/' + self.id + '/recursivecallgroups')
+      ('callgroups/' + self.id + '/recursivecallgroups?duration=' + minDuration)
       .then(function(datas) {
         return _.map(datas, function(data) {
             return {
