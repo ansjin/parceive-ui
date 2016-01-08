@@ -11,7 +11,7 @@ INSERT INTO LoopExecution SELECT
   Loop,
   ParentIteration,
   Duration,
-  (SELECT s.Call FROM Segment s WHERE s.LoopIteration = t.ParentIteration) AS CALL
+  (SELECT s.Call FROM Segment s, LoopIteration i WHERE s.LoopIteration = i.Id AND i.Execution = t.Id) AS call
 FROM Temporary t;
 DROP TABLE Temporary;
 
