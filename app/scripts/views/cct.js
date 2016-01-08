@@ -43,7 +43,7 @@ function(CallGraphDataService, loader, d3) {
 
     var callGroup = g.select('g.calls-group');
     //var refGroup = g.select('g.refs-group');
-    //var edgeGroup = g.select('g.edges-group');
+    var edgeGroup = g.select('g.edges-group');
 
     function nodeClick(d) {
       if (d3.event.shiftKey) {
@@ -71,7 +71,7 @@ function(CallGraphDataService, loader, d3) {
     var calls = callgraph.getNodes();
 
     var callNodes = callGroup.selectAll('g.node')
-      .data(calls, function(d) { return d.type + d.data.id; });
+      .data(calls, function(d) { return d.type + ':' + d.data.id; });
 
     callNodes
       .exit()
@@ -90,6 +90,13 @@ function(CallGraphDataService, loader, d3) {
       .enter()
       .append('g')
       .classed('node', true)
+      .classed({
+        'call': function(d) {return d.type === 'Call';},
+        'callgroup': function(d) {return d.type === 'CallGroup';},
+        'loopexecution': function(d) {return d.type === 'LoopExecution';},
+        'loopiteration': function(d) {return d.type === 'LoopIteration';},
+        'reference': function(d) {return d.type === 'Reference';},
+      })
       .on('click', nodeClick);
 
     callNodesEnter
@@ -130,20 +137,6 @@ function(CallGraphDataService, loader, d3) {
         return d.getLabel();
       });
 
-    /* Update node type*/
-    callNodes.classed('call', function(d) {
-      return d.type === 'Call';
-    })
-    .classed('callgroup', function(d) {
-      return d.type === 'CallGroup';
-    })
-    .classed('loopexecution', function(d) {
-      return d.type === 'LoopExecution';
-    })
-    .classed('loopiteration', function(d) {
-      return d.type === 'LoopIteration';
-    });
-
     /* Calculate true size */
     callNodes.each(function(d) {
       var bbox = this.getBBox();
@@ -160,6 +153,62 @@ function(CallGraphDataService, loader, d3) {
       .attr('transform', function(d) {
         return 'translate(' + d.x + ',' + d.y + ')';
       });
+
+    var edges = callgraph.getEdges();
+
+    var edgeNode = edgeGroup.selectAll('g.edge')
+      .data(edges, function(d) {
+        return d[0].type + ':' + d[0].data.id + '-' +
+               d[1].type + ':' + d[1].data.id;
+      });
+
+    edgeNode
+      .exit()
+      .transition('opacity')
+      .style('opacity', 0)
+      .remove();
+
+    var edgeNodesEnter = edgeNode
+      .enter()
+      .append('g')
+      .classed('edge', true)
+      .classed({
+        'from-call': function(d) {return d[0].type === 'Call';},
+        'to-call': function(d) {return d[1].type === 'Call';},
+        'from-callgroup': function(d) {return d[0].type === 'CallGroup';},
+        'to-callgroup': function(d) {return d[1].type === 'CallGroup';},
+        'from-loopexecution': function(d) {return d[0].type === 'LoopExecution';},
+        'to-loopexecution': function(d) {return d[1].type === 'LoopExecution';},
+        'from-loopiteration': function(d) {return d[0].type === 'LoopIteration';},
+        'tp-loopiteration': function(d) {return d[1].type === 'LoopIteration';},
+        'from-reference': function(d) {return d[0].type === 'Reference';},
+        'to-reference': function(d) {return d[1].type === 'Reference';},
+      });
+
+    edgeNodesEnter
+      .style('opacity', 0)
+      .transition('opacity')
+      .style('opacity', 1);
+
+    edgeNodesEnter
+      .append('path');
+
+    var edgeLines = edgeGroup.selectAll('g.edge > path');
+
+    edgeLines.each(function(d) {
+      d[0].midx = d[0].x + d[0].width / 2;
+      d[0].midy = d[0].y + d[0].height / 2;
+
+      d[1].midx = d[1].x + d[1].width / 2;
+      d[1].midy = d[1].y + d[1].height / 2;
+    });
+
+    var diagonal = d3.svg.diagonal()
+      .source(function(d) { return d[0]; })
+      .target(function(d) { return d[1]; })
+      .projection(function(d) { return [d.x, d.y]; });
+
+    edgeLines.attr('d', diagonal);
   }
 
   return function(svg, stateManager) {

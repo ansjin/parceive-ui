@@ -79,6 +79,32 @@ angular.module('app')
       return nodes;
     };
 
+    CallGraph.prototype.getEdges = function() {
+      var edges = [];
+
+      function getCallProper(parent) {
+        return function(node) {
+          processNode(node, parent);
+        };
+      }
+
+      function processNode(node, parent) {
+        edges.push([parent, node]);
+
+        _.forEach(node.children, getCallProper(node));
+        _.forEach(node.loopExecutions, getCallProper(node));
+        _.forEach(node.loopIterations, getCallProper(node));
+      }
+
+      _.forEach(this.roots, function(root) {
+        _.forEach(root.children, getCallProper(root));
+        _.forEach(root.loopExecutions, getCallProper(root));
+        _.forEach(root.loopIterations, getCallProper(root));
+      });
+
+      return edges;
+    };
+
     CallGraph.prototype.getReferences = function() {
       return this.references;
     };
