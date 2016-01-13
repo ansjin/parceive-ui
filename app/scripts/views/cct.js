@@ -198,16 +198,48 @@ function(CallGraphDataService, loader, d3) {
     var edgeLines = edgeGroup.selectAll('g.edge > path');
 
     edgeLines.each(function(d) {
-      d[0].midx = d[0].x + d[0].width / 2;
-      d[0].midy = d[0].y + d[0].height / 2;
+      d.source = {
+        elem: d[0]
+      };
 
-      d[1].midx = d[1].x + d[1].width / 2;
-      d[1].midy = d[1].y + d[1].height / 2;
+      d.target = {
+        elem: d[1]
+      };
+
+      var smidx = d[0].x + d[0].width / 2;
+      var smidy = d[0].y + d[0].height / 2;
+
+      var tmidx = d[1].x + d[1].width / 2;
+      var tmidy = d[1].y + d[1].height / 2;
+
+      var angle = Math.atan2(tmidy - smidy, tmidx - smidx);
+
+      if (Math.abs(angle) < Math.PI / 4) {
+        d.source.x = d[0].x + d[0].width;
+        d.source.y = d[0].y + d[0].height / 2;
+        d.target.x = d[1].x;
+        d.target.y = d[1].y + d[1].height / 2;
+      } else if (Math.abs(angle) > 3 * Math.PI / 4) {
+        d.source.x = d[0].x;
+        d.source.y = d[0].y + d[0].height / 2;
+        d.target.x = d[1].x + d[1].width;
+        d.target.y = d[1].y + d[1].height / 2;
+      } else if (angle < 0) {
+        d.source.x = d[0].x + d[0].width / 2;
+        d.source.y = d[0].y + d[0].height;
+        d.target.x = d[0].x + d[0].width / 2;
+        d.target.y = d[1].y;
+      } else if (angle >= 0) {
+        d.source.x = d[0].x + d[0].width / 2;
+        d.source.y = d[0].y;
+        d.target.x = d[0].x + d[0].width / 2;
+        d.target.y = d[1].y + d[1].height;
+      }
     });
 
     var diagonal = d3.svg.diagonal()
-      .source(function(d) { return d[0]; })
-      .target(function(d) { return d[1]; })
+      .source(function(d) { return d.source; })
+      .target(function(d) { return d.target; })
       .projection(function(d) { return [d.x, d.y]; });
 
     edgeLines.attr('d', diagonal);
