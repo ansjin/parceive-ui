@@ -177,9 +177,11 @@ function(CallGraphDataService, loader, d3) {
         'to-call': function(d) {return d[1].type === 'Call';},
         'from-callgroup': function(d) {return d[0].type === 'CallGroup';},
         'to-callgroup': function(d) {return d[1].type === 'CallGroup';},
-        'from-loopexecution': function(d) {return d[0].type === 'LoopExecution';},
+        'from-loopexecution':
+          function(d) {return d[0].type === 'LoopExecution';},
         'to-loopexecution': function(d) {return d[1].type === 'LoopExecution';},
-        'from-loopiteration': function(d) {return d[0].type === 'LoopIteration';},
+        'from-loopiteration':
+          function(d) {return d[0].type === 'LoopIteration';},
         'tp-loopiteration': function(d) {return d[1].type === 'LoopIteration';},
         'from-reference': function(d) {return d[0].type === 'Reference';},
         'to-reference': function(d) {return d[1].type === 'Reference';},
