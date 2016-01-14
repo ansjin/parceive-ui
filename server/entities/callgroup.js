@@ -38,7 +38,7 @@ router.get('/many/:ids/callgroups', function(req, res) {
     'CallGroup WHERE Parent');
 });
 
-router.get('/many/:ids/callgroupferences', function(req, res) {
+router.get('/many/:ids/callgroupreferences', function(req, res) {
   util.handleManyQuery(req.db, callgroupreferences.mapping, res, req.params.ids,
     'CallGroupReference WHERE CallGroup');
 });

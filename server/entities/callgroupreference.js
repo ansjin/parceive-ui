@@ -1,5 +1,6 @@
 var mapping = {
-  'CallgRoup': 'callgroup',
+  'Id': 'id',
+  'CallGroup': 'callgroup',
   'Reference': 'reference',
   'Read': 'read',
   'Write': 'write'

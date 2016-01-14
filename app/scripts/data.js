@@ -1219,7 +1219,7 @@ var CallGroupReference = {
     'reference': {
       type: 'Reference'
     },
-    'call': {
+    'callgroup': {
       type: 'CallGroup'
     }
   },

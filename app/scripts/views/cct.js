@@ -27,6 +27,48 @@ function(CallGraphDataService, loader, d3) {
     }
   }
 
+  function calcEdgePoints(d) {
+    d.source = {
+      elem: d[0]
+    };
+
+    d.target = {
+      elem: d[1]
+    };
+
+    var smidx = d[0].x + d[0].width / 2;
+    var smidy = d[0].y + d[0].height / 2;
+
+    var tmidx = d[1].x + d[1].width / 2;
+    var tmidy = d[1].y + d[1].height / 2;
+
+    var angle = Math.atan2(tmidy - smidy, tmidx - smidx);
+
+    if (Math.abs(angle) < Math.PI / 4) {
+      d.source.x = d[0].x + d[0].width;
+      d.source.y = d[0].y + d[0].height / 2;
+      d.target.x = d[1].x;
+      d.target.y = d[1].y + d[1].height / 2;
+    } else if (Math.abs(angle) > 3 * Math.PI / 4) {
+      d.source.x = d[0].x;
+      d.source.y = d[0].y + d[0].height / 2;
+      d.target.x = d[1].x + d[1].width;
+      d.target.y = d[1].y + d[1].height / 2;
+    } else if (angle > 0) {
+      d.source.x = d[0].x + d[0].width / 2;
+      d.source.y = d[0].y + d[0].height;
+      d.target.x = d[1].x + d[1].width / 2;
+      d.target.y = d[1].y;
+    } else if (angle <= 0) {
+      d.source.x = d[0].x + d[0].width / 2;
+      d.source.y = d[0].y;
+      d.target.x = d[1].x + d[1].width / 2;
+      d.target.y = d[1].y + d[1].height;
+    }
+  }
+
+  var force;
+
   function render(svg, stateManager) {
     function rerender() {
       render(svg, stateManager);
@@ -42,7 +84,7 @@ function(CallGraphDataService, loader, d3) {
     var g = svg.select('g.callgraph');
 
     var callGroup = g.select('g.calls-group');
-    //var refGroup = g.select('g.refs-group');
+    var refGroup = g.select('g.refs-group');
     var edgeGroup = g.select('g.edges-group');
 
     function nodeClick(d) {
@@ -69,6 +111,41 @@ function(CallGraphDataService, loader, d3) {
     }
 
     var calls = callgraph.getNodes();
+    var refs = callgraph.getReferences();
+    var edges = callgraph.getEdges();
+
+    var allnodes = calls.concat(refs);
+
+    _.forEach(allnodes, function(node, index) {
+      node.index = index;
+    });
+
+    // Set up force simulation
+
+    if (!_.isUndefined(force)) {
+      force.stop();
+    }
+
+    force = d3.layout.force()
+      .nodes(allnodes)
+      .links(_.map(edges, function(d, index) {
+        return {
+          source: d[0],
+          target: d[1],
+          index: index
+        };
+      }))
+      .gravity(0)
+      .charge(function(d) {
+        switch (d.type) {
+          case 'Reference':
+            return -20;
+          default:
+            return -40;
+        }
+      });
+
+    // Add nodes
 
     var callNodes = callGroup.selectAll('g.node')
       .data(calls, function(d) { return d.type + ':' + d.data.id; });
@@ -154,7 +231,45 @@ function(CallGraphDataService, loader, d3) {
         return 'translate(' + d.x + ',' + d.y + ')';
       });
 
-    var edges = callgraph.getEdges();
+    /* Add references */
+
+    var refNodes = refGroup.selectAll('g.reference')
+      .data(refs, function(d) { return d.data.id; });
+
+    refNodes
+      .exit()
+      .transition()
+      .style('opacity', 0)
+      .remove();
+
+    var refNodesEnter = refNodes
+      .enter()
+      .append('g')
+      .classed('reference', true)
+      .call(force.drag)
+      .on('mousedown', function() { d3.event.stopPropagation(); });
+
+    refNodesEnter
+      .append('circle')
+      .attr('r', 10);
+
+    refNodesEnter
+      .append('text')
+      .attr('x', 5)
+      .attr('y', 20)
+      .text(function(d) {
+        return d.data.name;
+      });
+
+    refNodes.each(function(d) {
+        d.fixed = true;
+
+        var bbox = this.getBBox();
+        d.width = bbox.width;
+        d.height = bbox.height;
+      });
+
+    /* Add references */
 
     var edgeNode = edgeGroup.selectAll('g.edge')
       .data(edges, function(d) {
@@ -197,45 +312,7 @@ function(CallGraphDataService, loader, d3) {
 
     var edgeLines = edgeGroup.selectAll('g.edge > path');
 
-    edgeLines.each(function(d) {
-      d.source = {
-        elem: d[0]
-      };
-
-      d.target = {
-        elem: d[1]
-      };
-
-      var smidx = d[0].x + d[0].width / 2;
-      var smidy = d[0].y + d[0].height / 2;
-
-      var tmidx = d[1].x + d[1].width / 2;
-      var tmidy = d[1].y + d[1].height / 2;
-
-      var angle = Math.atan2(tmidy - smidy, tmidx - smidx);
-
-      if (Math.abs(angle) < Math.PI / 4) {
-        d.source.x = d[0].x + d[0].width;
-        d.source.y = d[0].y + d[0].height / 2;
-        d.target.x = d[1].x;
-        d.target.y = d[1].y + d[1].height / 2;
-      } else if (Math.abs(angle) > 3 * Math.PI / 4) {
-        d.source.x = d[0].x;
-        d.source.y = d[0].y + d[0].height / 2;
-        d.target.x = d[1].x + d[1].width;
-        d.target.y = d[1].y + d[1].height / 2;
-      } else if (angle < 0) {
-        d.source.x = d[0].x + d[0].width / 2;
-        d.source.y = d[0].y + d[0].height;
-        d.target.x = d[0].x + d[0].width / 2;
-        d.target.y = d[1].y;
-      } else if (angle >= 0) {
-        d.source.x = d[0].x + d[0].width / 2;
-        d.source.y = d[0].y;
-        d.target.x = d[0].x + d[0].width / 2;
-        d.target.y = d[1].y + d[1].height;
-      }
-    });
+    edgeLines.each(calcEdgePoints);
 
     var diagonal = d3.svg.diagonal()
       .source(function(d) { return d.source; })
@@ -243,6 +320,26 @@ function(CallGraphDataService, loader, d3) {
       .projection(function(d) { return [d.x, d.y]; });
 
     edgeLines.attr('d', diagonal);
+
+    // start force simulation
+
+    function tick() {
+      var edgeLines = edgeGroup.select('g.edge.to-reference > path');
+
+      edgeLines.each(calcEdgePoints);
+
+      edgeLines.attr('d', diagonal);
+
+      var refNodes = refGroup.selectAll('g.reference');
+
+      refNodes.attr('transform', function(d) {
+        return 'translate(' + d.x + ',' + d.y + ')';
+      });
+    }
+
+    force
+      .start()
+      .on('tick', tick);
   }
 
   return function(svg, stateManager) {
