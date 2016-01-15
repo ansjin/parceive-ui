@@ -9,10 +9,20 @@ profilerViewHelper.$inject = [];
 function profilerViewHelper() {
   var factory = {
     appendDeep: appendDeep,
-    findDeep: findDeep
+    findDeep: findDeep,
+    sortObject: sortObject
   };
 
   return factory;
+
+  function sortObject(obj) {
+    if (obj.hasOwnProperty('children') === true) {
+      obj.children = _.sortBy(obj.children, 'duration');
+      for (var i = 0, len = obj.children.length; i < len; i++) {
+        sortObject(obj[i]);
+      }
+    }
+  }
 
   function appendDeep(finalObj, obj, isTracing) {
     var recurse = function(children, obj) {
@@ -35,8 +45,8 @@ function profilerViewHelper() {
       // otherwise create children property and add as first item
       if (child.hasOwnProperty('children') === true) {
         if (!isTracing) {
-          var ends = _.pluck(_.sortBy(child.children, 'end'), 'end');
-          obj.start = ends[ends.length - 1];
+          var end = _.sortBy(child.children, 'end');
+          obj.start = end[child.children.length - 1].end;
           obj.end = obj.start + obj.duration;
         }
         child.children.push(obj);
