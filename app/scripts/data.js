@@ -700,7 +700,8 @@ var Call = {
 
     minDuration = minDuration ? minDuration : 0;
 
-    return self._mapper.httpGet('calls/' + self.id + '/recursivecalls?duration=' + minDuration)
+    return self._mapper.httpGet('calls/' + self.id +
+      '/recursivecalls?duration=' + minDuration)
       .then(function(datas) {
         return _.map(datas, function(data) {
             return {
