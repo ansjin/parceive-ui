@@ -404,10 +404,6 @@ function addToPipeline(type, id, deferred, relationship) {
   * @see loader#getSpecific
   * @memberof client.data */
 function getSpecific(http, manager, type, id) {
-  if (_.isNull(id)) {
-    return RSVP.reject('Relationship undefined');
-  }
-
   var cached = getCache(type.typeName, id);
 
   if (cached) {
@@ -446,6 +442,10 @@ function getRelationship(http, manager, instance, relationship) {
   } else {
     if (_.isUndefined(instance[relationship])) {
       return RSVP.Promise.resolve(instance[relationship]);
+    }
+
+    if (_.isUndefined(instance[relationship + 'ID'])) {
+      return RSVP.Promise.resolve();
     }
 
     var relationType = manager.types[relationMeta.type];
