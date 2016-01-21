@@ -129,7 +129,7 @@ angular.module('app')
       if (_.isUndefined(node.children) || node.children.length === 0) {
         next = 0;
       } else {
-        next = _.max(node.children, visit);
+        next = _.max(node.children, visit).maxSequence;
       }
 
       node.maxSequence = next + 1;
@@ -203,8 +203,8 @@ angular.module('app')
 
       var distUp = y / 2;
 
-      if (column.length % 2 === 0) {
-        distUp += column[column.length - 1].height / 2;
+      if (column.length % 2 === 1) {
+        distUp -= column[column.length - 1].height / 2;
       }
 
       for (j = 0; j < column.length; j++) {
