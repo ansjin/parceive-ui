@@ -4,8 +4,8 @@ angular.module('cct-view', ['app'])
 .value('markedCb', function() {})
 .value('focusCb', function() {})
 .value('hoverCb', function() {})
-.service('render', ['CallGraphDataService', 'LoaderService', 'd3',
-function(CallGraphDataService, loader, d3) {
+.service('render', ['CallGraphDataService', 'LoaderService', 'd3', 'KeyService',
+function(CallGraphDataService, loader, d3, keyService) {
   function addZoom(svg) {
     svg.call(d3.behavior.zoom().scaleExtent([1, 10]).on('zoom', zoom));
 
@@ -65,6 +65,11 @@ function(CallGraphDataService, loader, d3) {
       d.target.x = d[1].x + d[1].width / 2;
       d.target.y = d[1].y + d[1].height;
     }
+
+    if (d.target.elem.type === 'Reference') {
+      d.target.x = d[1].x;
+      d.target.y = d[1].y;
+    }
   }
 
   var force;
@@ -105,6 +110,10 @@ function(CallGraphDataService, loader, d3) {
         }
       } else if (d3.event.altKey) {
         d.toggleReferences().then(rerender, fail);
+      } else if (keyService('Z')) {
+        if (d.type === 'Call' || d.type === 'CallGroup') {
+          d.toggleParent().then(rerender, fail);
+        }
       } else {
         d.toggleChildren().then(rerender, fail);
       }
@@ -115,6 +124,10 @@ function(CallGraphDataService, loader, d3) {
     var edges = callgraph.getEdges();
 
     var allnodes = calls.concat(refs);
+
+    _.forEach(calls, function(call) {
+      call.fixed = true;
+    });
 
     _.forEach(allnodes, function(node, index) {
       node.index = index;
@@ -136,12 +149,15 @@ function(CallGraphDataService, loader, d3) {
         };
       }))
       .gravity(0)
+      .linkStrength(0.05)
+      .linkDistance(60)
+      .friction(0.7)
       .charge(function(d) {
         switch (d.type) {
           case 'Reference':
-            return -20;
+            return -200;
           default:
-            return -40;
+            return -300;
         }
       });
 
@@ -149,19 +165,6 @@ function(CallGraphDataService, loader, d3) {
 
     var callNodes = callGroup.selectAll('g.node')
       .data(calls, function(d) { return d.type + ':' + d.data.id; });
-
-    callNodes
-      .exit()
-      .transition()
-      .attr('transform', function(d) {
-        if (d.parent) {
-          return 'translate(' + d.parent.x + ',' + d.parent.y + ')';
-        } else {
-          return 'translate(0,0)';
-        }
-      })
-      .style('opacity', 0)
-      .remove();
 
     var callNodesEnter = callNodes
       .enter()
@@ -178,14 +181,7 @@ function(CallGraphDataService, loader, d3) {
 
     callNodesEnter
       .style('opacity', 0)
-      .attr('transform', function(d) {
-        if (d.parent) {
-          return 'translate(' + d.parent.x + ',' + d.parent.y + ')';
-        } else {
-          return 'translate(0,0)';
-        }
-      })
-      .transition('enter')
+      .transition('opacity')
       .style('opacity', 1);
 
     /* Compute node sizes */
@@ -224,9 +220,33 @@ function(CallGraphDataService, loader, d3) {
     /* Layouting */
     callgraph.layout();
 
+    callNodes
+      .exit()
+      .transition()
+      .attr('transform', function(d) {
+        if (d.parent) {
+          return 'translate(' + d.parent.x + ',' + d.parent.y + ')';
+        } else {
+          return 'translate(0,0)';
+        }
+      })
+      .style('opacity', 0)
+      .remove();
+
+    /* Set initial position so the first transition makes sense */
+
+    callNodesEnter
+      .attr('transform', function(d) {
+        if (d.parent) {
+          return 'translate(' + d.parent.x + ',' + d.parent.y + ')';
+        } else {
+          return 'translate(0,0)';
+        }
+      });
+
     /* Update positions after layout */
     callNodes
-      .transition('layout')
+      .transition('position')
       .attr('transform', function(d) {
         return 'translate(' + d.x + ',' + d.y + ')';
       });
@@ -262,8 +282,6 @@ function(CallGraphDataService, loader, d3) {
       });
 
     refNodes.each(function(d) {
-        d.fixed = true;
-
         var bbox = this.getBBox();
         d.width = bbox.width;
         d.height = bbox.height;
@@ -279,8 +297,8 @@ function(CallGraphDataService, loader, d3) {
 
     edgeNode
       .exit()
-      .transition('opacity')
-      .style('opacity', 0)
+      .transition()
+      //.style('opacity', 0)
       .remove();
 
     var edgeNodesEnter = edgeNode
@@ -303,11 +321,6 @@ function(CallGraphDataService, loader, d3) {
       });
 
     edgeNodesEnter
-      .style('opacity', 0)
-      .transition('opacity')
-      .style('opacity', 1);
-
-    edgeNodesEnter
       .append('path');
 
     var edgeLines = edgeGroup.selectAll('g.edge > path');
@@ -317,14 +330,16 @@ function(CallGraphDataService, loader, d3) {
     var diagonal = d3.svg.diagonal()
       .source(function(d) { return d.source; })
       .target(function(d) { return d.target; })
-      .projection(function(d) { return [d.x, d.y]; });
+      .projection(function(d) {
+        return [d.x, d.y];
+      });
 
     edgeLines.attr('d', diagonal);
 
     // start force simulation
 
     function tick() {
-      var edgeLines = edgeGroup.select('g.edge.to-reference > path');
+      var edgeLines = edgeGroup.selectAll('g.edge.to-reference > path');
 
       edgeLines.each(calcEdgePoints);
 
