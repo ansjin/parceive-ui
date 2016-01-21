@@ -296,10 +296,16 @@ angular.module('app')
       return self.data.getCaller().then(function(caller) {
         self.parent = self.callgraph.addCall(caller);
 
+        if (_.isUndefined(self.parent)) {
+          return RSVP.resolve();
+        }
+
         self.callgraph.roots.remove(self);
         self.callgraph.roots.push(self.parent);
 
-        return self.parent;
+        self.parent.children = [self];
+
+        return self.parent.load();
       });
     };
 
@@ -347,6 +353,10 @@ angular.module('app')
      ('loopExecutions',
       Call.prototype.loadLoopExecutions,
       Call.prototype.unloadLoopExecutions);
+    Call.prototype.toggleParent = toggleFunction
+     ('parent',
+      Call.prototype.loadParent,
+      Node.prototype.unloadParent);
 
     /********************************************************** LoopExecution */
 
@@ -567,10 +577,16 @@ angular.module('app')
       return self.data.getCaller().then(function(caller) {
         self.parent = self.callgraph.addCall(caller);
 
+        if (_.isUndefined(self.parent)) {
+          return RSVP.resolve();
+        }
+
         self.callgraph.roots.remove(self);
         self.callgraph.roots.push(self.parent);
 
-        return self.parent;
+        self.parent.children = [self];
+
+        return self.parent.load();
       });
     };
 
@@ -620,6 +636,10 @@ angular.module('app')
       ('references',
        CallGroup.prototype.loadReferences,
        CallGroup.prototype.unloadReferences);
+    CallGroup.prototype.toggleParent = toggleFunction
+      ('parent',
+       CallGroup.prototype.loadParent,
+       Node.prototype.unloadParent);
 
     return function() {
       return new CallGraph();
