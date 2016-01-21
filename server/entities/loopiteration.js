@@ -17,6 +17,7 @@ module.exports = {
 
 var calls = require('./call');
 var segments = require('./segment');
+var loopexecutions = require('./loopexecution');
 
 router.get('/', function(req, res) {
   util.handleAllQuery(req.db, mapping, res, 'SELECT * FROM LoopIteration');
@@ -37,7 +38,7 @@ router.get('/many/:ids/segments', function(req, res) {
     'Segment WHERE Loop');
 });
 
-router.get('/:id', function(req, res) {
-  util.handleOneQuery(req.db, mapping, res,
-    'SELECT * FROM LoopIteration WHERE Id=?', req.params.id);
+router.get('/many/:ids/loopexecutions', function(req, res) {
+  util.handleManyQuery(req.db, loopexecutions.mapping, res, req.params.ids,
+    'LoopExecution WHERE ParentIteration');
 });

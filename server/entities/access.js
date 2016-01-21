@@ -21,11 +21,6 @@ router.get('/many/:ids', function(req, res) {
     'Access WHERE Id');
 });
 
-router.get('/:id', function(req, res) {
-  util.handleOneQuery(req.db, mapping, res,
-    'SELECT * FROM Access WHERE Id=?', req.params.id);
-});
-
 module.exports = {
   router: router,
   mapping: mapping

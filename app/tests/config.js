@@ -8,3 +8,5 @@ var $injector = angular.injector(['ng', 'app']);
 var loader = $injector.get('LoaderService');
 
 chai.should();
+
+var assert = chai.assert;

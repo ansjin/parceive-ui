@@ -1,4 +1,6 @@
 var express = require('express');
+var _ = require('lodash');
+
 var router = express.Router();
 
 var util = require('./util');
@@ -46,17 +48,13 @@ router.get('/many/:ids', function(req, res) {
     'CallGroup WHERE Id');
 });
 
-router.get('/:id/calls', function(req, res) {
-  util.handleRelationshipQuery(req.db, calls.mapping, res,
-    'SELECT * FROM Call WHERE CallGroup=?', req.params.id);
+var treeMapping = _.extend(mapping, {
+  'Depth': 'depth'
 });
 
-router.get('/:id/callgroups', function(req, res) {
-  util.handleRelationshipQuery(req.db, mapping, res,
-    'SELECT * FROM CallGroup WHERE Parent=?', req.params.id);
-});
-
-router.get('/:id', function(req, res) {
-  util.handleOneQuery(req.db, calls.mapping, res,
-    'SELECT * FROM CallGroup WHERE Id=?', req.params.id);
+router.get('/:id/recursivecallgroups', function(req, res) {
+  var duration = req.params.duration ? req.params.duration : 0;
+  util.handleRelationshipQuery(req.db, treeMapping, res,
+    'SELECT * FROM CallGroup, CallGroupTree WHERE Descendant=Id AND Ancestor=? AND Duration > ?',
+    req.params.id, duration);
 });

@@ -25,10 +25,10 @@ describe('Callgraph', function() {
     });
 
     _.forEach(references, function(reference) {
-      reference.calls.should.be.a('array');
-      reference.calls.should.have.length.above(0);
+      reference.nodes.should.be.a('array');
+      reference.nodes.should.have.length.above(0);
 
-      _.forEach(reference.calls, function(call) {
+      _.forEach(reference.nodes, function(call) {
         nodes.should.contain(call);
       });
     });
@@ -83,7 +83,7 @@ describe('Callgraph', function() {
         callgraph.getRoots()[0].references.should.have.length(4);
 
         _.forEach(callgraph.getReferences(), function(reference) {
-          reference.calls.should.contain(callgraph.getRoots()[0]);
+          reference.nodes.should.contain(callgraph.getRoots()[0]);
         });
 
         validateGraph(callgraph);

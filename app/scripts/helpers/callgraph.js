@@ -29,7 +29,7 @@ angular.module('app')
 
     CallGraph.prototype.addCall = function(call, parent) {
       var existing = _.find(this.getNodes(), function(node) {
-        return call === node.call;
+        return call === node.data && node.type === 'Call';
       });
 
       if (existing) {
@@ -41,7 +41,7 @@ angular.module('app')
 
     CallGraph.prototype.addCallGroup = function(callgroup, parent) {
       var existing = _.find(this.getNodes(), function(node) {
-        return callgroup === node.callgroup;
+        return callgroup === node.data && node.type === 'CallGroup';
       });
 
       if (existing) {
@@ -79,6 +79,32 @@ angular.module('app')
       return nodes;
     };
 
+    CallGraph.prototype.getEdges = function() {
+      var edges = [];
+
+      function getCallProper(parent) {
+        return function(node) {
+          processNode(node, parent);
+        };
+      }
+
+      function processNode(node, parent) {
+        edges.push([parent, node]);
+
+        _.forEach(node.children, getCallProper(node));
+        _.forEach(node.loopExecutions, getCallProper(node));
+        _.forEach(node.loopIterations, getCallProper(node));
+      }
+
+      _.forEach(this.roots, function(root) {
+        _.forEach(root.children, getCallProper(root));
+        _.forEach(root.loopExecutions, getCallProper(root));
+        _.forEach(root.loopIterations, getCallProper(root));
+      });
+
+      return edges;
+    };
+
     CallGraph.prototype.getReferences = function() {
       return this.references;
     };
@@ -111,56 +137,85 @@ angular.module('app')
       };
     }
 
-    /******************************************************************* Call */
+    /******************************************************************* Node */
 
-    function Call(callgraph, call, callgroup) {
-      this.call = call;
+    function Node(callgraph, data, parent) {
       this.callgraph = callgraph;
-      this.callgroup = callgroup;
-
-      this.type = 'Call';
+      this.data = data;
+      if (parent) {
+        this.parent = parent;
+      }
     }
 
-    Call.prototype.load = function() {
+    Node.prototype.getDuration = function() {
+      return this.data.duration;
+    };
+
+    Node.prototype.getStart = function() {
+      return this.data.start;
+    };
+
+    Node.prototype.loadReferences = function() {
       var self = this;
-      return self.call.getFunction().then(function(fct) {
-        self.function = fct;
-      });
-    };
-
-    Call.prototype.getDuration = function() {
-      return this.call.duration;
-    };
-
-    Call.prototype.getStart = function() {
-      return this.call.start;
-    };
-
-    Call.prototype.getLabel = function() {
-      return this.function.signature;
-    };
-
-    Call.prototype.loadReferences = function() {
-      var self = this;
-      return self.call.getReferences().then(function(references) {
+      return self.data.getReferences().then(function(references) {
         self.references = _.map(references, function(reference) {
           return self.callgraph.addReference(reference);
         });
 
         _.forEach(self.references, function(reference) {
-          reference.addCall(self);
+          reference.addNode(self);
         });
 
         return self.children;
       });
     };
 
-    Call.prototype.loadChildren = function() {
+    Node.prototype.unloadReferences = function() {
       var self = this;
 
-      self.unloadLoopExecutions();
+      _.forEach(self.references, function(reference) {
+        reference.removeNode(self);
+      });
 
-      return self.call.getCallGroups().then(function(children) {
+      delete self.references;
+    };
+
+    Node.prototype.loadCallChildren = function() {
+      var self = this;
+
+      return self.data.getCalls().then(function(children) {
+        self.children = _.map(children, function(child) {
+          return self.callgraph.addCall(child, self);
+        });
+
+        return RSVP.all(_.map(self.children, function(child) {
+          return child.load();
+        })).then(function() {
+          return self.children;
+        });
+      });
+    };
+
+    Node.prototype.loadDirectCalls = function() {
+      var self = this;
+
+      return self.data.getDirectCalls().then(function(children) {
+        self.children = _.map(children, function(child) {
+          return self.callgraph.addCall(child, self);
+        });
+
+        return RSVP.all(_.map(self.children, function(child) {
+          return child.load();
+        })).then(function() {
+          return self.children;
+        });
+      });
+    };
+
+    Node.prototype.loadCallGroupChildren = function() {
+      var self = this;
+
+      return self.data.getCallGroups().then(function(children) {
         self.children = _.map(children, function(child) {
           return self.callgraph.addCallGroup(child, self);
         });
@@ -173,20 +228,16 @@ angular.module('app')
       });
     };
 
-    Call.prototype.loadParent = function() {
-      var self = this;
-
-      return self.call.getCaller().then(function(caller) {
-        self.parent = self.callgraph.addCall(caller);
-
-        self.callgraph.roots.remove(self);
-        self.callgraph.roots.push(self.parent);
-
-        return self.parent;
+    Node.prototype.unloadChildren = function() {
+      _.forEach(this.chilren, function(child) {
+        child.unloadChildren();
+        child.unloadAssociations();
       });
+
+      delete this.children;
     };
 
-    Call.prototype.unloadParent = function() {
+    Node.prototype.unloadParent = function() {
       if (_.isUndefined(this.parent)) {
         return;
       }
@@ -200,30 +251,49 @@ angular.module('app')
       delete this.parent;
     };
 
-    Call.prototype.unloadChildren = function() {
-      if (_.isUndefined(this.children)) {
-        return;
-      }
+    /******************************************************************* Call */
 
-      _.forEach(this.chilren, function(child) {
-        child.unloadChildren();
-        child.unloadAssociations();
+    function Call(callgraph, call, parent) {
+      Node.call(this, callgraph, call, parent);
+
+      this.type = 'Call';
+    }
+
+    Call.prototype = Object.create(Node.prototype);
+
+    Call.prototype.load = function() {
+      var self = this;
+      return self.data.getFunction().then(function(fct) {
+        self.function = fct;
       });
-
-      delete this.children;
     };
 
-    Call.prototype.unloadReferences = function() {
-      if (_.isUndefined(this.references)) {
-        return;
+    Call.prototype.getLabel = function() {
+      return this.function.signature;
+    };
+
+    Call.prototype.loadChildren = function() {
+      this.unloadLoopExecutions();
+      this.unloadChildren();
+
+      return this.loadCallGroupChildren();
+    };
+
+    Call.prototype.loadParent = function() {
+      var self = this;
+
+      if (self.parent) {
+        return RSVP.resolve();
       }
 
-      var self = this;
-      _.forEach(self.references, function(reference) {
-        reference.unloadCall(self);
-      });
+      return self.data.getCaller().then(function(caller) {
+        self.parent = self.callgraph.addCall(caller);
 
-      delete self.references;
+        self.callgraph.roots.remove(self);
+        self.callgraph.roots.push(self.parent);
+
+        return self.parent;
+      });
     };
 
     Call.prototype.unloadAssociations = function() {
@@ -236,12 +306,16 @@ angular.module('app')
 
       self.unloadChildren();
 
-      return self.call.getLoopExecutions().then(function(loopExecutions) {
-        self.loopExecutions = _.map(loopExecutions, function(loopExecution) {
-          return new LoopExecution(self.callgraph, loopExecution, self);
-        });
+      return RSVP.hash({
+        loops: self.data.getDirectLoopExecutions()
+          .then(function(loopExecutions) {
+          self.loopExecutions = _.map(loopExecutions, function(loopExecution) {
+            return new LoopExecution(self.callgraph, loopExecution, self);
+          });
 
-        return self.loopExecutions;
+          return self.loopExecutions;
+        }),
+        calls: self.loadDirectCalls()
       });
     };
 
@@ -270,19 +344,19 @@ angular.module('app')
     /********************************************************** LoopExecution */
 
     function LoopExecution(callgraph, loopExecution, parent) {
-      this.callgraph = callgraph;
-      this.loopExecution = loopExecution;
-      this.parent = parent;
+      Node.call(this, callgraph, loopExecution, parent);
 
       this.type = 'LoopExecution';
     }
 
+    LoopExecution.prototype = Object.create(Node.prototype);
+
     LoopExecution.prototype.getLabel = function() {
-      return this.loopExecution.id;
+      return this.data.id;
     };
 
     LoopExecution.prototype.getStart = function() {
-      return this.loopExecution.id;
+      return this.data.id;
     };
 
     LoopExecution.prototype.getDuration = function() {
@@ -290,34 +364,9 @@ angular.module('app')
     };
 
     LoopExecution.prototype.loadChildren = function() {
-      var self = this;
+      this.unloadLoopIterations();
 
-      self.unloadLoopIterations();
-
-      return self.loopExecution.getCallGroups().then(function(children) {
-        self.children = _.map(children, function(child) {
-          return self.callgraph.addCallGroup(child, self);
-        });
-
-        return RSVP.all(_.map(self.children, function(child) {
-          return child.load();
-        })).then(function() {
-          return self.children;
-        });
-      });
-    };
-
-    LoopExecution.prototype.unloadChildren = function() {
-      if (_.isUndefined(this.children)) {
-        return;
-      }
-
-      _.forEach(this.chilren, function(child) {
-        child.unloadChildren();
-        child.unloadAssociations();
-      });
-
-      delete this.children;
+      return this.loadCallChildren();
     };
 
     LoopExecution.prototype.loadLoopIterations = function() {
@@ -325,7 +374,7 @@ angular.module('app')
 
       self.unloadChildren();
 
-      return self.loopExecution.getLoopIterations().then(
+      return self.data.getLoopIterations().then(
         function(loopIterations) {
         self.loopIterations = _.map(loopIterations, function(loopIteration) {
           return new LoopIteration(self.callgraph, loopIteration, self);
@@ -335,34 +384,6 @@ angular.module('app')
       });
     };
 
-    LoopExecution.prototype.loadReferences = function() {
-      var self = this;
-      return self.loopExecution.getReferences().then(function(references) {
-        self.references = _.map(references, function(reference) {
-          return self.callgraph.addReference(reference);
-        });
-
-        _.forEach(self.references, function(reference) {
-          reference.addCall(self);
-        });
-
-        return self.children;
-      });
-    };
-
-    LoopExecution.prototype.unloadReferences = function() {
-      if (_.isUndefined(this.references)) {
-        return;
-      }
-
-      var self = this;
-      _.forEach(self.references, function(reference) {
-        reference.unloadCall(self);
-      });
-
-      delete self.references;
-    };
-
     LoopExecution.prototype.unloadLoopIterations = function() {
       _.forEach(this.loopIterations, function(loopiteration) {
         loopiteration.unloadChildren();
@@ -370,13 +391,6 @@ angular.module('app')
       });
 
       delete this.loopIterations;
-    };
-
-    LoopExecution.prototype.unloadParent = function() {
-      this.parent.unloadParent();
-      this.parent.unloadAssociations();
-
-      delete this.parent;
     };
 
     LoopExecution.prototype.unloadAssociations = function() {
@@ -393,96 +407,73 @@ angular.module('app')
        LoopExecution.prototype.loadReferences,
        LoopExecution.prototype.unloadReferences);
     LoopExecution.prototype.toggleLoopIterations = toggleFunction
-     ('loopExecutions',
+     ('loopIterations',
       LoopExecution.prototype.loadLoopIterations,
       LoopExecution.prototype.unloadLoopIterations);
 
     /********************************************************** LoopIteration */
 
     function LoopIteration(callgraph, loopIteration, parent) {
-      this.callgraph = callgraph;
-      this.loopIteration = loopIteration;
-      this.parent = parent;
+      Node.call(this, callgraph, loopIteration, parent);
 
       this.type = 'LoopIteration';
     }
 
+    LoopIteration.prototype = Object.create(Node.prototype);
+
     LoopIteration.prototype.getLabel = function() {
-      return this.loopIteration.id;
+      return this.data.id;
     };
 
     LoopIteration.prototype.getStart = function() {
-      return this.loopIteration.id;
+      return this.data.id;
     };
 
     LoopIteration.prototype.getDuration = function() {
       return 0;
     };
 
-    LoopIteration.prototype.loadReferences = function() {
-      var self = this;
-      return self.loopIteration.getReferences().then(function(references) {
-        self.references = _.map(references, function(reference) {
-          return self.callgraph.addReference(reference);
-        });
-
-        _.forEach(self.references, function(reference) {
-          reference.addCall(self);
-        });
-
-        return self.children;
-      });
-    };
-
-    LoopIteration.prototype.unloadReferences = function() {
-      var self = this;
-      _.forEach(self.references, function(reference) {
-        reference.unloadCall(self);
-      });
-
-      delete self.references;
-    };
-
     LoopIteration.prototype.loadChildren = function() {
-      var self = this;
-
-      return self.loopIteration.getCallGroups().then(function(children) {
-        self.children = _.map(children, function(child) {
-          return self.callgraph.addCallGroup(child, self);
-        });
-
-        return RSVP.all(_.map(self.children, function(child) {
-          return child.load();
-        })).then(function() {
-          return self.children;
-        });
-      });
-    };
-
-    LoopIteration.prototype.unloadChildren = function() {
-      _.forEach(this.chilren, function(child) {
-        child.unloadChildren();
-        child.unloadAssociations();
-      });
-
-      delete this.children;
-    };
-
-    LoopIteration.prototype.unloadParent = function() {
-      this.parent.unloadParent();
-      this.parent.unloadAssociations();
-
-      delete this.parent;
+      return this.loadCallChildren();
     };
 
     LoopIteration.prototype.unloadAssociations = function() {
       this.unloadReferences();
     };
 
+    LoopIteration.prototype.loadLoopExecutions = function() {
+      var self = this;
+
+      self.unloadChildren();
+
+      return self.data.getLoopExecutions().then(function(loopExecutions) {
+        self.loopExecutions = _.map(loopExecutions, function(loopExecution) {
+          return new LoopExecution(self.callgraph, loopExecution, self);
+        });
+
+        return self.loopExecutions;
+      });
+    };
+
+    LoopIteration.prototype.unloadLoopExecutions = function() {
+      this.unloadChildren();
+
+      _.forEach(this.loopExecutions, function(loopExecution) {
+        loopExecution.unloadChildren();
+        loopExecution.unloadAssociations();
+      });
+
+      delete this.loopExecutions;
+    };
+
     LoopIteration.prototype.toggleChildren = toggleFunction
       ('children',
        LoopIteration.prototype.loadChildren,
        LoopIteration.prototype.unloadChildren);
+    LoopIteration.prototype.toggleLoopExecutions = toggleFunction
+      ('loopExecutions',
+       LoopIteration.prototype.loadLoopExecutions,
+       LoopIteration.prototype.unloadLoopExecutions);
     LoopIteration.prototype.toggleReferences = toggleFunction
       ('references',
        LoopIteration.prototype.loadReferences,
@@ -496,7 +487,7 @@ angular.module('app')
 
       this.type = 'Reference';
 
-      this.calls = [];
+      this.nodes = [];
 
       callgraph.references.push(this);
     }
@@ -506,43 +497,43 @@ angular.module('app')
     };
 
     Reference.prototype.checkUnload = function() {
-      if (this.calls.length === 0 && this.callgroups.length) {
+      if (this.nodes.length === 0 && this.callgroups.length) {
         this.unload();
       }
     };
 
-    Reference.prototype.unloadCall = function(call) {
-      this.calls.remove(call);
+    Reference.prototype.removeNode = function(call) {
+      this.nodes.remove(call);
       this.checkUnload();
     };
 
     Reference.prototype.unload = function() {
       var self = this;
 
-      _.forEach(self.calls, function(call) {
+      _.forEach(self.nodes, function(call) {
         call.references.remove(self);
       });
 
       self.callgraph.references.remove(self);
     };
 
-    Reference.prototype.addCall = function(call) {
-      this.calls.push(call);
+    Reference.prototype.addNode = function(call) {
+      this.nodes.push(call);
     };
 
     /************************************************************** CallGroup */
 
     function CallGroup(callgraph, callgroup, parent) {
-      this.callgroup = callgroup;
-      this.callgraph = callgraph;
-      this.parent = parent;
+      Node.call(this, callgraph, callgroup, parent);
 
       this.type = 'CallGroup';
     }
 
+    CallGroup.prototype = Object.create(Node.prototype);
+
     CallGroup.prototype.load = function() {
       var self = this;
-      return self.callgroup.getFunction().then(function(fct) {
+      return self.data.getFunction().then(function(fct) {
         self.function = fct;
       });
     };
@@ -552,33 +543,21 @@ angular.module('app')
     };
 
     CallGroup.prototype.getDuration = function() {
-      return this.callgroup.duration;
+      return this.data.duration;
     };
 
-    LoopIteration.prototype.getStart = function() {
-      return this.callgroup.start;
+    CallGroup.prototype.getStart = function() {
+      return this.data.start;
     };
 
     CallGroup.prototype.loadChildren = function() {
-      var self = this;
-
-      return self.callgroup.getCallGroups().then(function(children) {
-        self.children = _.map(children, function(child) {
-          return self.callgraph.addCallGroup(child, self);
-        });
-
-        return RSVP.all(_.map(self.children, function(child) {
-          return child.load();
-        })).then(function() {
-          return self.children;
-        });
-      });
+      return this.loadCallGroupChildren();
     };
 
     CallGroup.prototype.loadParent = function() {
       var self = this;
 
-      return self.call.getCaller().then(function(caller) {
+      return self.data.getCaller().then(function(caller) {
         self.parent = self.callgraph.addCall(caller);
 
         self.callgraph.roots.remove(self);
@@ -588,46 +567,6 @@ angular.module('app')
       });
     };
 
-    CallGroup.prototype.unloadParent = function() {
-      if (_.isUndefined(this.parent)) {
-        return;
-      }
-
-      this.parent.unloadParent();
-      this.parent.unloadAssociations();
-
-      this.callgraph.roots.remove(this.parent);
-      this.callgraph.roots.push(this);
-
-      delete this.parent;
-    };
-
-    CallGroup.prototype.unloadChildren = function() {
-      if (_.isUndefined(this.children)) {
-        return;
-      }
-
-      _.forEach(this.chilren, function(child) {
-        child.unloadChildren();
-        child.unloadAssociations();
-      });
-
-      delete this.chilren;
-    };
-
-    CallGroup.prototype.unloadReferences = function() {
-      if (_.isUndefined(this.references)) {
-        return;
-      }
-
-      var self = this;
-      _.forEach(self.references, function(reference) {
-        reference.unloadCall(self);
-      });
-
-      delete self.references;
-    };
-
     CallGroup.prototype.unloadAssociations = function() {
       this.unloadReferences();
     };
@@ -635,7 +574,7 @@ angular.module('app')
     CallGroup.prototype.loadCalls = function() {
       var self = this;
 
-      return self.callgroup.getCalls().then(function(calls) {
+      return self.data.getCalls().then(function(calls) {
         self.unloadAssociations();
 
         if (self.parent) {

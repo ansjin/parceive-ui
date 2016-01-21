@@ -1,4 +1,6 @@
 var express = require('express');
+var _ = require('lodash');
+
 var router = express.Router();
 
 var util = require('./util');
@@ -50,7 +52,7 @@ router.get('/many/:ids/loopexecutions', function(req, res) {
 
 router.get('/many/:ids/directloopexecutions', function(req, res) {
   util.handleManyQuery(req.db, loopexecutions.mapping, res, req.params.ids,
-    'LoopExecution WHERE Caller', 'AND ParentIteration IS NULL');
+    'LoopExecution WHERE Call', 'AND ParentIteration IS NULL');
 });
 
 router.get('/many/:ids/directcalls', function(req, res) {
@@ -73,27 +75,13 @@ router.get('/many/:ids', function(req, res) {
     'Call WHERE Id');
 });
 
-router.get('/:id/segments', function(req, res) {
-  util.handleRelationshipQuery(req.db, segments.mapping, res,
-    'SELECT * FROM Segment WHERE Call=?', req.params.id);
+var treeMapping = _.extend(mapping, {
+  'Depth': 'depth'
 });
 
-router.get('/:id/calls', function(req, res) {
-  util.handleRelationshipQuery(req.db, mapping, res,
-    'SELECT * FROM Call WHERE Caller=?', req.params.id);
-});
-
-router.get('/:id/loopexecutions', function(req, res) {
-  util.handleRelationshipQuery(req.db, loopexecutions.mapping, res,
-    'SELECT * FROM LoopExecution WHERE Call=?', req.params.id);
-});
-
-router.get('/:id/callgroups', function(req, res) {
-  util.handleRelationshipQuery(req.db, callgroups.mapping, res,
-    'SELECT * FROM CallGroup WHERE Caller=?', req.params.id);
-});
-
-router.get('/:id', function(req, res) {
-  util.handleOneQuery(req.db, mapping, res,
-    'SELECT * FROM Call WHERE Id=?', req.params.id);
+router.get('/:id/recursivecalls', function(req, res) {
+  var duration = req.params.duration ? req.params.duration : 0;
+  util.handleRelationshipQuery(req.db, treeMapping, res,
+    'SELECT * FROM Call, CallTree WHERE Descendant=Id AND Ancestor=? AND Duration > ?',
+    req.params.id, duration);
 });

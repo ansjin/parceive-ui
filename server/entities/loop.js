@@ -29,13 +29,3 @@ router.get('/many/:ids', function(req, res) {
   util.handleManyQuery(req.db, mapping, res, req.params.ids,
     'Loop WHERE No');
 });
-
-router.get('/:id', function(req, res) {
-  util.handleOneQuery(req.db, mapping, res,
-    'SELECT * FROM Loop WHERE No=?', req.params.id);
-});
-
-router.get('/:id/loopexecutions', function(req, res) {
-  util.handleRelationshipQuery(req.db, loopexecutions.mapping, res,
-    'SELECT * FROM LoopExecution WHERE No=?', req.params.id);
-});

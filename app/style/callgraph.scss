@@ -8,10 +8,18 @@ g.callgraph {
     }
   }
 
-  g.call {
+  g.node.call {
     rect.call-bg {
       fill: $base3;
       stroke: $base2;
+    }
+  }
+
+  g.edge {
+    path {
+      stroke: rgb(255,0,0);
+      stroke-width: 1;
+      fill-opacity: 0;
     }
   }
 }
