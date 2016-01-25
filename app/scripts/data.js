@@ -821,7 +821,7 @@ var CallGroup = {
         return _.map(datas, function(data) {
             return {
               depth: data.depth,
-              callgroup: wrap(data, Call, self._mapper)
+              callgroup: wrap(data, CallGroup, self._mapper)
             };
           });
       });
