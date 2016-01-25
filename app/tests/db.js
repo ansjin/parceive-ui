@@ -187,6 +187,33 @@ describe('Unit Test Databases', function() {
       });
     });
 
+    it('must filter correctly', function() {
+      return loader.getFunctionBySignature('main').then(function(fct) {
+        return fct.getCalls();
+      }).then(function(calls) {
+        return calls[0];
+      }).then(function(call) {
+        return call.getCallGroup();
+      }).then(function(callgroup) {
+        return RSVP.hash({
+          calls: callgroup.getRecursiveCallGroups(),
+          callgroup: callgroup
+        });
+      }).then(function(data) {
+        var minDuration = _.min(data.calls, function(call) {
+          return call.callgroup.duration;
+        }).callgroup.duration;
+
+        return RSVP.hash({
+          same: data.callgroup.getRecursiveCallGroups(minDuration - 1),
+          less: data.callgroup.getRecursiveCallGroups(minDuration)
+        }).then(function(queries) {
+          queries.same.should.deep.equal(data.calls);
+          queries.less.length.should.equal(queries.same.length - 1);
+        });
+      });
+    });
+
     genericDBTests();
   });
 
