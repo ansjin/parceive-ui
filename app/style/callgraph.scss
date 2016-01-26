@@ -22,4 +22,8 @@ g.callgraph {
       fill-opacity: 0;
     }
   }
+
+  g.bg-group > g > polygon {
+    opacity: 0.5;
+  }
 }

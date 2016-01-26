@@ -6,6 +6,8 @@ angular.module('cct-view', ['app'])
 .value('hoverCb', function() {})
 .service('render', ['CallGraphDataService', 'LoaderService', 'd3', 'KeyService',
 function(CallGraphDataService, loader, d3, keyService) {
+  var bgColors = d3.scale.category20();
+
   function addZoom(svg) {
     svg.call(d3.behavior.zoom().scaleExtent([1, 10]).on('zoom', zoom));
 
@@ -23,19 +25,27 @@ function(CallGraphDataService, loader, d3, keyService) {
       .attr('d', 'M765 1043q-9 -19 -29 -19h-224v-1248q0 -14 -9 -23t-23 -9h-192q-14 0 -23 9t-9 23v1248h-224q-21 0 -29 19t5 35l350 384q10 10 23 10q14 0 24 -10l355 -384q13 -16 5 -35z')
       .attr('horiz-adv-x', '768');
 
+    defs.append('filter')
+      .attr('id', 'blurFilter')
+      .append('feGaussianBlur')
+      .attr('in', 'SourceGraphic')
+      .attr('stdDeviation', 8);
+
     /* jscs: enable */
 
     var g = svg.append('g')
       .attr('class', 'callgraph');
 
     g.append('g')
+      .attr('class', 'bg-group')
+        .append('g')
+        .attr('class', 'loop-bg-group');
+
+    g.append('g')
       .attr('class', 'edges-group');
 
     g.append('g')
       .attr('class', 'calls-group');
-
-    g.append('g')
-      .attr('class', 'refs-group');
 
     function zoom() {
       g.attr('transform', 'translate(' + d3.event.translate +
@@ -88,6 +98,15 @@ function(CallGraphDataService, loader, d3, keyService) {
     }
   }
 
+  function calcPolygonPoints(execution) {
+    var min = _.min(execution.loopIterations, 'y');
+    var max = _.max(execution.loopIterations, 'y');
+
+    return execution.x + 5  + ',' + (execution.y + 5) + ' ' +
+            (min.x + 5) + ',' + (min.y + 5) + ' ' +
+            (max.x + 5) + ',' + (max.y + 5);
+  }
+
   var force;
 
   function render(svg, stateManager) {
@@ -104,6 +123,8 @@ function(CallGraphDataService, loader, d3, keyService) {
 
     var g = svg.select('g.callgraph');
 
+    var bgGroup = g.select('g.bg-group');
+    var loopBgGroup = bgGroup.select('g.loop-bg-group');
     var callGroup = g.select('g.calls-group');
     var refGroup = g.select('g.refs-group');
     var edgeGroup = g.select('g.edges-group');
@@ -210,7 +231,7 @@ function(CallGraphDataService, loader, d3, keyService) {
 
     loopExecutionEnter.append('use')
       .attr('xlink:href', '#execution')
-      .attr('transform', 'scale(' + 10 / 448 + ')');
+      .attr('transform', 'scale(' + 10 / 800 + ')');
 
     var loopIterationEnter = callNodesEnter.filter(function(d) {
       return d.type === 'LoopIteration';
@@ -218,7 +239,7 @@ function(CallGraphDataService, loader, d3, keyService) {
 
     loopIterationEnter.append('use')
       .attr('xlink:href', '#iteration')
-      .attr('transform', 'scale(' + 10 / 448 + ')');
+      .attr('transform', 'scale(' + 10 / 800 + ')');
 
     var restNodesEnter = callNodesEnter.filter(function(d) {
       return d.type === 'Call' || d.type === 'CallGroup';
@@ -286,6 +307,27 @@ function(CallGraphDataService, loader, d3, keyService) {
       .attr('transform', function(d) {
         return 'translate(' + d.x + ',' + d.y + ')';
       });
+
+    /* Background */
+
+    var executions = _.filter(calls, function(call) {
+      return call.type === 'LoopExecution' &&
+              !_.isUndefined(call.loopIterations);
+    });
+
+    var loopBg = loopBgGroup.selectAll('polygon')
+      .data(executions, function(d) { return d.data.id; });
+
+    loopBg.exit().remove();
+
+    loopBg.enter()
+      .append('polygon')
+      .style('filter', 'url(#blurFilter)')
+      .style('fill', function(d, i) { return bgColors(i); });
+
+    loopBg.attr('points', function(d) {
+      return calcPolygonPoints(d);
+    });
 
     /* Add references */
 
