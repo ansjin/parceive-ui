@@ -82,6 +82,7 @@ function render(d3, pdh, pvh, size, grad, ld) {
     var zoomProfilingAdjustment = 0; // "adjustLevel" value for profiling on mode switch
     var zoomTracingMaxLevel = 1; // "maxLevel" value for tracing on mode switch
     var zoomProfilingMaxLevel = 1; // "maxLevel" value for profiling on mode switch
+    var showLoop = false; // show loops in visualization
 
     function init() {
       // get "main" function data
@@ -99,6 +100,15 @@ function render(d3, pdh, pvh, size, grad, ld) {
 
     function isTracing() {
       return viewMode === 'T';
+    }
+
+    function toggleLoop() {
+      // change loop visibility
+      showLoop = showLoop ? false : true;
+
+      // update loop button
+      var text = showLoop ? 'Hide' : 'Show';
+      $('#profiler-loop').text(text + ' Loops');
     }
 
     function toggleViewMode() {
@@ -599,6 +609,12 @@ function render(d3, pdh, pvh, size, grad, ld) {
       document.getElementById('profiler-view-toggle')
       .addEventListener('click', function() {
         toggleViewMode();
+      });
+
+      // add click handler to show/hide loops
+      document.getElementById('profiler-loop')
+      .addEventListener('click', function() {
+        toggleLoop();
       });
 
       // add click handler to re-render view on window resize
