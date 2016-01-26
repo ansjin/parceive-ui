@@ -9,6 +9,22 @@ function(CallGraphDataService, loader, d3, keyService) {
   function addZoom(svg) {
     svg.call(d3.behavior.zoom().scaleExtent([1, 10]).on('zoom', zoom));
 
+    var defs = svg.append('defs');
+
+    /* jscs: disable */
+
+    defs.append('path')
+      .attr('id', 'execution')
+      .attr('d', 'M1536 1280v-448q0 -26 -19 -45t-45 -19h-448q-42 0 -59 40q-17 39 14 69l138 138q-148 137 -349 137q-104 0 -198.5 -40.5t-163.5 -109.5t-109.5 -163.5t-40.5 -198.5t40.5 -198.5t109.5 -163.5t163.5 -109.5t198.5 -40.5q119 0 225 52t179 147q7 10 23 12q14 0 25 -9 l137 -138q9 -8 9.5 -20.5t-7.5 -22.5q-109 -132 -264 -204.5t-327 -72.5q-156 0 -298 61t-245 164t-164 245t-61 298t61 298t164 245t245 164t298 61q147 0 284.5 -55.5t244.5 -156.5l130 129q29 31 70 14q39 -17 39 -59z')
+      .attr('horiz-adv-x', '448');
+
+    defs.append('path')
+      .attr('id', 'iteration')
+      .attr('d', 'M765 1043q-9 -19 -29 -19h-224v-1248q0 -14 -9 -23t-23 -9h-192q-14 0 -23 9t-9 23v1248h-224q-21 0 -29 19t5 35l350 384q10 10 23 10q14 0 24 -10l355 -384q13 -16 5 -35z')
+      .attr('horiz-adv-x', '768');
+
+    /* jscs: enable */
+
     var g = svg.append('g')
       .attr('class', 'callgraph');
 
@@ -188,7 +204,27 @@ function(CallGraphDataService, loader, d3, keyService) {
     callgraph.computeSizes();
 
     /* Background */
-    callNodesEnter.append('rect')
+    var loopExecutionEnter = callNodesEnter.filter(function(d) {
+      return d.type === 'LoopExecution';
+    });
+
+    loopExecutionEnter.append('use')
+      .attr('xlink:href', '#execution')
+      .attr('transform', 'scale(' + 10 / 448 + ')');
+
+    var loopIterationEnter = callNodesEnter.filter(function(d) {
+      return d.type === 'LoopIteration';
+    });
+
+    loopIterationEnter.append('use')
+      .attr('xlink:href', '#iteration')
+      .attr('transform', 'scale(' + 10 / 448 + ')');
+
+    var restNodesEnter = callNodesEnter.filter(function(d) {
+      return d.type === 'Call' || d.type === 'CallGroup';
+    });
+
+    restNodesEnter.append('rect')
       .classed('call-bg', true)
       .attr('x', 0)
       .attr('y', 0)
@@ -200,7 +236,7 @@ function(CallGraphDataService, loader, d3, keyService) {
       });
 
     /* Label */
-    callNodesEnter
+    restNodesEnter
       .append('text')
       .attr('x', 5)
       .attr('y', function(d) {
