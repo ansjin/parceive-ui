@@ -9,7 +9,11 @@ profilerDataHelper.$inject = ['LoaderService'];
 function profilerDataHelper(LoaderService) {
   var factory = {
     getMain: getMain,
-    getViewData: getViewData
+    getRecursive: getRecursive,
+    getCall: getCall,
+    getCallGroup: getCallGroup,
+    getCallObj: getCallObj,
+    getCallGroupObj: getCallGroupObj
   };
 
   return factory;
@@ -22,11 +26,61 @@ function profilerDataHelper(LoaderService) {
       .then(function(call) {
         return new RSVP.resolve(call[0]);
       });
-
     return promise;
   }
 
-  function getCall(id, ancestor, level) {
+  function getRecursive(obj, isTracing, runtimeThreshold, level) {
+    var promises = [];
+    var children = [];
+    var type = isTracing ? 'call' : 'callgroup';
+    var ancestor = isTracing ? 'callerID' : 'parentID';
+    var func = isTracing
+      ? obj.getRecursiveCalls(runtimeThreshold)
+      : obj.getRecursiveCallGroups(runtimeThreshold);
+    
+    var promise = func
+    .then(function(data) {
+      for (var i = 0, len = data.length; i < len; i++) {
+        children.push({
+          start: isTracing ? Number(data[i][type].start) : null,
+          end: isTracing ? Number(data[i][type].end) : null,
+          duration: Number(data[i][type].duration),
+          ancestor: data[i][type][ancestor],
+          level: data[i].depth + level,
+          id: data[i][type].id
+        });
+      }
+
+      var promises = data.map(function(o){
+        return o[type].getFunction();
+      });
+      return RSVP.all(promises);
+    })
+    .then(function(data) {
+      for (var i = 0, len = children.length; i < len; i++) {
+        children[i].name = data[i].signature;
+      }
+
+      // sort for callgroup case
+      if (!isTracing) {
+        console.log('SORTING PROFILING DATA');
+        children = _.sortByOrder(children, ['level', 'duration'], [true, false]);
+      }
+      console.log(children);
+      return new RSVP.resolve(children);
+    });
+    return promise;
+  }
+
+  function getCall(id) {
+    return LoaderService.getCall(id);
+  }
+
+  function getCallGroup(id) {
+    return LoaderService.getCallGroup(id);
+  }
+
+  function getCallObj(id, ancestor, level) {
     var self;
     var temp = {};
 
@@ -47,23 +101,12 @@ function profilerDataHelper(LoaderService) {
       .then(function(func) {
         temp.name = func.signature;
 
-        return self.getCalls();
-      })
-      .then(function(calls) {
-        temp.calls = [];
-
-        // append callees for this call
-        for (var i = 0, len = calls.length; i < len; i++) {
-          temp.calls.push(calls[i].id);
-        }
-
         return new RSVP.resolve(temp);
       });
-
     return promise;
   }
 
-  function getCallGroup(id, ancestor, level) {
+  function getCallGroupObj(id, ancestor, level) {
     var self;
     var temp = {};
 
@@ -84,30 +127,8 @@ function profilerDataHelper(LoaderService) {
       .then(function(func) {
         temp.name = func.signature;
 
-        return self.getCallGroups();
-      })
-      .then(function(callGroups) {
-        temp.calls = [];
-
-        // append callees for this call
-        for (var i = 0, len = callGroups.length; i < len; i++) {
-          temp.calls.push(callGroups[i].id);
-        }
-
         return new RSVP.resolve(temp);
       });
-
     return promise;
-  }
-
-  function getViewData(ids, ancestor, level, viewMode) {
-    var promises = [];
-    var func = viewMode === 'T' ? getCall : getCallGroup;
-    for (var i = 0, len = ids.length; i < len; i++) {
-      var promise = func(ids[i], ancestor, level);
-      promises.push(promise);
-    }
-
-    return RSVP.all(promises);
   }
 }
