@@ -38,7 +38,7 @@ router.get('/many/:ids/callgroups', function(req, res) {
     'CallGroup WHERE Parent');
 });
 
-router.get('/many/:ids/callgroupferences', function(req, res) {
+router.get('/many/:ids/callgroupreferences', function(req, res) {
   util.handleManyQuery(req.db, callgroupreferences.mapping, res, req.params.ids,
     'CallGroupReference WHERE CallGroup');
 });
@@ -53,7 +53,7 @@ var treeMapping = _.extend(mapping, {
 });
 
 router.get('/:id/recursivecallgroups', function(req, res) {
-  var duration = req.params.duration ? req.params.duration : 0;
+  var duration = req.query.duration ? req.query.duration : 0;
   util.handleRelationshipQuery(req.db, treeMapping, res,
     'SELECT * FROM CallGroup, CallGroupTree WHERE Descendant=Id AND Ancestor=? AND Duration > ?',
     req.params.id, duration);

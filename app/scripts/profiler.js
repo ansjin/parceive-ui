@@ -1,4 +1,4 @@
-/* global $, window, document */
+/* global $, window, document, console */
 
 angular
   .module('profile-view', ['app'])
@@ -30,11 +30,12 @@ render.$inject = [
   'profilerDataHelper',
   'profilerViewHelper',
   'SizeService',
-  'GradientService'
+  'GradientService',
+  'LoaderService'
 ];
 
 // render the view
-function render(d3, pdh, pvh, size, grad) {
+function render(d3, pdh, pvh, size, grad, ld) {
   return function(svg, stateManager) {
     var viewMode = 'T'; // valid values T = tracing, P = profiling
     var initTracingMode = true; // checks if tracing view has been loaded before
@@ -155,56 +156,55 @@ function render(d3, pdh, pvh, size, grad) {
 
     // load view depending on current view mode
     function loadView() {
-      var ids = isTracing() ? [mainCallId] : [mainCallGroupId];
+      var id = isTracing() ? mainCallId : mainCallGroupId;
       var ancestor = 'null';
       var level = 1;
+      
       setRuntimeThreshold(mainDuration);
-      getViewData(ids, ancestor, level);
-    }
-
-    function getViewData(ids, ancestor, level) {
-      // get remote data
-      pdh.getViewData(ids, ancestor, level, viewMode)
+      var func = isTracing()
+        ? pdh.getCallObj(id, ancestor, level)
+        : pdh.getCallGroupObj(id, ancestor, level);
+      
+      func
         .then(function(data) {
-          for (var i = 0, len = data.length; i < len; i++) {
-            var obj = data[i];
-
-            // skip calls with runtime lesser than runtimeThreshold
-            if (obj.duration < runtimeThreshold) {
-              continue;
-            }
-
-            // add call ids' to history
-            if (isTracing()) {
-              callHistory.push(obj.id);
-            } else {
-              callGroupHistory.push(obj.id);
-            }
-
-            // append object to tracing or profiling parent object
-            buildViewData(obj);
-
-            // call getViewData on children of obj
-            loadChildren(obj.id, obj.calls, level);
-
-            // update the display
-            displayView();
-          }
+          buildViewData(data);
+          loadChildren(id, level);
         });
     }
 
-    function loadChildren(id, calls, level) {
-      var children = [];
+    function checkCallHistory(id) {
       var history = isTracing() ? callHistory : callGroupHistory;
-      _.map(calls, function(x) {
-        if (history.indexOf(x) === -1) {
-          children.push(x);
-        }
-      });
+      return history.indexOf(id) === -1;
+    }
 
-      if (children.length > 0) {
-        getViewData(children, id, level + 1);
+    function addCallHistory(id) {
+      if (isTracing()) {
+        callHistory.push(id);
+      } else {
+        callGroupHistory.push(id);
       }
+    }
+
+    function loadChildren(id, level) {
+      var func = isTracing()
+        ? pdh.getCall(id)
+        : pdh.getCallGroup(id);
+
+      func
+        .then(function(call) {
+          return pdh.getRecursive(call, isTracing(), runtimeThreshold, level)
+        })
+        .then(function(data) {
+          _.forEach(data, function(d) {
+            if (checkCallHistory(d.id)) {
+              buildViewData(d);
+              addCallHistory(d.id);
+            }
+          });
+
+          // update the display
+          displayView();
+        }, function(err) { console.log(err); });
     }
 
     // add an object to the children element of tracing or profiling data
@@ -498,11 +498,11 @@ function render(d3, pdh, pvh, size, grad) {
     function drawTextSvg(selection, nodes) {
       selection
         .data(nodes.filter(function(d) {
-          // only show text for calls with widths' big enough
+          // only show text for calls with widths big enough
           // to contain the full name of the call
           var rectWidth = size.svgSizeById(d.id).width;
           var textWidth = size.svgTextSize(d.name, 14).width;
-          return rectWidth > textWidth + textPadX;
+          return rectWidth > textWidth + 20;
         }))
         .enter()
         .append('text')
@@ -575,7 +575,7 @@ function render(d3, pdh, pvh, size, grad) {
       displayView();
 
       if (loadNodeChildren) {
-        loadChildren(d.id, d.calls, d.level);
+        loadChildren(d.id, d.level);
       }
     }
 

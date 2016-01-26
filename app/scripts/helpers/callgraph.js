@@ -53,7 +53,7 @@ angular.module('app')
 
     CallGraph.prototype.addReference = function(reference) {
       var existing = _.find(this.references, function(node) {
-        return reference === node.reference;
+        return reference === node.data;
       });
 
       if (existing) {
@@ -100,6 +100,13 @@ angular.module('app')
         _.forEach(root.children, getCallProper(root));
         _.forEach(root.loopExecutions, getCallProper(root));
         _.forEach(root.loopIterations, getCallProper(root));
+      });
+
+      _.forEach(this.references, function(reference) {
+        var i;
+        for (i = 0; i < reference.nodes.length; i++) {
+          edges.push([reference.nodes[i], reference]);
+        }
       });
 
       return edges;
@@ -482,7 +489,7 @@ angular.module('app')
     /************************************************************** Reference */
 
     function Reference(callgraph, reference) {
-      this.reference = reference;
+      this.data = reference;
       this.callgraph = callgraph;
 
       this.type = 'Reference';
@@ -493,11 +500,11 @@ angular.module('app')
     }
 
     Reference.prototype.getLabel = function() {
-      return this.reference.signature;
+      return this.data.signature;
     };
 
     Reference.prototype.checkUnload = function() {
-      if (this.nodes.length === 0 && this.callgroups.length) {
+      if (this.nodes.length === 0) {
         this.unload();
       }
     };
