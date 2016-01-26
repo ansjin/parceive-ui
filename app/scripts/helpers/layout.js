@@ -17,7 +17,7 @@ angular.module('app')
   [function() {
   var conf = {
     horisontalMargin: 20,
-    verticalMargin: 0
+    verticalMargin: 10
   };
 
   function clearLayout(callgraph) {
