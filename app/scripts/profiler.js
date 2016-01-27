@@ -90,6 +90,8 @@ function render(d3, pdh, pvh, size, grad, ld) {
         mainDuration = call.duration;
         mainCallId = call.id;
         mainCallGroupId = call.callGroupID;
+        // call.getDirectLoopExecutions()
+        // .then(function(d) { console.log(d); });       
         loadView();
       });
     }
@@ -100,6 +102,11 @@ function render(d3, pdh, pvh, size, grad, ld) {
 
     function isTracing() {
       return viewMode === 'T';
+    }
+
+    function showHideLoopBtn() {
+      var text = isTracing() ? '' : 'hide';
+      document.getElementById('profiler-loop').className = text;
     }
 
     function toggleLoop() {
@@ -162,6 +169,9 @@ function render(d3, pdh, pvh, size, grad, ld) {
       // update toggle button
       var state = !isTracing() ? 'Tracing' : 'Profiling';
       $('#profiler-view-toggle').text('Switch to ' + state);
+
+      // show/hide loop button
+      showHideLoopBtn();
     }
 
     // load view depending on current view mode
@@ -616,6 +626,7 @@ function render(d3, pdh, pvh, size, grad, ld) {
       .addEventListener('click', function() {
         toggleLoop();
       });
+      showHideLoopBtn();
 
       // add click handler to re-render view on window resize
       window.addEventListener('resize', function() {

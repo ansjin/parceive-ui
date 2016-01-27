@@ -40,6 +40,7 @@ function profilerDataHelper(LoaderService) {
     
     var promise = func
     .then(function(data) {
+      console.log(data);
       for (var i = 0, len = data.length; i < len; i++) {
         children.push({
           start: isTracing ? Number(data[i][type].start) : null,
@@ -63,10 +64,8 @@ function profilerDataHelper(LoaderService) {
 
       // sort for callgroup case
       if (!isTracing) {
-        console.log('SORTING PROFILING DATA');
         children = _.sortByOrder(children, ['level', 'duration'], [true, false]);
       }
-      console.log(children);
       return new RSVP.resolve(children);
     });
     return promise;
