@@ -15,7 +15,7 @@ describe('Callgraph', function() {
     _.forEach(nodes, function(node) {
       node.type.should.match(/^(Call)|(CallGroup)$/);
 
-      _.forEach(node.children, function(child) {
+      _.forEach(node.calls, function(child) {
         child.parent.should.equal(node);
       });
 
@@ -69,7 +69,7 @@ describe('Callgraph', function() {
       return addMainRoot(callgraph).then(function() {
         return callgraph.getRoots()[0].loadChildren();
       }).then(function() {
-        callgraph.getRoots()[0].children.should.have.length(2);
+        callgraph.getRoots()[0].calls.should.have.length(2);
 
         validateGraph(callgraph);
       });
