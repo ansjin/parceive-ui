@@ -9,10 +9,45 @@ angular.module('app')
         sorting: 'Importance',
         textSize: 10
       };
+
+      this.tree = d3.layout.tree();
+
+      this.tree.children(function(node) {
+        var all = [];
+
+        if (node.calls) {
+          all = all.concat(node.calls);
+        }
+
+        if (node.loopExecutions) {
+          all = all.concat(node.loopExecutions);
+        }
+
+        if (node.loopIterations) {
+          all = all.concat(node.loopIterations);
+        }
+
+        return all;
+      });
     }
 
     CallGraph.prototype.layout = function() {
-      layout(this);
+      var root = {
+        calls: this.getRoots()
+      };
+
+      var nodes = this.tree.nodes(root);
+
+      var maxNodeWidth = _.max(nodes, 'width').width + 20;
+      var maxNodeHeight = _.max(nodes, 'width').height + 20;
+      var maxNodeDepth = _.max(nodes, 'depth').depth;
+      var maxNodeBreath = _.max(_.groupBy(nodes, 'depth'), 'length').length;
+
+      _.forEach(nodes, function(node) {
+        var tmp = node.x;
+        node.x = node.y * maxNodeWidth * maxNodeDepth;
+        node.y = tmp * maxNodeHeight * maxNodeBreath;
+      });
     };
 
     CallGraph.prototype.addCallRoot = function(call) {
@@ -69,7 +104,7 @@ angular.module('app')
       function processNode(node) {
         nodes.push(node);
 
-        _.forEach(node.children, processNode);
+        _.forEach(node.calls, processNode);
         _.forEach(node.loopExecutions, processNode);
         _.forEach(node.loopIterations, processNode);
       }
@@ -91,13 +126,13 @@ angular.module('app')
       function processNode(node, parent) {
         edges.push([parent, node]);
 
-        _.forEach(node.children, getCallProper(node));
+        _.forEach(node.calls, getCallProper(node));
         _.forEach(node.loopExecutions, getCallProper(node));
         _.forEach(node.loopIterations, getCallProper(node));
       }
 
       _.forEach(this.roots, function(root) {
-        _.forEach(root.children, getCallProper(root));
+        _.forEach(root.calls, getCallProper(root));
         _.forEach(root.loopExecutions, getCallProper(root));
         _.forEach(root.loopIterations, getCallProper(root));
       });
@@ -173,7 +208,7 @@ angular.module('app')
           reference.addNode(self);
         });
 
-        return self.children;
+        return self.calls;
       });
     };
 
@@ -191,14 +226,14 @@ angular.module('app')
       var self = this;
 
       return self.data.getCalls().then(function(children) {
-        self.children = _.map(children, function(child) {
+        self.calls = _.map(children, function(child) {
           return self.callgraph.addCall(child, self);
         });
 
-        return RSVP.all(_.map(self.children, function(child) {
+        return RSVP.all(_.map(self.calls, function(child) {
           return child.load();
         })).then(function() {
-          return self.children;
+          return self.calls;
         });
       });
     };
@@ -207,14 +242,14 @@ angular.module('app')
       var self = this;
 
       return self.data.getDirectCalls().then(function(children) {
-        self.children = _.map(children, function(child) {
+        self.calls = _.map(children, function(child) {
           return self.callgraph.addCall(child, self);
         });
 
-        return RSVP.all(_.map(self.children, function(child) {
+        return RSVP.all(_.map(self.calls, function(child) {
           return child.load();
         })).then(function() {
-          return self.children;
+          return self.calls;
         });
       });
     };
@@ -223,14 +258,14 @@ angular.module('app')
       var self = this;
 
       return self.data.getCallGroups().then(function(children) {
-        self.children = _.map(children, function(child) {
+        self.calls = _.map(children, function(child) {
           return self.callgraph.addCallGroup(child, self);
         });
 
-        return RSVP.all(_.map(self.children, function(child) {
+        return RSVP.all(_.map(self.calls, function(child) {
           return child.load();
         })).then(function() {
-          return self.children;
+          return self.calls;
         });
       });
     };
@@ -241,7 +276,7 @@ angular.module('app')
         child.unloadAssociations();
       });
 
-      delete this.children;
+      delete this.calls;
     };
 
     Node.prototype.unloadParent = function() {
@@ -303,7 +338,7 @@ angular.module('app')
         self.callgraph.roots.remove(self);
         self.callgraph.roots.push(self.parent);
 
-        self.parent.children = [self];
+        self.parent.calls = [self];
 
         return self.parent.load();
       });
@@ -342,7 +377,7 @@ angular.module('app')
     };
 
     Call.prototype.toggleChildren = toggleFunction
-      ('children',
+      ('calls',
        Call.prototype.loadChildren,
        Call.prototype.unloadChildren);
     Call.prototype.toggleReferences = toggleFunction
@@ -416,7 +451,7 @@ angular.module('app')
     };
 
     LoopExecution.prototype.toggleChildren = toggleFunction
-      ('children',
+      ('calls',
        LoopExecution.prototype.loadChildren,
        LoopExecution.prototype.unloadChildren);
     LoopExecution.prototype.toggleReferences = toggleFunction
@@ -484,7 +519,7 @@ angular.module('app')
     };
 
     LoopIteration.prototype.toggleChildren = toggleFunction
-      ('children',
+      ('calls',
        LoopIteration.prototype.loadChildren,
        LoopIteration.prototype.unloadChildren);
     LoopIteration.prototype.toggleLoopExecutions = toggleFunction
@@ -584,7 +619,7 @@ angular.module('app')
         self.callgraph.roots.remove(self);
         self.callgraph.roots.push(self.parent);
 
-        self.parent.children = [self];
+        self.parent.calls = [self];
 
         return self.parent.load();
       });
@@ -601,11 +636,11 @@ angular.module('app')
         self.unloadAssociations();
 
         if (self.parent) {
-          self.parent.children.remove(self);
+          self.parent.calls.remove(self);
 
           var added = _.map(calls, function(call) {
             var node = self.callgraph.addCall(call, self.parent);
-            self.parent.children.push(node);
+            self.parent.calls.push(node);
             return node;
           });
 
@@ -629,7 +664,7 @@ angular.module('app')
     };
 
     CallGroup.prototype.toggleChildren = toggleFunction
-      ('children',
+      ('calls',
        CallGroup.prototype.loadChildren,
        CallGroup.prototype.unloadChildren);
     CallGroup.prototype.toggleReferences = toggleFunction
