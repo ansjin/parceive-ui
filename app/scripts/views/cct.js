@@ -5,7 +5,8 @@ angular.module('cct-view', ['app'])
 .value('focusCb', function() {})
 .value('hoverCb', function() {})
 .service('render', ['CallGraphDataService', 'LoaderService', 'd3', 'KeyService',
-function(CallGraphDataService, loader, d3, keyService) {
+                    'GradientService',
+function(CallGraphDataService, loader, d3, keyService, GradientService) {
   var bgColors = d3.scale.category20();
 
   function addZoom(svg) {
@@ -160,6 +161,12 @@ function(CallGraphDataService, loader, d3, keyService) {
     var refs = callgraph.getReferences();
     var edges = callgraph.getEdges();
 
+    var durations = _.map(calls, function(call) {
+      return call.data.duration;
+    });
+
+    var gradient = GradientService.gradient(_.min(durations), _.max(durations));
+
     var allnodes = calls.concat(refs);
 
     _.forEach(calls, function(call) {
@@ -231,7 +238,10 @@ function(CallGraphDataService, loader, d3, keyService) {
 
     loopExecutionEnter.append('use')
       .attr('xlink:href', '#execution')
-      .attr('transform', 'scale(' + 10 / 800 + ')');
+      .attr('transform', 'scale(' + 10 / 800 + ')')
+      .attr('fill', function(d) {
+        return gradient(d.data.duration);
+      });
 
     var loopIterationEnter = callNodesEnter.filter(function(d) {
       return d.type === 'LoopIteration';
@@ -249,17 +259,23 @@ function(CallGraphDataService, loader, d3, keyService) {
       .classed('call-bg', true)
       .attr('x', 0)
       .attr('y', 0)
+      .attr('rx', 5)
+      .attr('ry', 5)
       .attr('width', function(d) {
-        return d.width + 10;
+        return d.width + 6;
       })
       .attr('height', function(d) {
-        return d.height + 10;
+        return d.height + 6;
+      }).attr('fill', function(d) {
+        return d3.rgb(gradient(d.data.duration)).brighter();
+      }).attr('stroke', function(d) {
+        return gradient(d.data.duration);
       });
 
     /* Label */
     restNodesEnter
       .append('text')
-      .attr('x', 5)
+      .attr('x', 3)
       .attr('y', function(d) {
         return d.height;
       })
