@@ -993,7 +993,7 @@ var LoopExecution = {
   typeName: 'LoopExecution',
   singular: 'loopexecution',
   plural: 'loopexecutions',
-  properties: ['loop', 'parent', 'duration', 'call'],
+  properties: ['loop', 'parent', 'duration', 'call', 'iterationsCount'],
   relationships: {
     'loop': {
       type: 'Loop'

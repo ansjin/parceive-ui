@@ -286,8 +286,34 @@ function(CallGraphDataService, loader, d3, keyService, GradientService) {
     /* Calculate true size */
     callNodes.each(function(d) {
       var bbox = this.getBBox();
-      d.width = bbox.width;
-      d.height = bbox.height;
+      d.width = bbox.width - (d.counterWidth ? d.counterWidth : 0);
+      d.height = bbox.height - (d.counterHeight ? d.counterHeight : 0);
+    });
+
+    /* Add counters */
+
+    var callGroupNodesEnter = callNodesEnter.filter(function(d) {
+      return d.type === 'CallGroup' || d.type === 'LoopExecution';
+    });
+
+    var textCounters = callGroupNodesEnter
+      .append('text')
+      .attr('x', function(d) {
+        return d.width;
+      })
+      .text(function(d) {
+        if (d.type === 'CallGroup') {
+          return d.data.count;
+        } else if (d.type === 'LoopExecution') {
+          return d.data.iterationsCount;
+        }
+
+      });
+
+    textCounters.each(function(d) {
+      var bbox = this.getBBox();
+      d.counterWidth = bbox.width;
+      d.counterHeight = bbox.height;
     });
 
     /* Layouting */
