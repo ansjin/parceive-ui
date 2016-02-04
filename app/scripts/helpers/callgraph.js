@@ -1,6 +1,6 @@
 angular.module('app')
   .service('CallGraphDataService',
-  ['LayoutCallGraphService', 'SizeService', function(layout, SizeService) {
+  ['d3', 'SizeService', function(d3, SizeService) {
     function CallGraph() {
       this.roots = [];
       this.references = [];
