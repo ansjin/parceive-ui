@@ -1,6 +1,5 @@
 describe('Callgraph', function() {
   var CallGraphDataService = $injector.get('CallGraphDataService');
-  var LayoutCallGraphService = $injector.get('LayoutCallGraphService');
 
   function validateGraph(callgraph) {
     callgraph.roots.should.be.an('array');
@@ -33,7 +32,7 @@ describe('Callgraph', function() {
       });
     });
 
-    LayoutCallGraphService(callgraph);
+    callgraph.layout();
   }
 
   before(function() {
