@@ -404,10 +404,6 @@ function addToPipeline(type, id, deferred, relationship) {
   * @see loader#getSpecific
   * @memberof client.data */
 function getSpecific(http, manager, type, id) {
-  if (_.isNull(id)) {
-    return RSVP.reject('Relationship undefined');
-  }
-
   var cached = getCache(type.typeName, id);
 
   if (cached) {
@@ -446,6 +442,10 @@ function getRelationship(http, manager, instance, relationship) {
   } else {
     if (_.isUndefined(instance[relationship])) {
       return RSVP.Promise.resolve(instance[relationship]);
+    }
+
+    if (_.isUndefined(instance[relationship + 'ID'])) {
+      return RSVP.Promise.resolve();
     }
 
     var relationType = manager.types[relationMeta.type];
@@ -508,7 +508,7 @@ var Call = {
   plural: 'calls',
   properties: ['thread', 'function', 'instruction', 'callGroup',
                 'start', 'end', 'caller', 'callsOthers', 'duration',
-                'callerexecution', 'calleriteration'],
+                'callerexecution', 'calleriteration', 'loopCount'],
   relationships: {
     'thread': {
       type: 'Thread'
@@ -700,7 +700,8 @@ var Call = {
 
     minDuration = minDuration ? minDuration : 0;
 
-    return self._mapper.httpGet('calls/' + self.id + '/recursivecalls?duration=' + minDuration)
+    return self._mapper.httpGet('calls/' + self.id +
+      '/recursivecalls?duration=' + minDuration)
       .then(function(datas) {
         return _.map(datas, function(data) {
             return {
@@ -863,7 +864,7 @@ var FunctionType = {
   typeName: 'Function',
   singular: 'function',
   plural: 'functions',
-  properties: ['signature', 'type', 'file', 'startLine'],
+  properties: ['signature', 'type', 'file', 'startLine', 'duration'],
   relationships: {
     'file': {
       type: 'File'
@@ -992,7 +993,7 @@ var LoopExecution = {
   typeName: 'LoopExecution',
   singular: 'loopexecution',
   plural: 'loopexecutions',
-  properties: ['loop', 'parent', 'duration', 'call'],
+  properties: ['loop', 'parent', 'duration', 'call', 'iterationsCount'],
   relationships: {
     'loop': {
       type: 'Loop'
