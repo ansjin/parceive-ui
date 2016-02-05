@@ -3,15 +3,7 @@
 g.callgraph {
   g.node {
     rect.call-bg {
-      fill: $base2;
-      stroke: $base1;
-    }
-  }
-
-  g.node.call {
-    rect.call-bg {
-      fill: $base3;
-      stroke: $base2;
+      stroke-width: 2;
     }
   }
 
@@ -21,5 +13,9 @@ g.callgraph {
       stroke-width: 1;
       fill-opacity: 0;
     }
+  }
+
+  g.bg-group > g > polygon {
+    opacity: 0.5;
   }
 }

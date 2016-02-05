@@ -4,22 +4,49 @@ angular.module('cct-view', ['app'])
 .value('markedCb', function() {})
 .value('focusCb', function() {})
 .value('hoverCb', function() {})
-.service('render', ['CallGraphDataService', 'LoaderService', 'd3',
-function(CallGraphDataService, loader, d3) {
+.service('render', ['CallGraphDataService', 'LoaderService', 'd3', 'KeyService',
+                    'GradientService',
+function(CallGraphDataService, loader, d3, keyService, GradientService) {
+  var bgColors = d3.scale.category20();
+
   function addZoom(svg) {
     svg.call(d3.behavior.zoom().scaleExtent([1, 10]).on('zoom', zoom));
 
+    var defs = svg.append('defs');
+
+    /* jscs: disable */
+
+    defs.append('path')
+      .attr('id', 'execution')
+      .attr('d', 'M1536 1280v-448q0 -26 -19 -45t-45 -19h-448q-42 0 -59 40q-17 39 14 69l138 138q-148 137 -349 137q-104 0 -198.5 -40.5t-163.5 -109.5t-109.5 -163.5t-40.5 -198.5t40.5 -198.5t109.5 -163.5t163.5 -109.5t198.5 -40.5q119 0 225 52t179 147q7 10 23 12q14 0 25 -9 l137 -138q9 -8 9.5 -20.5t-7.5 -22.5q-109 -132 -264 -204.5t-327 -72.5q-156 0 -298 61t-245 164t-164 245t-61 298t61 298t164 245t245 164t298 61q147 0 284.5 -55.5t244.5 -156.5l130 129q29 31 70 14q39 -17 39 -59z')
+      .attr('horiz-adv-x', '448');
+
+    defs.append('path')
+      .attr('id', 'iteration')
+      .attr('d', 'M765 1043q-9 -19 -29 -19h-224v-1248q0 -14 -9 -23t-23 -9h-192q-14 0 -23 9t-9 23v1248h-224q-21 0 -29 19t5 35l350 384q10 10 23 10q14 0 24 -10l355 -384q13 -16 5 -35z')
+      .attr('horiz-adv-x', '768');
+
+    defs.append('filter')
+      .attr('id', 'blurFilter')
+      .append('feGaussianBlur')
+      .attr('in', 'SourceGraphic')
+      .attr('stdDeviation', 8);
+
+    /* jscs: enable */
+
     var g = svg.append('g')
       .attr('class', 'callgraph');
+
+    g.append('g')
+      .attr('class', 'bg-group')
+        .append('g')
+        .attr('class', 'loop-bg-group');
 
     g.append('g')
       .attr('class', 'edges-group');
 
     g.append('g')
       .attr('class', 'calls-group');
-
-    g.append('g')
-      .attr('class', 'refs-group');
 
     function zoom() {
       g.attr('transform', 'translate(' + d3.event.translate +
@@ -65,6 +92,20 @@ function(CallGraphDataService, loader, d3) {
       d.target.x = d[1].x + d[1].width / 2;
       d.target.y = d[1].y + d[1].height;
     }
+
+    if (d.target.elem.type === 'Reference') {
+      d.target.x = d[1].x;
+      d.target.y = d[1].y;
+    }
+  }
+
+  function calcPolygonPoints(execution) {
+    var min = _.min(execution.loopIterations, 'y');
+    var max = _.max(execution.loopIterations, 'y');
+
+    return execution.x + 5  + ',' + (execution.y + 5) + ' ' +
+            (min.x + 5) + ',' + (min.y + 5) + ' ' +
+            (max.x + 5) + ',' + (max.y + 5);
   }
 
   var force;
@@ -83,6 +124,8 @@ function(CallGraphDataService, loader, d3) {
 
     var g = svg.select('g.callgraph');
 
+    var bgGroup = g.select('g.bg-group');
+    var loopBgGroup = bgGroup.select('g.loop-bg-group');
     var callGroup = g.select('g.calls-group');
     var refGroup = g.select('g.refs-group');
     var edgeGroup = g.select('g.edges-group');
@@ -105,6 +148,10 @@ function(CallGraphDataService, loader, d3) {
         }
       } else if (d3.event.altKey) {
         d.toggleReferences().then(rerender, fail);
+      } else if (keyService('Z')) {
+        if (d.type === 'Call' || d.type === 'CallGroup') {
+          d.toggleParent().then(rerender, fail);
+        }
       } else {
         d.toggleChildren().then(rerender, fail);
       }
@@ -114,7 +161,17 @@ function(CallGraphDataService, loader, d3) {
     var refs = callgraph.getReferences();
     var edges = callgraph.getEdges();
 
+    var durations = _.map(calls, function(call) {
+      return call.data.duration;
+    });
+
+    var gradient = GradientService.gradient(_.min(durations), _.max(durations));
+
     var allnodes = calls.concat(refs);
+
+    _.forEach(calls, function(call) {
+      call.fixed = true;
+    });
 
     _.forEach(allnodes, function(node, index) {
       node.index = index;
@@ -136,12 +193,15 @@ function(CallGraphDataService, loader, d3) {
         };
       }))
       .gravity(0)
+      .linkStrength(0.05)
+      .linkDistance(60)
+      .friction(0.7)
       .charge(function(d) {
         switch (d.type) {
           case 'Reference':
-            return -20;
+            return -200;
           default:
-            return -40;
+            return -300;
         }
       });
 
@@ -149,19 +209,6 @@ function(CallGraphDataService, loader, d3) {
 
     var callNodes = callGroup.selectAll('g.node')
       .data(calls, function(d) { return d.type + ':' + d.data.id; });
-
-    callNodes
-      .exit()
-      .transition()
-      .attr('transform', function(d) {
-        if (d.parent) {
-          return 'translate(' + d.parent.x + ',' + d.parent.y + ')';
-        } else {
-          return 'translate(0,0)';
-        }
-      })
-      .style('opacity', 0)
-      .remove();
 
     var callNodesEnter = callNodes
       .enter()
@@ -178,35 +225,57 @@ function(CallGraphDataService, loader, d3) {
 
     callNodesEnter
       .style('opacity', 0)
-      .attr('transform', function(d) {
-        if (d.parent) {
-          return 'translate(' + d.parent.x + ',' + d.parent.y + ')';
-        } else {
-          return 'translate(0,0)';
-        }
-      })
-      .transition('enter')
+      .transition('opacity')
       .style('opacity', 1);
 
     /* Compute node sizes */
     callgraph.computeSizes();
 
     /* Background */
-    callNodesEnter.append('rect')
+    var loopExecutionEnter = callNodesEnter.filter(function(d) {
+      return d.type === 'LoopExecution';
+    });
+
+    loopExecutionEnter.append('use')
+      .attr('xlink:href', '#execution')
+      .attr('transform', 'scale(' + 10 / 800 + ')')
+      .attr('fill', function(d) {
+        return gradient(d.data.duration);
+      });
+
+    var loopIterationEnter = callNodesEnter.filter(function(d) {
+      return d.type === 'LoopIteration';
+    });
+
+    loopIterationEnter.append('use')
+      .attr('xlink:href', '#iteration')
+      .attr('transform', 'scale(' + 10 / 800 + ')');
+
+    var restNodesEnter = callNodesEnter.filter(function(d) {
+      return d.type === 'Call' || d.type === 'CallGroup';
+    });
+
+    restNodesEnter.append('rect')
       .classed('call-bg', true)
       .attr('x', 0)
       .attr('y', 0)
+      .attr('rx', 5)
+      .attr('ry', 5)
       .attr('width', function(d) {
-        return d.width + 10;
+        return d.width + 6;
       })
       .attr('height', function(d) {
-        return d.height + 10;
+        return d.height + 6;
+      }).attr('fill', function(d) {
+        return d3.rgb(gradient(d.data.duration)).brighter();
+      }).attr('stroke', function(d) {
+        return gradient(d.data.duration);
       });
 
     /* Label */
-    callNodesEnter
+    restNodesEnter
       .append('text')
-      .attr('x', 5)
+      .attr('x', 3)
       .attr('y', function(d) {
         return d.height;
       })
@@ -217,19 +286,90 @@ function(CallGraphDataService, loader, d3) {
     /* Calculate true size */
     callNodes.each(function(d) {
       var bbox = this.getBBox();
-      d.width = bbox.width;
-      d.height = bbox.height;
+      d.width = bbox.width - (d.counterWidth ? d.counterWidth : 0);
+      d.height = bbox.height - (d.counterHeight ? d.counterHeight : 0);
+    });
+
+    /* Add counters */
+
+    var callGroupNodesEnter = callNodesEnter.filter(function(d) {
+      return d.type === 'CallGroup' || d.type === 'LoopExecution';
+    });
+
+    var textCounters = callGroupNodesEnter
+      .append('text')
+      .attr('x', function(d) {
+        return d.width;
+      })
+      .text(function(d) {
+        if (d.type === 'CallGroup') {
+          return d.data.count;
+        } else if (d.type === 'LoopExecution') {
+          return d.data.iterationsCount;
+        }
+
+      });
+
+    textCounters.each(function(d) {
+      var bbox = this.getBBox();
+      d.counterWidth = bbox.width;
+      d.counterHeight = bbox.height;
     });
 
     /* Layouting */
     callgraph.layout();
 
+    callNodes
+      .exit()
+      .transition()
+      .attr('transform', function(d) {
+        if (d.parent) {
+          return 'translate(' + d.parent.x + ',' + d.parent.y + ')';
+        } else {
+          return 'translate(0,0)';
+        }
+      })
+      .style('opacity', 0)
+      .remove();
+
+    /* Set initial position so the first transition makes sense */
+
+    callNodesEnter
+      .attr('transform', function(d) {
+        if (d.parent) {
+          return 'translate(' + d.parent.x + ',' + d.parent.y + ')';
+        } else {
+          return 'translate(0,0)';
+        }
+      });
+
     /* Update positions after layout */
     callNodes
-      .transition('layout')
+      .transition('position')
       .attr('transform', function(d) {
         return 'translate(' + d.x + ',' + d.y + ')';
       });
+
+    /* Background */
+
+    var executions = _.filter(calls, function(call) {
+      return call.type === 'LoopExecution' &&
+              !_.isUndefined(call.loopIterations);
+    });
+
+    var loopBg = loopBgGroup.selectAll('polygon')
+      .data(executions, function(d) { return d.data.id; });
+
+    loopBg.exit().remove();
+
+    loopBg.enter()
+      .append('polygon')
+      .style('filter', 'url(#blurFilter)')
+      .style('fill', function(d, i) { return bgColors(i); });
+
+    loopBg.attr('points', function(d) {
+      return calcPolygonPoints(d);
+    });
 
     /* Add references */
 
@@ -262,8 +402,6 @@ function(CallGraphDataService, loader, d3) {
       });
 
     refNodes.each(function(d) {
-        d.fixed = true;
-
         var bbox = this.getBBox();
         d.width = bbox.width;
         d.height = bbox.height;
@@ -279,8 +417,8 @@ function(CallGraphDataService, loader, d3) {
 
     edgeNode
       .exit()
-      .transition('opacity')
-      .style('opacity', 0)
+      .transition()
+      //.style('opacity', 0)
       .remove();
 
     var edgeNodesEnter = edgeNode
@@ -303,11 +441,6 @@ function(CallGraphDataService, loader, d3) {
       });
 
     edgeNodesEnter
-      .style('opacity', 0)
-      .transition('opacity')
-      .style('opacity', 1);
-
-    edgeNodesEnter
       .append('path');
 
     var edgeLines = edgeGroup.selectAll('g.edge > path');
@@ -317,14 +450,16 @@ function(CallGraphDataService, loader, d3) {
     var diagonal = d3.svg.diagonal()
       .source(function(d) { return d.source; })
       .target(function(d) { return d.target; })
-      .projection(function(d) { return [d.x, d.y]; });
+      .projection(function(d) {
+        return [d.x, d.y];
+      });
 
     edgeLines.attr('d', diagonal);
 
     // start force simulation
 
     function tick() {
-      var edgeLines = edgeGroup.select('g.edge.to-reference > path');
+      var edgeLines = edgeGroup.selectAll('g.edge.to-reference > path');
 
       edgeLines.each(calcEdgePoints);
 

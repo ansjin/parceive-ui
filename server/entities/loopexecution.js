@@ -8,7 +8,8 @@ var mapping = {
   'Loop': 'loop',
   'ParentIteration': 'parent',
   'Duration': 'duration',
-  'Call': 'call'
+  'Call': 'call',
+  'IterationsCount': 'iterationsCount'
 };
 
 module.exports = {
