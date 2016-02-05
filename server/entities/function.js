@@ -8,7 +8,8 @@ var mapping = {
   'Signature': 'signature',
   'Type': 'type',
   'File': 'file',
-  'Line': 'startLine'
+  'Line': 'startLine',
+  'Duration': 'duration'
 };
 
 module.exports = {

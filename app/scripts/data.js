@@ -508,7 +508,7 @@ var Call = {
   plural: 'calls',
   properties: ['thread', 'function', 'instruction', 'callGroup',
                 'start', 'end', 'caller', 'callsOthers', 'duration',
-                'callerexecution', 'calleriteration'],
+                'callerexecution', 'calleriteration', 'loopCount'],
   relationships: {
     'thread': {
       type: 'Thread'
@@ -864,7 +864,7 @@ var FunctionType = {
   typeName: 'Function',
   singular: 'function',
   plural: 'functions',
-  properties: ['signature', 'type', 'file', 'startLine'],
+  properties: ['signature', 'type', 'file', 'startLine', 'duration'],
   relationships: {
     'file': {
       type: 'File'
