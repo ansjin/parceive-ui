@@ -3,7 +3,41 @@ angular.module('cct-view', ['app'])
 .value('group', 'Callgraph')
 .value('markedCb', function() {})
 .value('focusCb', function() {})
-.value('hoverCb', function() {})
+.value('hoverCb', function(stateManager, hovered) {
+  var state = stateManager.getData();
+  var callgraph = state.unsaved.callgraph;
+  var nodes = callgraph.getNodes();
+
+  if (hovered.length === 0) {
+    state.unsaved.callGroup.selectAll('g.node')
+      .transition('opacity')
+      .style('opacity', function(d) {
+        return d.normalOpacity ? d.normalOpacity : 1;
+      });
+  } else {
+    _.forEach(nodes, function(node) {
+      node.isHovered = false;
+    });
+
+    _.forEach(hovered, function(toFind) {
+      var node = _.find(nodes, function(node) {
+        return node.type === toFind.type && node.data.id === toFind.id;
+      });
+
+      node.isHovered = true;
+    });
+
+    state.unsaved.callGroup.selectAll('g.node')
+      .transition('opacity')
+      .style('opacity', function(d) {
+        if (d.isHovered) {
+          return 1;
+        } else {
+          return (d.normalOpacity ? d.normalOpacity : 1) - 0.5;
+        }
+      });
+  }
+})
 .service('render', ['CallGraphDataService', 'LoaderService', 'd3', 'KeyService',
                     'GradientService',
 function(CallGraphDataService, loader, d3, keyService, GradientService) {
@@ -113,7 +147,7 @@ function(CallGraphDataService, loader, d3, keyService, GradientService) {
 
   var force;
 
-  function render(svg, stateManager) {
+  function render(svg, stateManager, hovered) {
     function rerender() {
       render(svg, stateManager);
     }
@@ -132,6 +166,8 @@ function(CallGraphDataService, loader, d3, keyService, GradientService) {
     var callGroup = g.select('g.calls-group');
     var refGroup = g.select('g.refs-group');
     var edgeGroup = g.select('g.edges-group');
+
+    state.unsaved.callGroup = callGroup;
 
     function nodeClick(d) {
       if (d3.event.shiftKey) {
@@ -266,7 +302,8 @@ function(CallGraphDataService, loader, d3, keyService, GradientService) {
       .transition('opacity')
       .style('opacity', function(d) {
         if (d.data.callsOthers === 0) {
-          return 0.8;
+          d.normalOpacity = 0.8;
+          return d.normalOpacity;
         } else {
           return 1;
         }
@@ -499,6 +536,14 @@ function(CallGraphDataService, loader, d3, keyService, GradientService) {
 
     refNodes.on('mouseover', function(d) {
       stateManager.hover([{'type': 'Reference', 'id': d.data.id}]);
+    });
+
+    callNodes.on('mouseout', function() {
+      stateManager.hover([]);
+    });
+
+    refNodes.on('mouseout', function() {
+      stateManager.hover([]);
     });
   }
 
