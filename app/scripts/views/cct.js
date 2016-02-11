@@ -46,6 +46,9 @@ function(CallGraphDataService, loader, d3, keyService, GradientService) {
       .attr('class', 'edges-group');
 
     g.append('g')
+      .attr('class', 'refs-group');
+
+    g.append('g')
       .attr('class', 'calls-group');
 
     function zoom() {
@@ -254,6 +257,20 @@ function(CallGraphDataService, loader, d3, keyService, GradientService) {
     var restNodesEnter = callNodesEnter.filter(function(d) {
       return d.type === 'Call' || d.type === 'CallGroup';
     });
+
+    var fctcallNodesEnter = restNodesEnter.filter(function(d) {
+      return d.type === 'Call';
+    });
+
+    fctcallNodesEnter
+      .transition('opacity')
+      .style('opacity', function(d) {
+        if (d.data.callsOthers === 0) {
+          return 0.8;
+        } else {
+          return 1;
+        }
+      });
 
     restNodesEnter.append('rect')
       .classed('call-bg', true)
@@ -475,6 +492,14 @@ function(CallGraphDataService, loader, d3, keyService, GradientService) {
     force
       .start()
       .on('tick', tick);
+
+    callNodes.on('mouseover', function(d) {
+      stateManager.hover([{'type': d.type, 'id': d.data.id}]);
+    });
+
+    refNodes.on('mouseover', function(d) {
+      stateManager.hover([{'type': 'Reference', 'id': d.data.id}]);
+    });
   }
 
   return function(svg, stateManager) {
