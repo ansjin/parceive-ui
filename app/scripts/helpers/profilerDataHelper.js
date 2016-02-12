@@ -40,7 +40,6 @@ function profilerDataHelper(LoaderService) {
     
     var promise = func
     .then(function(data) {
-      console.log(data);
       for (var i = 0, len = data.length; i < len; i++) {
         children.push({
           start: isTracing ? Number(data[i][type].start) : null,
@@ -48,7 +47,8 @@ function profilerDataHelper(LoaderService) {
           duration: Number(data[i][type].duration),
           ancestor: data[i][type][ancestor],
           level: data[i].depth + level,
-          id: data[i][type].id
+          id: data[i][type].id,
+          loopCount: (type === 'call') ? data[i][type].loopCount : 0
         });
       }
 
@@ -94,6 +94,7 @@ function profilerDataHelper(LoaderService) {
         temp.ancestor = ancestor;
         temp.level = level;
         temp.id = call.id;
+        temp.loopCount = call.loopCount;
 
         return call.getFunction();
       })
@@ -120,6 +121,7 @@ function profilerDataHelper(LoaderService) {
         temp.ancestor = ancestor;
         temp.level = level;
         temp.id = callGroup.id;
+        temp.loopCount = 0;
 
         return callGroup.getFunction();
       })

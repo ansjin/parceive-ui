@@ -90,6 +90,7 @@ function render(d3, pdh, pvh, size, grad, ld) {
         mainDuration = call.duration;
         mainCallId = call.id;
         mainCallGroupId = call.callGroupID;
+        // console.log(call);
         // call.getDirectLoopExecutions()
         // .then(function(d) { console.log(d); });       
         loadView();
@@ -249,6 +250,8 @@ function render(d3, pdh, pvh, size, grad, ld) {
 
     // build the profiling or tracing svg, and display it
     function displayView() {
+      console.log(tracingData);
+
       // initialize some view variables if uninitialized
       if (initView === false) {
         initView = true;
