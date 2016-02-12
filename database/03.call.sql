@@ -28,9 +28,9 @@ INSERT INTO Call SELECT
   NULL AS CallerExecution,
   NULL AS CallGroup, -- filled in by UPDATE
   NULL AS CallsOther, -- filled in by UPDATE
-  (SELECT COUNT(*) FROM LoopExecution e WHERE e.Call = Id) AS LoopCount,
+  (SELECT COUNT(*) FROM LoopExecution e WHERE e.Call = t.Id) AS LoopCount,
   (End - Start)
-FROM Temporary WHERE End != -1 AND Start != -1;
+FROM Temporary t WHERE End != -1 AND Start != -1;
 DROP TABLE Temporary;
 
 UPDATE Call SET CallerExecution = (SELECT i.Execution FROM LoopIteration i WHERE i.Id = CallerIteration);
