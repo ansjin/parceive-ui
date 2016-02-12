@@ -15,7 +15,7 @@ var mapping = {
   'Caller': 'caller',
   'CallerExecution': 'callerexecution',
   'CallerIteration': 'calleriteration',
-  'CallsOthers': 'callsOthers',
+  'CallsOther': 'callsOthers',
   'Duration': 'duration',
   'CallGroup': 'callGroup',
   'LoopCount': 'loopCount'

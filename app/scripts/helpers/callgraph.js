@@ -263,7 +263,11 @@ angular.module('app')
         });
 
         return RSVP.all(_.map(self.calls, function(child) {
-          return child.load();
+          if (child.data.count === 1) {
+            return child.loadCalls();
+          } else {
+            return child.load();
+          }
         })).then(function() {
           return self.calls;
         });
