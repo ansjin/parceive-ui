@@ -194,6 +194,7 @@ function render(d3, pdh, pvh, size, grad, ld) {
     }
 
     function checkCallHistory(id) {
+      // return true if call id is not in call history
       var history = isTracing() ? callHistory : callGroupHistory;
       return history.indexOf(id) === -1;
     }
@@ -206,6 +207,33 @@ function render(d3, pdh, pvh, size, grad, ld) {
       }
     }
 
+    function addLoopProperties(data) {
+      var loopLevels = [];
+      // get levels with any loop call
+      _.map(data, function(d) {
+        if (d.loopCount > 0) {
+          // let the level below the current one 
+          // shift down one height length
+          loopLevels.push(d.level + 1);
+        }
+      });
+
+      loopLevels = _.uniq(loopLevels);
+      var adjustment = 0;
+      var adjustmentLevel = 0;
+      for (var i = 0, len = data.length; i < len; i++) {
+        if (loopLevels.indexOf(data[i].level) > -1) {
+          data[i].loopLevel = true;
+          if (Number(adjustmentLevel) !== Number(data[i].level)) {
+            adjustment++;
+            adjustmentLevel = data[i].level;
+          }
+        }
+        data[i].loopAdjust = adjustment;
+      }
+      return data;
+    }
+
     function loadChildren(id, level) {
       var func = isTracing()
         ? pdh.getCall(id)
@@ -216,6 +244,7 @@ function render(d3, pdh, pvh, size, grad, ld) {
           return pdh.getRecursive(call, isTracing(), runtimeThreshold, level)
         })
         .then(function(data) {
+          data = addLoopProperties(data);
           _.forEach(data, function(d) {
             if (checkCallHistory(d.id)) {
               buildViewData(d);
@@ -490,6 +519,7 @@ function render(d3, pdh, pvh, size, grad, ld) {
           var y = rectHeight * (d.level - adjustLevel) - rectHeight;
           if (d.level > maxLevel) { maxLevel = d.level; }
           if (zoomId !== null) { y -= rectHeight; }
+          y += (d.loopAdjust * rectHeight);
           return y;
         })
         .attr('height', function() {
@@ -514,7 +544,9 @@ function render(d3, pdh, pvh, size, grad, ld) {
           return rectHeight;
         })
         .attr('y', function(d) {
-          return rectHeight * (d.level - adjustLevel) - rectHeight;
+          var y = rectHeight * (d.level - adjustLevel) - rectHeight;
+          y += (d.loopAdjust * rectHeight);
+          return y;
         });
     }
 
@@ -543,6 +575,7 @@ function render(d3, pdh, pvh, size, grad, ld) {
           var y = rectHeight * (d.level - adjustLevel) - rectHeight;
           y += textPadY;
           if (zoomId !== null) { y -= 50; }
+          y += (d.loopAdjust * rectHeight);
           return y;
         })
         .attr('fill-opacity', function() {
@@ -561,6 +594,7 @@ function render(d3, pdh, pvh, size, grad, ld) {
         .attr('fill-opacity', 1)
         .attr('y', function(d) {
           var y = rectHeight * (d.level - adjustLevel) - rectHeight;
+          y += (d.loopAdjust * rectHeight);
           return y + textPadY;
         });
     }

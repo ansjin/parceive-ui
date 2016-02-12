@@ -48,7 +48,9 @@ function profilerDataHelper(LoaderService) {
           ancestor: data[i][type][ancestor],
           level: data[i].depth + level,
           id: data[i][type].id,
-          loopCount: (type === 'call') ? data[i][type].loopCount : 0
+          loopCount: /*(Math.random() < 0.5) ? 0 : 1,*/ (type === 'call') ? data[i][type].loopCount : 0,
+          loopLevel: false,
+          loopAdjust: 0
         });
       }
 
@@ -95,6 +97,8 @@ function profilerDataHelper(LoaderService) {
         temp.level = level;
         temp.id = call.id;
         temp.loopCount = call.loopCount;
+        temp.loopLevel = false;
+        temp.loopAdjust = 0;
 
         return call.getFunction();
       })
@@ -122,6 +126,8 @@ function profilerDataHelper(LoaderService) {
         temp.level = level;
         temp.id = callGroup.id;
         temp.loopCount = 0;
+        temp.loopLevel = false;
+        temp.loopAdjust = 0;
 
         return callGroup.getFunction();
       })
