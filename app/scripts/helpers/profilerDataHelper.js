@@ -77,7 +77,9 @@ function profilerDataHelper(LoaderService) {
     .then(function(data) {
       for (var i = 0, len = children.length; i < len; i++) {
         var icount = data[i].length > 0 ? data[i][0].iterationsCount : 0;
-        children[i].directLoopExecutionCount = icount;
+        var iduration = data[i].length > 0 ? data[i][0].duration : 0;
+        children[i].loopIterationCount = icount;
+        children[i].loopDuration = iduration;
       }
 
       // sort for callgroup case
@@ -122,7 +124,8 @@ function profilerDataHelper(LoaderService) {
         return self.getDirectLoopExecutions();
       })
       .then(function(data) {
-        temp.directLoopExecutionCount = data.length > 0 ? data[0].iterationsCount : 0;
+        temp.loopIterationCount = data.length > 0 ? data[0].iterationsCount : 0;
+        temp.loopDuration = data.length > 0 ? data[0].duration : 0;
         return new RSVP.resolve(temp);
       });
     return promise;

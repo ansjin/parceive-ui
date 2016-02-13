@@ -92,7 +92,8 @@ function render(d3, pdh, pvh, size, grad, ld) {
         mainCallGroupId = call.callGroupID;
         // console.log(call);
         // call.getDirectLoopExecutions()
-        // .then(function(d) { console.log(d); });       
+        // .then(function(d) { console.log('getDirectLoopExecutions', d); return d[0].getLoopIterations(); })
+        // .then(function(d) { console.log('getLoopIterations', d); });       
         loadView();
       });
     }
@@ -221,13 +222,15 @@ function render(d3, pdh, pvh, size, grad, ld) {
     function addLoopProperties(data, parent) {
       data = _.sortByOrder(data, ['level'], [true]);
       var adjust = parent.loopCount > 0 ? [data[0].level] : [];
+      var add = [];
       _.map(data, function(d) {
         if(d.loopCount > 0 && adjust.indexOf(d.level + 1) === -1) {
           adjust.push(d.level + 1);
         }
-        if (adjust.indexOf(d.level) > -1) {
-          d.loopAdjust = adjust.indexOf(d.level) + 1;
+        if (adjust.indexOf(d.level) > -1 && add.indexOf(d.level) === -1) {
+          add.push(d.level);
         }
+        d.loopAdjust = add.length;
       });
       return data;
     }
@@ -612,8 +615,8 @@ function render(d3, pdh, pvh, size, grad, ld) {
       selection
         .data(nodes.filter(function(d) {
           // only show loop text for calls with
-          // directLoopExecutionCount greater than 0
-          return d.directLoopExecutionCount > 0;
+          // loopIterationCount greater than 0
+          return d.loopIterationCount > 0;
         }))
         .enter()
         .append('text')
@@ -640,7 +643,7 @@ function render(d3, pdh, pvh, size, grad, ld) {
           if (zoomId !== null) { f = 0; }
           return f;
         })
-        .text(function(d) { return d.directLoopExecutionCount; });
+        .text(function(d) { return d.loopIterationCount; });
     }
 
     function drawLoopTextSvgZoom(selection) {
