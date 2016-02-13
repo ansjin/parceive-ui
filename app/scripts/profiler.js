@@ -114,12 +114,31 @@ function render(d3, pdh, pvh, size, grad, ld) {
       // change loop visibility
       showLoop = showLoop ? false : true;
 
+      initZoomVars();
+      reload();
+
       // update loop button
       var text = showLoop ? 'Hide' : 'Show';
       $('#profiler-loop').text(text + ' Loops');
     }
 
     function toggleViewMode() {
+      initZoomVars();
+
+      // change view mode
+      viewMode = viewMode === 'T' ? 'P' : 'T';
+
+      reload();
+
+      // update toggle button
+      var state = !isTracing() ? 'Tracing' : 'Profiling';
+      $('#profiler-view-toggle').text('Switch to ' + state);
+
+      // show/hide loop button
+      showHideLoopBtn();
+    }
+
+    function initZoomVars() {
       // store some variables for use when returning back to the 
       // view we are toggling out of
       if (isTracing()) {
@@ -133,10 +152,9 @@ function render(d3, pdh, pvh, size, grad, ld) {
         zoomProfilingAdjustment = adjustLevel;
         zoomProfilingMaxLevel = maxLevel;
       }
+    }
 
-      // change view mode
-      viewMode = viewMode === 'T' ? 'P' : 'T';
-
+    function reload() {
       // set values for variables used in view we are toggling into
       // if the variables had a previously saved value, retrieve them.
       if (isTracing()) {
@@ -166,13 +184,6 @@ function render(d3, pdh, pvh, size, grad, ld) {
           initProfilingMode = true;
         }
       }
-
-      // update toggle button
-      var state = !isTracing() ? 'Tracing' : 'Profiling';
-      $('#profiler-view-toggle').text('Switch to ' + state);
-
-      // show/hide loop button
-      showHideLoopBtn();
     }
 
     // load view depending on current view mode
@@ -207,44 +218,33 @@ function render(d3, pdh, pvh, size, grad, ld) {
       }
     }
 
-    function addLoopProperties(data) {
-      var loopLevels = [];
-      // get levels with any loop call
+    function addLoopProperties(data, parent) {
+      data = _.sortByOrder(data, ['level'], [true]);
+      var adjust = parent.loopCount > 0 ? [data[0].level] : [];
       _.map(data, function(d) {
-        if (d.loopCount > 0) {
-          // let the level below the current one 
-          // shift down one height length
-          loopLevels.push(d.level + 1);
+        if(d.loopCount > 0 && adjust.indexOf(d.level + 1) === -1) {
+          adjust.push(d.level + 1);
+        }
+        if (adjust.indexOf(d.level) > -1) {
+          d.loopAdjust = adjust.indexOf(d.level) + 1;
         }
       });
-
-      loopLevels = _.uniq(loopLevels);
-      var adjustment = 0;
-      var adjustmentLevel = 0;
-      for (var i = 0, len = data.length; i < len; i++) {
-        if (loopLevels.indexOf(data[i].level) > -1) {
-          data[i].loopLevel = true;
-          if (Number(adjustmentLevel) !== Number(data[i].level)) {
-            adjustment++;
-            adjustmentLevel = data[i].level;
-          }
-        }
-        data[i].loopAdjust = adjustment;
-      }
       return data;
     }
 
     function loadChildren(id, level) {
+      var parent;
       var func = isTracing()
         ? pdh.getCall(id)
         : pdh.getCallGroup(id);
 
       func
         .then(function(call) {
+          parent = call;
           return pdh.getRecursive(call, isTracing(), runtimeThreshold, level)
         })
         .then(function(data) {
-          data = addLoopProperties(data);
+          data = addLoopProperties(data, parent);
           _.forEach(data, function(d) {
             if (checkCallHistory(d.id)) {
               buildViewData(d);
@@ -322,19 +322,27 @@ function render(d3, pdh, pvh, size, grad, ld) {
       drawRectSvg(svg.selectAll('rect'), nodes);
 
       // draw text svg elements using data
-      drawTextSvg(svg.selectAll('text'), nodes);
+      drawTextSvg(svg.selectAll('text.title'), nodes);
+
+      if (showLoop) {
+        // draw loop iteration count
+        drawLoopTextSvg(svg.selectAll('text.loop'), nodes);
+      }
 
       // set click/dblClick handlers for rect and text
-      svgClickHander(svg.selectAll('rect, text'));
+      svgClickHander(svg.selectAll('rect, text.title'));
 
       // adjust svg height, so scrollbars appear if any
-      var newSvgHeight = rectHeight * (maxLevel - adjustLevel);
-      svg.style('height', newSvgHeight + 'px');
+      // var newSvgHeight = rectHeight * (maxLevel - adjustLevel);
+      // svg.style('height', newSvgHeight + 'px');
 
       // if we are zooming a node to top
       if (zoomId !== null) {
         drawRectSvgZoom(svg.selectAll('rect'));
-        drawTextSvgZoom(svg.selectAll('text'));
+        drawTextSvgZoom(svg.selectAll('text.title'));
+        if (showLoop) {
+          drawLoopTextSvgZoom(svg.selectAll('text.loop'));
+        }
       }
 
       // highlight selected nodes if any are present
@@ -519,7 +527,7 @@ function render(d3, pdh, pvh, size, grad, ld) {
           var y = rectHeight * (d.level - adjustLevel) - rectHeight;
           if (d.level > maxLevel) { maxLevel = d.level; }
           if (zoomId !== null) { y -= rectHeight; }
-          y += (d.loopAdjust * rectHeight);
+          if (showLoop) { y += (d.loopAdjust * rectHeight); }
           return y;
         })
         .attr('height', function() {
@@ -545,7 +553,7 @@ function render(d3, pdh, pvh, size, grad, ld) {
         })
         .attr('y', function(d) {
           var y = rectHeight * (d.level - adjustLevel) - rectHeight;
-          y += (d.loopAdjust * rectHeight);
+          if (showLoop) { y += (d.loopAdjust * rectHeight); }
           return y;
         });
     }
@@ -562,6 +570,7 @@ function render(d3, pdh, pvh, size, grad, ld) {
         .enter()
         .append('text')
         .attr('id', function(d) { return 'text_' + d.id; })
+        .attr('class', 'title')
         .attr('font-family', 'Arial')
         .attr('font-size', '14px')
         .attr('fill', 'white')
@@ -575,7 +584,7 @@ function render(d3, pdh, pvh, size, grad, ld) {
           var y = rectHeight * (d.level - adjustLevel) - rectHeight;
           y += textPadY;
           if (zoomId !== null) { y -= 50; }
-          y += (d.loopAdjust * rectHeight);
+          if (showLoop) { y += (d.loopAdjust * rectHeight); }
           return y;
         })
         .attr('fill-opacity', function() {
@@ -594,7 +603,55 @@ function render(d3, pdh, pvh, size, grad, ld) {
         .attr('fill-opacity', 1)
         .attr('y', function(d) {
           var y = rectHeight * (d.level - adjustLevel) - rectHeight;
-          y += (d.loopAdjust * rectHeight);
+          if (showLoop) { y += (d.loopAdjust * rectHeight); }
+          return y + textPadY;
+        });
+    }
+
+    function drawLoopTextSvg(selection, nodes) {
+      selection
+        .data(nodes.filter(function(d) {
+          // only show loop text for calls with
+          // directLoopExecutionCount greater than 0
+          return d.directLoopExecutionCount > 0;
+        }))
+        .enter()
+        .append('text')
+        .attr('id', function(d) { return 'loop_' + d.id; })
+        .attr('class', 'loop')
+        .attr('font-family', 'Arial')
+        .attr('font-size', '14px')
+        .attr('fill', 'black')
+        .attr('x', function(d) {
+          var old = xScale(d.start);
+          var sliced = Number(old.slice(0, -1));
+          var x = Number(sliced + textPadX) + '%';
+          return x;
+        })
+        .attr('y', function(d) {
+          var y = rectHeight * (d.level - adjustLevel) - rectHeight;
+          y += textPadY;
+          if (zoomId !== null) { y -= 50; }
+          if (showLoop) { y += (d.loopAdjust * rectHeight); y+= rectHeight; }
+          return y;
+        })
+        .attr('fill-opacity', function() {
+          var f = 1;
+          if (zoomId !== null) { f = 0; }
+          return f;
+        })
+        .text(function(d) { return d.directLoopExecutionCount; });
+    }
+
+    function drawLoopTextSvgZoom(selection) {
+      selection
+        .transition()
+        .duration(transTime)
+        .ease(transType)
+        .attr('fill-opacity', 1)
+        .attr('y', function(d) {
+          var y = rectHeight * (d.level - adjustLevel) - rectHeight;
+          if (showLoop) { y += (d.loopAdjust * rectHeight); y+= rectHeight; }
           return y + textPadY;
         });
     }

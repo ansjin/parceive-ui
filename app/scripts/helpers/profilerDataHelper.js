@@ -32,6 +32,7 @@ function profilerDataHelper(LoaderService) {
   function getRecursive(obj, isTracing, runtimeThreshold, level) {
     var promises = [];
     var children = [];
+    var calls;
     var type = isTracing ? 'call' : 'callgroup';
     var ancestor = isTracing ? 'callerID' : 'parentID';
     var func = isTracing
@@ -40,6 +41,7 @@ function profilerDataHelper(LoaderService) {
     
     var promise = func
     .then(function(data) {
+      calls = data;
       for (var i = 0, len = data.length; i < len; i++) {
         children.push({
           start: isTracing ? Number(data[i][type].start) : null,
@@ -48,8 +50,7 @@ function profilerDataHelper(LoaderService) {
           ancestor: data[i][type][ancestor],
           level: data[i].depth + level,
           id: data[i][type].id,
-          loopCount: /*(Math.random() < 0.5) ? 0 : 1,*/ (type === 'call') ? data[i][type].loopCount : 0,
-          loopLevel: false,
+          loopCount: (type === 'call') ? data[i][type].loopCount : 0,
           loopAdjust: 0
         });
       }
@@ -62,6 +63,21 @@ function profilerDataHelper(LoaderService) {
     .then(function(data) {
       for (var i = 0, len = children.length; i < len; i++) {
         children[i].name = data[i].signature;
+      }
+      
+      if (type === 'call') {
+        var promises = calls.map(function(o){
+          return o[type].getDirectLoopExecutions();
+        });
+        return RSVP.all(promises);
+      } else {
+        return new RSVP.resolve(children);
+      }
+    })
+    .then(function(data) {
+      for (var i = 0, len = children.length; i < len; i++) {
+        var icount = data[i].length > 0 ? data[i][0].iterationsCount : 0;
+        children[i].directLoopExecutionCount = icount;
       }
 
       // sort for callgroup case
@@ -97,14 +113,16 @@ function profilerDataHelper(LoaderService) {
         temp.level = level;
         temp.id = call.id;
         temp.loopCount = call.loopCount;
-        temp.loopLevel = false;
         temp.loopAdjust = 0;
 
         return call.getFunction();
       })
       .then(function(func) {
         temp.name = func.signature;
-
+        return self.getDirectLoopExecutions();
+      })
+      .then(function(data) {
+        temp.directLoopExecutionCount = data.length > 0 ? data[0].iterationsCount : 0;
         return new RSVP.resolve(temp);
       });
     return promise;
@@ -126,7 +144,6 @@ function profilerDataHelper(LoaderService) {
         temp.level = level;
         temp.id = callGroup.id;
         temp.loopCount = 0;
-        temp.loopLevel = false;
         temp.loopAdjust = 0;
 
         return callGroup.getFunction();
