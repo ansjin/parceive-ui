@@ -102,39 +102,46 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $) {
       elem: d[1]
     };
 
-    var smidx = d[0].x + d[0].width / 2;
-    var smidy = d[0].y + d[0].height / 2;
-
-    var tmidx = d[1].x + d[1].width / 2;
-    var tmidy = d[1].y + d[1].height / 2;
-
-    var angle = Math.atan2(tmidy - smidy, tmidx - smidx);
-
-    if (Math.abs(angle) < Math.PI / 4) {
+    if (d[0].type !== 'Reference' && d[1].type !== 'Reference') {
       d.source.x = d[0].x + d[0].width;
       d.source.y = d[0].y + d[0].height / 2;
       d.target.x = d[1].x;
       d.target.y = d[1].y + d[1].height / 2;
-    } else if (Math.abs(angle) > 3 * Math.PI / 4) {
-      d.source.x = d[0].x;
-      d.source.y = d[0].y + d[0].height / 2;
-      d.target.x = d[1].x + d[1].width;
-      d.target.y = d[1].y + d[1].height / 2;
-    } else if (angle > 0) {
-      d.source.x = d[0].x + d[0].width / 2;
-      d.source.y = d[0].y + d[0].height;
-      d.target.x = d[1].x + d[1].width / 2;
-      d.target.y = d[1].y;
-    } else if (angle <= 0) {
-      d.source.x = d[0].x + d[0].width / 2;
-      d.source.y = d[0].y;
-      d.target.x = d[1].x + d[1].width / 2;
-      d.target.y = d[1].y + d[1].height;
-    }
+    } else {
+      var smidx = d[0].x + d[0].width / 2;
+      var smidy = d[0].y + d[0].height / 2;
 
-    if (d.target.elem.type === 'Reference') {
-      d.target.x = d[1].x;
-      d.target.y = d[1].y;
+      var tmidx = d[1].x + d[1].width / 2;
+      var tmidy = d[1].y + d[1].height / 2;
+
+      var angle = Math.atan2(tmidy - smidy, tmidx - smidx);
+
+      if (Math.abs(angle) < Math.PI / 4) {
+        d.source.x = d[0].x + d[0].width;
+        d.source.y = d[0].y + d[0].height / 2;
+        d.target.x = d[1].x;
+        d.target.y = d[1].y + d[1].height / 2;
+      } else if (Math.abs(angle) > 3 * Math.PI / 4) {
+        d.source.x = d[0].x;
+        d.source.y = d[0].y + d[0].height / 2;
+        d.target.x = d[1].x + d[1].width;
+        d.target.y = d[1].y + d[1].height / 2;
+      } else if (angle > 0) {
+        d.source.x = d[0].x + d[0].width / 2;
+        d.source.y = d[0].y + d[0].height;
+        d.target.x = d[1].x + d[1].width / 2;
+        d.target.y = d[1].y;
+      } else if (angle <= 0) {
+        d.source.x = d[0].x + d[0].width / 2;
+        d.source.y = d[0].y;
+        d.target.x = d[1].x + d[1].width / 2;
+        d.target.y = d[1].y + d[1].height;
+      }
+
+      if (d.target.elem.type === 'Reference') {
+        d.target.x = d[1].x;
+        d.target.y = d[1].y;
+      }
     }
   }
 
@@ -507,7 +514,7 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $) {
     edgeNode
       .exit()
       .transition()
-      //.style('opacity', 0)
+      .style('opacity', 0)
       .remove();
 
     var edgeNodesEnter = edgeNode
@@ -543,7 +550,9 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $) {
         return [d.x, d.y];
       });
 
-    edgeLines.attr('d', diagonal);
+    edgeLines
+      .transition()
+      .attr('d', diagonal);
 
     // start force simulation
 
