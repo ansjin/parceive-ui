@@ -156,7 +156,7 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $) {
 
   var force;
 
-  function render(svg, stateManager, hovered) {
+  function render(svg, stateManager) {
     function rerender() {
       render(svg, stateManager);
     }
