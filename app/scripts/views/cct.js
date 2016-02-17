@@ -41,8 +41,8 @@ angular.module('cct-view', ['app'])
   }
 })
 .service('render', ['CallGraphDataService', 'LoaderService', 'd3', 'KeyService',
-                    'GradientService',
-function(CallGraphDataService, loader, d3, keyService, GradientService) {
+                    'GradientService', 'jquery',
+function(CallGraphDataService, loader, d3, keyService, GradientService, $) {
   var bgColors = d3.scale.category20();
 
   function addZoom(svg) {
@@ -171,30 +171,46 @@ function(CallGraphDataService, loader, d3, keyService, GradientService) {
 
     state.unsaved.callGroup = callGroup;
 
+    function expandAction(d) {
+      switch (d.type) {
+        case 'CallGroup':
+          d.loadCalls().then(rerender, fail);
+          break;
+        case 'Call':
+          d.toggleLoopExecutions().then(rerender, fail);
+          break;
+        case 'LoopExecution':
+          d.toggleLoopIterations().then(rerender, fail);
+          break;
+        case 'LoopIteration':
+          d.toggleLoopExecutions().then(rerender, fail);
+          break;
+      }
+    }
+
+    function childrenAction(d) {
+      d.toggleChildren().then(rerender, fail);
+    }
+
+    function referencesAction(d) {
+      d.toggleReferences().then(rerender, fail);
+    }
+
+    function parentAction(d) {
+      if (d.type === 'Call' || d.type === 'CallGroup') {
+        d.toggleParent().then(rerender, fail);
+      }
+    }
+
     function nodeClick(d) {
       if (d3.event.shiftKey) {
-        switch (d.type) {
-          case 'CallGroup':
-            d.loadCalls().then(rerender, fail);
-            break;
-          case 'Call':
-            d.toggleLoopExecutions().then(rerender, fail);
-            break;
-          case 'LoopExecution':
-            d.toggleLoopIterations().then(rerender, fail);
-            break;
-          case 'LoopIteration':
-            d.toggleLoopExecutions().then(rerender, fail);
-            break;
-        }
+        expandAction(d);
       } else if (d3.event.altKey) {
-        d.toggleReferences().then(rerender, fail);
+        referencesAction(d);
       } else if (keyService('Z')) {
-        if (d.type === 'Call' || d.type === 'CallGroup') {
-          d.toggleParent().then(rerender, fail);
-        }
+        parentAction(d);
       } else {
-        d.toggleChildren().then(rerender, fail);
+        childrenAction(d);
       }
     }
 
@@ -322,10 +338,6 @@ function(CallGraphDataService, loader, d3, keyService, GradientService) {
       })
       .attr('height', function(d) {
         return d.height + 6;
-      }).attr('fill', function(d) {
-        return d3.rgb(gradient(d.data.duration)).brighter();
-      }).attr('stroke', function(d) {
-        return gradient(d.data.duration);
       });
 
     /* Label */
@@ -387,6 +399,27 @@ function(CallGraphDataService, loader, d3, keyService, GradientService) {
       })
       .style('opacity', 0)
       .remove();
+
+    /* Set colors */
+
+    callNodes.selectAll('g.call > rect.call-bg')
+      .attr('fill', function(d) {
+        return d3.rgb(gradient(d.data.duration));
+      }).attr('stroke', function(d) {
+        return gradient(d.data.duration);
+      });
+
+    callNodes.selectAll('g.callgroup > rect.call-bg')
+      .attr('fill', function(d) {
+        return d3.rgb(gradient(d.data.duration));
+      }).attr('stroke', function(d) {
+        return gradient(d.data.duration);
+      });
+
+    callNodes.selectAll('g.loopexecution > rect.call-bg')
+      .attr('FILL', function(d) {
+        return gradient(d.data.duration);
+      });
 
     /* Set initial position so the first transition makes sense */
 
@@ -546,6 +579,189 @@ function(CallGraphDataService, loader, d3, keyService, GradientService) {
 
     refNodes.on('mouseout', function() {
       stateManager.hover([]);
+    });
+
+    $(function() {
+      $.contextMenu({
+        selector: '.node.call',
+        build: function(menu) {
+          var element = menu[0].__data__;
+          var data = {
+            position: function(opt) {
+              var rect = opt.$trigger[0].getBoundingClientRect();
+              opt.$menu.css({
+                top: rect.top + element.height,
+                left: rect.left + element.width
+              });
+            },
+            items: {
+              'children': {
+                name: (element.children ? 'Hide' : 'Show') + ' Children',
+                callback: function() {
+                  element.toggleChildren().then(rerender, fail);
+                }
+              },
+              'expand': {
+                name: (element.loopExecutions ? 'Hide' : 'Show') +
+                      ' Loop Executions',
+                callback: function() {
+                  element.toggleLoopExecutions().then(rerender, fail);
+                }
+              },
+              'references': {
+                name: (element.references ? 'Hide' : 'Show') +
+                      ' References',
+                callback: function() {
+                  element.toggleReferences().then(rerender, fail);
+                }
+              },
+              'parent': {
+                name: (element.parent ? 'Hide' : 'Show') +
+                      ' Parent',
+                callback: function() {
+                  element.toggleParent().then(rerender, fail);
+                }
+              },
+            }
+          };
+
+          if (element.data.loopCount === 0) {
+            delete data.items.expand;
+          }
+
+          if (element.data.callsOthers === 0) {
+            delete data.items.children;
+          }
+
+          return data;
+        }
+      });
+    });
+
+    $(function() {
+      $.contextMenu({
+        selector: '.node.callgroup',
+        build: function(menu) {
+          var element = menu[0].__data__;
+          return {
+            position: function(opt) {
+              var rect = opt.$trigger[0].getBoundingClientRect();
+              opt.$menu.css({
+                top: rect.top + element.height,
+                left: rect.left + element.width
+              });
+            },
+            items: {
+              'children': {
+                name: (element.children ? 'Hide' : 'Show') + ' Children',
+                callback: function() {
+                  element.toggleChildren().then(rerender, fail);
+                }
+              },
+              'expand': {
+                name: 'Expand into Calls',
+                callback: function() {
+                  element.loadCalls().then(rerender, fail);
+                }
+              },
+              'references': {
+                name: (element.references ? 'Hide' : 'Show') +
+                      ' References',
+                callback: function() {
+                  element.toggleReferences().then(rerender, fail);
+                }
+              },
+              'parent': {
+                name: (element.parent ? 'Hide' : 'Show') +
+                      ' Parent',
+                callback: function() {
+                  element.toggleParent().then(rerender, fail);
+                }
+              },
+            }
+          };
+        }
+      });
+    });
+
+    $(function() {
+      $.contextMenu({
+        selector: '.node.loopexecution',
+        build: function(menu) {
+          var element = menu[0].__data__;
+          return {
+            position: function(opt) {
+              var rect = opt.$trigger[0].getBoundingClientRect();
+              opt.$menu.css({
+                top: rect.top + element.height,
+                left: rect.left + element.width
+              });
+            },
+            items: {
+              'children': {
+                name: (element.children ? 'Hide' : 'Show') + ' Children',
+                callback: function() {
+                  element.toggleChildren().then(rerender, fail);
+                }
+              },
+              'expand': {
+                name: (element.loopIterations ? 'Hide' : 'Show') +
+                      ' Loop Iterations',
+                callback: function() {
+                  element.toggleLoopIterations().then(rerender, fail);
+                }
+              },
+              'references': {
+                name: (element.references ? 'Hide' : 'Show') +
+                      ' References',
+                callback: function() {
+                  element.toggleReferences().then(rerender, fail);
+                }
+              }
+            }
+          };
+        }
+      });
+    });
+
+    $(function() {
+      $.contextMenu({
+        selector: '.node.loopiteration',
+        build: function(menu) {
+          var element = menu[0].__data__;
+          return {
+            position: function(opt) {
+              var rect = opt.$trigger[0].getBoundingClientRect();
+              opt.$menu.css({
+                top: rect.top + element.height,
+                left: rect.left + element.width
+              });
+            },
+            items: {
+              'children': {
+                name: (element.children ? 'Hide' : 'Show') + ' Children',
+                callback: function() {
+                  element.toggleChildren().then(rerender, fail);
+                }
+              },
+              'expand': {
+                name: (element.loopExecutions ? 'Hide' : 'Show') +
+                      ' Loop Executions',
+                callback: function() {
+                  element.toggleLoopExecutions().then(rerender, fail);
+                }
+              },
+              'references': {
+                name: (element.references ? 'Hide' : 'Show') +
+                      ' References',
+                callback: function() {
+                  element.toggleReferences().then(rerender, fail);
+                }
+              }
+            }
+          };
+        }
+      });
     });
   }
 
