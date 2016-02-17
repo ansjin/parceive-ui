@@ -48,6 +48,10 @@ angular.module('app')
         node.x = node.y * maxNodeWidth * maxNodeDepth;
         node.y = tmp * maxNodeHeight * maxNodeBreath;
       });
+
+      _.forEach(root.calls, function(root) {
+        delete root.parent;
+      });
     };
 
     CallGraph.prototype.addCallRoot = function(call) {
