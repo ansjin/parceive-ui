@@ -24,7 +24,9 @@ angular.module('cct-view', ['app'])
         return node.type === toFind.type && node.data.id === toFind.id;
       });
 
-      node.isHovered = true;
+      if (node) {
+        node.isHovered = true;
+      }
     });
 
     state.unsaved.callGroup.selectAll('g.node')
