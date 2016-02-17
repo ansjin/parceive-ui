@@ -599,7 +599,7 @@ angular.module('app')
     };
 
     CallGroup.prototype.getLabel = function() {
-      return this.function.signature;
+      return this.function.signature + ' ' + this.data.count;
     };
 
     CallGroup.prototype.getDuration = function() {

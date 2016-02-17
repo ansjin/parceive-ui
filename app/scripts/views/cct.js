@@ -377,12 +377,9 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $) {
         return d.width;
       })
       .text(function(d) {
-        if (d.type === 'CallGroup') {
-          return d.data.count;
-        } else if (d.type === 'LoopExecution') {
+        if (d.type === 'LoopExecution') {
           return d.data.iterationsCount;
         }
-
       });
 
     textCounters.each(function(d) {
