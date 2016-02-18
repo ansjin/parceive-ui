@@ -244,6 +244,10 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $) {
     // Set up force simulation
 
     if (!_.isUndefined(force)) {
+      _.forEach(calls, function(node) {
+        delete node.px;
+        delete node.py;
+      });
       force.stop();
     }
 
