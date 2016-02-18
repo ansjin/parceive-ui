@@ -279,7 +279,7 @@ angular.module('app')
     };
 
     Node.prototype.unloadChildren = function() {
-      _.forEach(this.chilren, function(child) {
+      _.forEach(this.children, function(child) {
         child.unloadChildren();
         child.unloadAssociations();
       });
