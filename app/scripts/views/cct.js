@@ -536,7 +536,7 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $) {
     edgeNodesEnter
       .append('path');
 
-    var edgeLines = edgeGroup.selectAll('g.edge > path');
+    var edgeLines = edgeGroup.selectAll('g.edge:not(.to-reference) > path');
 
     edgeLines.each(calcEdgePoints);
 
