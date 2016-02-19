@@ -9,7 +9,9 @@ var mapping = {
   'ParentIteration': 'parent',
   'Duration': 'duration',
   'Call': 'call',
-  'IterationsCount': 'iterationsCount'
+  'IterationsCount': 'iterationsCount',
+  'Start': 'start',
+  'End': 'end'
 };
 
 module.exports = {
