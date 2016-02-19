@@ -287,18 +287,34 @@ angular.module('app')
       delete this.calls;
     };
 
-    Node.prototype.unloadParent = function() {
+    Node.prototype.unloadParent = function(keepReferences) {
       if (_.isUndefined(this.parent)) {
         return;
       }
 
-      this.parent.unloadParent();
+      var oldNodes;
+
+      if (_.isUndefined(keepReferences)) {
+        oldNodes = this.callgraph.getNodes();
+      }
+
+      this.parent.unloadParent(true);
       this.parent.unloadAssociations();
 
       this.callgraph.roots.remove(this.parent);
       this.callgraph.roots.push(this);
 
       delete this.parent;
+
+      if (_.isUndefined(keepReferences)) {
+        var newNodes = this.callgraph.getNodes();
+
+        var removed = _.difference(oldNodes, newNodes);
+
+        _.forEach(removed, function(node) {
+          node.unloadAssociations();
+        });
+      }
     };
 
     /******************************************************************* Call */
