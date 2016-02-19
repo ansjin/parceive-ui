@@ -7,10 +7,13 @@
       "./app/bower_components/d3/d3.js",
       "./app/bower_components/lodash/lodash.js",
       "./app/bower_components/rsvp/rsvp.js",
-      "./app/bower_components/highlightjs/highlight.pack.js"
+      "./app/bower_components/highlightjs/highlight.pack.js",
+      "./app/bower_components/jQuery-contextMenu/dist/jquery.ui.position.js",
+      "./app/bower_components/jQuery-contextMenu/dist/jquery.contextMenu.js"
     ],
 
   "cssDeps": [
+    "./app/bower_components/jQuery-contextMenu/dist/jquery.contextMenu.css"
   ],
 
   "codeOrder": [

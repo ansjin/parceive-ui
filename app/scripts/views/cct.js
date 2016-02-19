@@ -24,7 +24,9 @@ angular.module('cct-view', ['app'])
         return node.type === toFind.type && node.data.id === toFind.id;
       });
 
-      node.isHovered = true;
+      if (node) {
+        node.isHovered = true;
+      }
     });
 
     state.unsaved.callGroup.selectAll('g.node')
@@ -39,8 +41,8 @@ angular.module('cct-view', ['app'])
   }
 })
 .service('render', ['CallGraphDataService', 'LoaderService', 'd3', 'KeyService',
-                    'GradientService',
-function(CallGraphDataService, loader, d3, keyService, GradientService) {
+                    'GradientService', 'jquery',
+function(CallGraphDataService, loader, d3, keyService, GradientService, $) {
   var bgColors = d3.scale.category20();
 
   function addZoom(svg) {
@@ -100,39 +102,46 @@ function(CallGraphDataService, loader, d3, keyService, GradientService) {
       elem: d[1]
     };
 
-    var smidx = d[0].x + d[0].width / 2;
-    var smidy = d[0].y + d[0].height / 2;
-
-    var tmidx = d[1].x + d[1].width / 2;
-    var tmidy = d[1].y + d[1].height / 2;
-
-    var angle = Math.atan2(tmidy - smidy, tmidx - smidx);
-
-    if (Math.abs(angle) < Math.PI / 4) {
+    if (d[0].type !== 'Reference' && d[1].type !== 'Reference') {
       d.source.x = d[0].x + d[0].width;
       d.source.y = d[0].y + d[0].height / 2;
       d.target.x = d[1].x;
       d.target.y = d[1].y + d[1].height / 2;
-    } else if (Math.abs(angle) > 3 * Math.PI / 4) {
-      d.source.x = d[0].x;
-      d.source.y = d[0].y + d[0].height / 2;
-      d.target.x = d[1].x + d[1].width;
-      d.target.y = d[1].y + d[1].height / 2;
-    } else if (angle > 0) {
-      d.source.x = d[0].x + d[0].width / 2;
-      d.source.y = d[0].y + d[0].height;
-      d.target.x = d[1].x + d[1].width / 2;
-      d.target.y = d[1].y;
-    } else if (angle <= 0) {
-      d.source.x = d[0].x + d[0].width / 2;
-      d.source.y = d[0].y;
-      d.target.x = d[1].x + d[1].width / 2;
-      d.target.y = d[1].y + d[1].height;
-    }
+    } else {
+      var smidx = d[0].x + d[0].width / 2;
+      var smidy = d[0].y + d[0].height / 2;
 
-    if (d.target.elem.type === 'Reference') {
-      d.target.x = d[1].x;
-      d.target.y = d[1].y;
+      var tmidx = d[1].x + d[1].width / 2;
+      var tmidy = d[1].y + d[1].height / 2;
+
+      var angle = Math.atan2(tmidy - smidy, tmidx - smidx);
+
+      if (Math.abs(angle) < Math.PI / 4) {
+        d.source.x = d[0].x + d[0].width;
+        d.source.y = d[0].y + d[0].height / 2;
+        d.target.x = d[1].x;
+        d.target.y = d[1].y + d[1].height / 2;
+      } else if (Math.abs(angle) > 3 * Math.PI / 4) {
+        d.source.x = d[0].x;
+        d.source.y = d[0].y + d[0].height / 2;
+        d.target.x = d[1].x + d[1].width;
+        d.target.y = d[1].y + d[1].height / 2;
+      } else if (angle > 0) {
+        d.source.x = d[0].x + d[0].width / 2;
+        d.source.y = d[0].y + d[0].height;
+        d.target.x = d[1].x + d[1].width / 2;
+        d.target.y = d[1].y;
+      } else if (angle <= 0) {
+        d.source.x = d[0].x + d[0].width / 2;
+        d.source.y = d[0].y;
+        d.target.x = d[1].x + d[1].width / 2;
+        d.target.y = d[1].y + d[1].height;
+      }
+
+      if (d.target.elem.type === 'Reference') {
+        d.target.x = d[1].x;
+        d.target.y = d[1].y;
+      }
     }
   }
 
@@ -147,7 +156,7 @@ function(CallGraphDataService, loader, d3, keyService, GradientService) {
 
   var force;
 
-  function render(svg, stateManager, hovered) {
+  function render(svg, stateManager) {
     function rerender() {
       render(svg, stateManager);
     }
@@ -169,30 +178,46 @@ function(CallGraphDataService, loader, d3, keyService, GradientService) {
 
     state.unsaved.callGroup = callGroup;
 
+    function expandAction(d) {
+      switch (d.type) {
+        case 'CallGroup':
+          d.loadCalls().then(rerender, fail);
+          break;
+        case 'Call':
+          d.toggleLoopExecutions().then(rerender, fail);
+          break;
+        case 'LoopExecution':
+          d.toggleLoopIterations().then(rerender, fail);
+          break;
+        case 'LoopIteration':
+          d.toggleLoopExecutions().then(rerender, fail);
+          break;
+      }
+    }
+
+    function childrenAction(d) {
+      d.toggleChildren().then(rerender, fail);
+    }
+
+    function referencesAction(d) {
+      d.toggleReferences().then(rerender, fail);
+    }
+
+    function parentAction(d) {
+      if (d.type === 'Call' || d.type === 'CallGroup') {
+        d.toggleParent().then(rerender, fail);
+      }
+    }
+
     function nodeClick(d) {
       if (d3.event.shiftKey) {
-        switch (d.type) {
-          case 'CallGroup':
-            d.loadCalls().then(rerender, fail);
-            break;
-          case 'Call':
-            d.toggleLoopExecutions().then(rerender, fail);
-            break;
-          case 'LoopExecution':
-            d.toggleLoopIterations().then(rerender, fail);
-            break;
-          case 'LoopIteration':
-            d.toggleLoopExecutions().then(rerender, fail);
-            break;
-        }
+        expandAction(d);
       } else if (d3.event.altKey) {
-        d.toggleReferences().then(rerender, fail);
+        referencesAction(d);
       } else if (keyService('Z')) {
-        if (d.type === 'Call' || d.type === 'CallGroup') {
-          d.toggleParent().then(rerender, fail);
-        }
+        parentAction(d);
       } else {
-        d.toggleChildren().then(rerender, fail);
+        childrenAction(d);
       }
     }
 
@@ -219,6 +244,10 @@ function(CallGraphDataService, loader, d3, keyService, GradientService) {
     // Set up force simulation
 
     if (!_.isUndefined(force)) {
+      _.forEach(calls, function(node) {
+        delete node.px;
+        delete node.py;
+      });
       force.stop();
     }
 
@@ -320,10 +349,6 @@ function(CallGraphDataService, loader, d3, keyService, GradientService) {
       })
       .attr('height', function(d) {
         return d.height + 6;
-      }).attr('fill', function(d) {
-        return d3.rgb(gradient(d.data.duration)).brighter();
-      }).attr('stroke', function(d) {
-        return gradient(d.data.duration);
       });
 
     /* Label */
@@ -356,12 +381,9 @@ function(CallGraphDataService, loader, d3, keyService, GradientService) {
         return d.width;
       })
       .text(function(d) {
-        if (d.type === 'CallGroup') {
-          return d.data.count;
-        } else if (d.type === 'LoopExecution') {
+        if (d.type === 'LoopExecution') {
           return d.data.iterationsCount;
         }
-
       });
 
     textCounters.each(function(d) {
@@ -385,6 +407,27 @@ function(CallGraphDataService, loader, d3, keyService, GradientService) {
       })
       .style('opacity', 0)
       .remove();
+
+    /* Set colors */
+
+    callNodes.selectAll('g.call > rect.call-bg')
+      .attr('fill', function(d) {
+        return d3.rgb(gradient(d.data.duration));
+      }).attr('stroke', function(d) {
+        return gradient(d.data.duration);
+      });
+
+    callNodes.selectAll('g.callgroup > rect.call-bg')
+      .attr('fill', function(d) {
+        return d3.rgb(gradient(d.data.duration));
+      }).attr('stroke', function(d) {
+        return gradient(d.data.duration);
+      });
+
+    callNodes.selectAll('g.loopexecution > rect.call-bg')
+      .attr('FILL', function(d) {
+        return gradient(d.data.duration);
+      });
 
     /* Set initial position so the first transition makes sense */
 
@@ -472,7 +515,7 @@ function(CallGraphDataService, loader, d3, keyService, GradientService) {
     edgeNode
       .exit()
       .transition()
-      //.style('opacity', 0)
+      .style('opacity', 0)
       .remove();
 
     var edgeNodesEnter = edgeNode
@@ -497,7 +540,7 @@ function(CallGraphDataService, loader, d3, keyService, GradientService) {
     edgeNodesEnter
       .append('path');
 
-    var edgeLines = edgeGroup.selectAll('g.edge > path');
+    var edgeLines = edgeGroup.selectAll('g.edge:not(.to-reference) > path');
 
     edgeLines.each(calcEdgePoints);
 
@@ -508,7 +551,9 @@ function(CallGraphDataService, loader, d3, keyService, GradientService) {
         return [d.x, d.y];
       });
 
-    edgeLines.attr('d', diagonal);
+    edgeLines
+      .transition()
+      .attr('d', diagonal);
 
     // start force simulation
 
@@ -544,6 +589,189 @@ function(CallGraphDataService, loader, d3, keyService, GradientService) {
 
     refNodes.on('mouseout', function() {
       stateManager.hover([]);
+    });
+
+    $(function() {
+      $.contextMenu({
+        selector: '.node.call',
+        build: function(menu) {
+          var element = menu[0].__data__;
+          var data = {
+            position: function(opt) {
+              var rect = opt.$trigger[0].getBoundingClientRect();
+              opt.$menu.css({
+                top: rect.top + element.height,
+                left: rect.left + element.width
+              });
+            },
+            items: {
+              'children': {
+                name: (element.children ? 'Hide' : 'Show') + ' Children',
+                callback: function() {
+                  element.toggleChildren().then(rerender, fail);
+                }
+              },
+              'expand': {
+                name: (element.loopExecutions ? 'Hide' : 'Show') +
+                      ' Loop Executions',
+                callback: function() {
+                  element.toggleLoopExecutions().then(rerender, fail);
+                }
+              },
+              'references': {
+                name: (element.references ? 'Hide' : 'Show') +
+                      ' References',
+                callback: function() {
+                  element.toggleReferences().then(rerender, fail);
+                }
+              },
+              'parent': {
+                name: (element.parent ? 'Hide' : 'Show') +
+                      ' Parent',
+                callback: function() {
+                  element.toggleParent().then(rerender, fail);
+                }
+              },
+            }
+          };
+
+          if (element.data.loopCount === 0) {
+            delete data.items.expand;
+          }
+
+          if (element.data.callsOthers === 0) {
+            delete data.items.children;
+          }
+
+          return data;
+        }
+      });
+    });
+
+    $(function() {
+      $.contextMenu({
+        selector: '.node.callgroup',
+        build: function(menu) {
+          var element = menu[0].__data__;
+          return {
+            position: function(opt) {
+              var rect = opt.$trigger[0].getBoundingClientRect();
+              opt.$menu.css({
+                top: rect.top + element.height,
+                left: rect.left + element.width
+              });
+            },
+            items: {
+              'children': {
+                name: (element.children ? 'Hide' : 'Show') + ' Children',
+                callback: function() {
+                  element.toggleChildren().then(rerender, fail);
+                }
+              },
+              'expand': {
+                name: 'Expand into Calls',
+                callback: function() {
+                  element.loadCalls().then(rerender, fail);
+                }
+              },
+              'references': {
+                name: (element.references ? 'Hide' : 'Show') +
+                      ' References',
+                callback: function() {
+                  element.toggleReferences().then(rerender, fail);
+                }
+              },
+              'parent': {
+                name: (element.parent ? 'Hide' : 'Show') +
+                      ' Parent',
+                callback: function() {
+                  element.toggleParent().then(rerender, fail);
+                }
+              },
+            }
+          };
+        }
+      });
+    });
+
+    $(function() {
+      $.contextMenu({
+        selector: '.node.loopexecution',
+        build: function(menu) {
+          var element = menu[0].__data__;
+          return {
+            position: function(opt) {
+              var rect = opt.$trigger[0].getBoundingClientRect();
+              opt.$menu.css({
+                top: rect.top + element.height,
+                left: rect.left + element.width
+              });
+            },
+            items: {
+              'children': {
+                name: (element.children ? 'Hide' : 'Show') + ' Children',
+                callback: function() {
+                  element.toggleChildren().then(rerender, fail);
+                }
+              },
+              'expand': {
+                name: (element.loopIterations ? 'Hide' : 'Show') +
+                      ' Loop Iterations',
+                callback: function() {
+                  element.toggleLoopIterations().then(rerender, fail);
+                }
+              },
+              'references': {
+                name: (element.references ? 'Hide' : 'Show') +
+                      ' References',
+                callback: function() {
+                  element.toggleReferences().then(rerender, fail);
+                }
+              }
+            }
+          };
+        }
+      });
+    });
+
+    $(function() {
+      $.contextMenu({
+        selector: '.node.loopiteration',
+        build: function(menu) {
+          var element = menu[0].__data__;
+          return {
+            position: function(opt) {
+              var rect = opt.$trigger[0].getBoundingClientRect();
+              opt.$menu.css({
+                top: rect.top + element.height,
+                left: rect.left + element.width
+              });
+            },
+            items: {
+              'children': {
+                name: (element.children ? 'Hide' : 'Show') + ' Children',
+                callback: function() {
+                  element.toggleChildren().then(rerender, fail);
+                }
+              },
+              'expand': {
+                name: (element.loopExecutions ? 'Hide' : 'Show') +
+                      ' Loop Executions',
+                callback: function() {
+                  element.toggleLoopExecutions().then(rerender, fail);
+                }
+              },
+              'references': {
+                name: (element.references ? 'Hide' : 'Show') +
+                      ' References',
+                callback: function() {
+                  element.toggleReferences().then(rerender, fail);
+                }
+              }
+            }
+          };
+        }
+      });
     });
   }
 

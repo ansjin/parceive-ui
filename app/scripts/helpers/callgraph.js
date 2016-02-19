@@ -48,6 +48,10 @@ angular.module('app')
         node.x = node.y * maxNodeWidth * maxNodeDepth;
         node.y = tmp * maxNodeHeight * maxNodeBreath;
       });
+
+      _.forEach(root.calls, function(root) {
+        delete root.parent;
+      });
     };
 
     CallGraph.prototype.addCallRoot = function(call) {
@@ -275,7 +279,7 @@ angular.module('app')
     };
 
     Node.prototype.unloadChildren = function() {
-      _.forEach(this.chilren, function(child) {
+      _.forEach(this.children, function(child) {
         child.unloadChildren();
         child.unloadAssociations();
       });
@@ -283,18 +287,34 @@ angular.module('app')
       delete this.calls;
     };
 
-    Node.prototype.unloadParent = function() {
+    Node.prototype.unloadParent = function(keepReferences) {
       if (_.isUndefined(this.parent)) {
         return;
       }
 
-      this.parent.unloadParent();
+      var oldNodes;
+
+      if (_.isUndefined(keepReferences)) {
+        oldNodes = this.callgraph.getNodes();
+      }
+
+      this.parent.unloadParent(true);
       this.parent.unloadAssociations();
 
       this.callgraph.roots.remove(this.parent);
       this.callgraph.roots.push(this);
 
       delete this.parent;
+
+      if (_.isUndefined(keepReferences)) {
+        var newNodes = this.callgraph.getNodes();
+
+        var removed = _.difference(oldNodes, newNodes);
+
+        _.forEach(removed, function(node) {
+          node.unloadAssociations();
+        });
+      }
     };
 
     /******************************************************************* Call */
@@ -595,7 +615,7 @@ angular.module('app')
     };
 
     CallGroup.prototype.getLabel = function() {
-      return this.function.signature;
+      return this.function.signature + ' ' + this.data.count;
     };
 
     CallGroup.prototype.getDuration = function() {
