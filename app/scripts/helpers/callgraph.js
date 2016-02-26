@@ -29,6 +29,15 @@ angular.module('app')
 
         return all;
       });
+
+      this.tree.sort(function(a, b) {
+        switch (a.type) {
+          case 'LoopIteration':
+            return b.data.id - a.data.id;
+          default:
+            return b.data.duration - a.data.duration;
+        }
+      });
     }
 
     CallGraph.prototype.layout = function() {
