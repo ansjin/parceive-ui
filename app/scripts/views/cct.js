@@ -46,7 +46,7 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $) {
   var bgColors = d3.scale.category20();
 
   function addZoom(svg) {
-    svg.call(d3.behavior.zoom().scaleExtent([1, 10]).on('zoom', zoom));
+    svg.call(d3.behavior.zoom().on('zoom', zoom));
 
     var defs = svg.append('defs');
 
