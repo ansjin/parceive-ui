@@ -16,9 +16,11 @@ function applyMarked(state, nodes, changes) {
       }
     });
 
-  state.unsaved.refGroup.selectAll('g.ref')
+  state.unsaved.refGroup.selectAll('g.reference')
     .style('filter', function(d) {
-      if (d.isMarked) {
+      if (d.isMarked || _.all(d.nodes, function(node) {
+        return node.isMarked;
+      })) {
         return 'url(#marked)';
       }
     });
