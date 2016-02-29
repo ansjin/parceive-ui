@@ -702,6 +702,13 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $,
                   element.toggleReferences().then(rerender, fail);
                 }
               },
+              'recursiveReferences': {
+                name: (element.references ? 'Hide' : 'Show') +
+                      ' Recursive References',
+                callback: function() {
+                  element.toggleRecursiveReferences().then(rerender, fail);
+                }
+              },
               'parent': {
                 name: (element.parent ? 'Hide' : 'Show') +
                       ' Parent',
@@ -764,6 +771,13 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $,
                       ' References',
                 callback: function() {
                   element.toggleReferences().then(rerender, fail);
+                }
+              },
+              'recursiveReferences': {
+                name: (element.references ? 'Hide' : 'Show') +
+                      ' Recursive References',
+                callback: function() {
+                  element.toggleRecursiveReferences().then(rerender, fail);
                 }
               },
               'parent': {
