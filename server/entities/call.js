@@ -82,6 +82,6 @@ var treeMapping = _.extend(mapping, {
 router.get('/:id/recursivecalls', function(req, res) {
   var duration = req.query.duration ? req.query.duration : 0;
   util.handleRelationshipQuery(req.db, treeMapping, res,
-    'SELECT * FROM Call, CallTree WHERE Descendant=Id AND Ancestor=? AND Duration > ?',
-    req.params.id, duration);
+    'SELECT * FROM Call, CallTree WHERE Descendant=Id AND Ancestor=? AND ' +
+    'Duration > ?', req.params.id, duration);
 });
