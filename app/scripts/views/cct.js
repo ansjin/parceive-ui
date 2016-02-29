@@ -75,8 +75,9 @@ angular.module('cct-view', ['app'])
   }
 })
 .service('render', ['CallGraphDataService', 'LoaderService', 'd3', 'KeyService',
-                    'GradientService', 'jquery',
-function(CallGraphDataService, loader, d3, keyService, GradientService, $) {
+                    'GradientService', 'jquery', 'SizeService',
+function(CallGraphDataService, loader, d3, keyService, GradientService, $,
+          SizeService) {
   var bgColors = d3.scale.category20();
 
   function addZoom(svg) {
@@ -404,6 +405,27 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $) {
         return d.height + 6;
       });
 
+    var callGroupNodesEnter = callNodesEnter.filter(function(d) {
+      return d.type === 'CallGroup';
+    });
+
+    callGroupNodesEnter
+      .append('rect')
+      .classed('count-bg', true)
+      .attr('x', function(d) {
+        return SizeService.svgTextSize(d.getLabel()).width -
+               SizeService.svgTextSize(d.data.count).width;
+      })
+      .attr('y', 3)
+      .attr('rx', 2)
+      .attr('ry', 2)
+      .attr('width', function(d) {
+        return SizeService.svgTextSize(d.data.count).width + 4;
+      })
+      .attr('height', function(d) {
+        return SizeService.svgTextSize(d.data.count).height + 2;
+      });
+
     /* Label */
     restNodesEnter
       .append('text')
@@ -424,11 +446,11 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $) {
 
     /* Add counters */
 
-    var callGroupNodesEnter = callNodesEnter.filter(function(d) {
-      return d.type === 'CallGroup' || d.type === 'LoopExecution';
+    var loopExecutionNodesEnter = callNodesEnter.filter(function(d) {
+      return d.type === 'LoopExecution';
     });
 
-    var textCounters = callGroupNodesEnter
+    var textCounters = loopExecutionNodesEnter
       .append('text')
       .attr('x', function(d) {
         return d.width;
