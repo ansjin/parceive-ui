@@ -711,6 +711,32 @@ var Call = {
           });
       });
   },
+
+  /** @instance
+    * @return {external:Promise.<Call.CallReference[]>} */
+  getRecursiveCallReferences: function() {
+    var self = this;
+
+    return self._mapper.httpGet('calls/' + self.id +
+      '/recursivecallreferences')
+      .then(function(datas) {
+        return _.map(datas, function(data) {
+          return wrap(data, CallReference, self._mapper);
+        });
+      });
+  },
+
+  /** @instance
+    * @return {external:Promise.<Reference[]>} the list of references that
+    *                                          the call accesses */
+  getRecursiveReferences: function() {
+    return this.getRecursiveCallReferences()
+      .then(function(callreferences) {
+        return RSVP.all(_.map(callreferences, function(callreference) {
+          return callreference.getReference();
+        }));
+      });
+  },
 };
 
 /** @class
@@ -824,6 +850,32 @@ var CallGroup = {
               callgroup: wrap(data, CallGroup, self._mapper)
             };
           });
+      });
+  },
+
+  /** @instance
+    * @return {external:Promise.<Call.CallGroupReference[]>} */
+  getRecursiveCallGroupReferences: function() {
+    var self = this;
+
+    return self._mapper.httpGet('callgroups/' + self.id +
+      '/recursivecallgroupreferences')
+      .then(function(datas) {
+        return _.map(datas, function(data) {
+          return wrap(data, CallGroupReference, self._mapper);
+        });
+      });
+  },
+
+  /** @instance
+    * @return {external:Promise.<Reference[]>} the list of references that
+    *                                          the call accesses */
+  getRecursiveReferences: function() {
+    return this.getRecursiveCallGroupReferences()
+      .then(function(callreferences) {
+        return RSVP.all(_.map(callreferences, function(callreference) {
+          return callreference.getReference();
+        }));
       });
   },
 };
