@@ -233,22 +233,6 @@ function render(d3, pdh, pvh, size, grad, ld) {
       }
     }
 
-    function addLoopProperties(data, parent) {
-      data = _.sortByOrder(data, ['level'], [true]);
-      var adjust = parent.hasLoops ? [data[0].level] : [];
-      var add = [];
-      _.map(data, function(d) {
-        if(d.hasLoops > 0 && adjust.indexOf(d.level + 1) === -1) {
-          adjust.push(d.level + 1);
-        }
-        if (adjust.indexOf(d.level) > -1 && add.indexOf(d.level) === -1) {
-          add.push(d.level);
-        }
-        d.loopAdjust = add.length;
-      });
-      return data;
-    }
-
     function loadChildren(id, level) {
       var parent;
       var func = isTracing()
@@ -261,7 +245,6 @@ function render(d3, pdh, pvh, size, grad, ld) {
           return pdh.getRecursive(call, isTracing(), runtimeThreshold, level)
         })
         .then(function(data) {
-          data = addLoopProperties(data, parent);
           _.forEach(data, function(d) {
             if (checkCallHistory(d.id)) {
               buildViewData(d);
@@ -294,9 +277,40 @@ function render(d3, pdh, pvh, size, grad, ld) {
       }
     }
 
+    function addLoopProperties(data) {
+      var hasLoop = data.hasLoops ? 1 : 0;
+      var currLevel = 2;
+      var queue = [];
+
+      var addChildrenToQueue = function(child) {
+        if (child.hasOwnProperty('children') === true) {
+          _.forEach(child.children, function(c) {
+            queue.push(c);
+          });
+        }
+      };
+
+      var recurse = function() {
+        if (queue.length <= 0) { return; }
+        var child = queue.shift();
+        if (child.level > currLevel) {
+          hasLoop++;
+          currLevel = child.level;
+        }
+        child.loopAdjust = hasLoop;
+        addChildrenToQueue(child);
+        recurse();
+      };
+
+      data.loopAdjust = 0;
+      addChildrenToQueue(data);
+      recurse();
+    }
+
     // build the profiling or tracing svg, and display it
     function displayView() {
       console.log(tracingData);
+      addLoopProperties(tracingData);
 
       // initialize some view variables if uninitialized
       if (initView === false) {
@@ -408,7 +422,7 @@ function render(d3, pdh, pvh, size, grad, ld) {
         .style('width', tooltipWidth + 'px');
       tooltip
         .select('#title')
-        .text(d.name);
+        .text(d.name + ' - lvl:' + d.level + ' - adj:' + d.loopAdjust + ' - iter:' + d.loopIterationCount);
       tooltip
         .select('#value')
         .text(duration.toFixed(2) + ' %');
@@ -543,8 +557,8 @@ function render(d3, pdh, pvh, size, grad, ld) {
         .attr('y', function(d) {
           var y = rectHeight * (d.level - adjustLevel) - rectHeight;
           if (d.level > maxLevel) { maxLevel = d.level; }
+          if (showLoop) { y += (d.loopAdjust - adjustLevel) * rectHeight; }
           if (zoomId !== null) { y -= rectHeight; }
-          if (showLoop) { y += (adjustLevel + d.loopAdjust) * rectHeight; }
           return y;
         })
         .attr('height', function() {
@@ -570,7 +584,7 @@ function render(d3, pdh, pvh, size, grad, ld) {
         })
         .attr('y', function(d) {
           var y = rectHeight * (d.level - adjustLevel) - rectHeight;
-          if (showLoop) { y += (adjustLevel + d.loopAdjust) * rectHeight; }
+          if (showLoop) { y += (d.loopAdjust - adjustLevel) * rectHeight; }
           return y;
         });
     }
@@ -600,8 +614,8 @@ function render(d3, pdh, pvh, size, grad, ld) {
         .attr('y', function(d) {
           var y = rectHeight * (d.level - adjustLevel) - rectHeight;
           y += textPadY;
+          if (showLoop) { y += (d.loopAdjust - adjustLevel) * rectHeight; }
           if (zoomId !== null) { y -= 50; }
-          if (showLoop) { y += (adjustLevel + d.loopAdjust) * rectHeight; }
           return y;
         })
         .attr('fill-opacity', function() {
@@ -620,7 +634,7 @@ function render(d3, pdh, pvh, size, grad, ld) {
         .attr('fill-opacity', 1)
         .attr('y', function(d) {
           var y = rectHeight * (d.level - adjustLevel) - rectHeight;
-          if (showLoop) { y += (adjustLevel + d.loopAdjust) * rectHeight; }
+          if (showLoop) { y += (d.loopAdjust - adjustLevel) * rectHeight; }
           return y + textPadY;
         });
     }
@@ -648,8 +662,8 @@ function render(d3, pdh, pvh, size, grad, ld) {
         .attr('y', function(d) {
           var y = rectHeight * (d.level - adjustLevel) - rectHeight;
           y += textPadY;
+          if (showLoop) { y += (d.loopAdjust - adjustLevel) * rectHeight; y+= rectHeight; }
           if (zoomId !== null) { y -= 50; }
-          if (showLoop) { y += (d.loopAdjust * rectHeight); y+= rectHeight; }
           return y;
         })
         .attr('fill-opacity', function() {
@@ -668,7 +682,7 @@ function render(d3, pdh, pvh, size, grad, ld) {
         .attr('fill-opacity', 1)
         .attr('y', function(d) {
           var y = rectHeight * (d.level - adjustLevel) - rectHeight;
-          if (showLoop) { y += (d.loopAdjust * rectHeight); y+= rectHeight; }
+          if (showLoop) { y += (d.loopAdjust - adjustLevel) * rectHeight; y+= rectHeight; }
           return y + textPadY;
         });
     }
