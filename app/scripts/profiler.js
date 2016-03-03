@@ -90,10 +90,24 @@ function render(d3, pdh, pvh, size, grad, ld) {
         mainDuration = call.duration;
         mainCallId = call.id;
         mainCallGroupId = call.callGroupID;
-        // console.log(call);
-        // call.getDirectLoopExecutions()
-        // .then(function(d) { console.log('getDirectLoopExecutions', d); return d[0].getLoopIterations(); })
-        // .then(function(d) { console.log('getLoopIterations', d); });       
+        
+        // TEST
+        console.log(call);
+        call.getDirectLoopExecutions()
+        .then(function(d) { 
+          console.log('getDirectLoopExecutions', d); 
+          return d[0].getLoopIterations(); 
+        })
+        .then(function(d) { 
+          console.log('getLoopIterations', d); 
+          var promises = d.map(function(o){ return o.getCalls(); });
+          return RSVP.all(promises);
+        })
+        .then(function(data) {
+          console.log('getCalls', data);
+        });  
+        // END TEST
+
         loadView();
       });
     }
@@ -530,7 +544,7 @@ function render(d3, pdh, pvh, size, grad, ld) {
           var y = rectHeight * (d.level - adjustLevel) - rectHeight;
           if (d.level > maxLevel) { maxLevel = d.level; }
           if (zoomId !== null) { y -= rectHeight; }
-          if (showLoop) { y += (d.loopAdjust * rectHeight); }
+          if (showLoop) { y += (adjustLevel + d.loopAdjust) * rectHeight; }
           return y;
         })
         .attr('height', function() {
@@ -556,7 +570,7 @@ function render(d3, pdh, pvh, size, grad, ld) {
         })
         .attr('y', function(d) {
           var y = rectHeight * (d.level - adjustLevel) - rectHeight;
-          if (showLoop) { y += (d.loopAdjust * rectHeight); }
+          if (showLoop) { y += (adjustLevel + d.loopAdjust) * rectHeight; }
           return y;
         });
     }
@@ -587,7 +601,7 @@ function render(d3, pdh, pvh, size, grad, ld) {
           var y = rectHeight * (d.level - adjustLevel) - rectHeight;
           y += textPadY;
           if (zoomId !== null) { y -= 50; }
-          if (showLoop) { y += (d.loopAdjust * rectHeight); }
+          if (showLoop) { y += (adjustLevel + d.loopAdjust) * rectHeight; }
           return y;
         })
         .attr('fill-opacity', function() {
@@ -606,7 +620,7 @@ function render(d3, pdh, pvh, size, grad, ld) {
         .attr('fill-opacity', 1)
         .attr('y', function(d) {
           var y = rectHeight * (d.level - adjustLevel) - rectHeight;
-          if (showLoop) { y += (d.loopAdjust * rectHeight); }
+          if (showLoop) { y += (adjustLevel + d.loopAdjust) * rectHeight; }
           return y + textPadY;
         });
     }
