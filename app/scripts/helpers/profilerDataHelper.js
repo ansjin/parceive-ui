@@ -50,7 +50,7 @@ function profilerDataHelper(LoaderService) {
           ancestor: data[i][type][ancestor],
           level: data[i].depth + level,
           id: data[i][type].id,
-          loopCount: (type === 'call') ? data[i][type].loopCount : 0,
+          hasLoops: (type === 'call') ? (data[i][type].loopCount > 0 ? true : false) : false,
           loopAdjust: 0
         });
       }
@@ -102,11 +102,13 @@ function profilerDataHelper(LoaderService) {
   function getCallObj(id, ancestor, level) {
     var self;
     var temp = {};
+    var directloopexecutions;
 
     var promise = LoaderService.getCall(id)
       .then(function(call) {
         // store call object for later
         self = call;
+        directloopexecutions = call.directloopexecutions;
 
         temp.start = Number(call.start);
         temp.end = Number(call.end);
@@ -114,8 +116,25 @@ function profilerDataHelper(LoaderService) {
         temp.ancestor = ancestor;
         temp.level = level;
         temp.id = call.id;
-        temp.loopCount = call.loopCount;
+        temp.hasLoops = call.loopCount > 0 ? true : false;
         temp.loopAdjust = 0;
+        temp.loopIterationCount = 0;
+        temp.loopDuration = 0;
+        temp.loopStart = undefined;
+        temp.loopEnd = undefined;
+        temp.loopIterationCalls = [];
+
+        if (call.directloopexecutions.length > 0) {
+          temp.loopIterationCount = call.directloopexecutions[0].iterationsCount;
+          temp.loopDuration = call.directloopexecutions[0].duration;
+          temp.loopStart = call.directloopexecutions[0].start;
+          temp.loopEnd = call.directloopexecutions[0].end;
+
+          var iterations = call.directloopexecutions[0].loopiterations;
+          _.forEach(iterations, function(i) {
+            
+          });
+        }
 
         return call.getFunction();
       })
@@ -132,21 +151,16 @@ function profilerDataHelper(LoaderService) {
   }
 
   function getCallGroupObj(id, ancestor, level) {
-    var self;
     var temp = {};
-
     var promise = LoaderService.getCallGroup(id)
       .then(function(callGroup) {
-        // store call object for later
-        self = callGroup;
-
         temp.start = null;
         temp.end = null;
         temp.duration = callGroup.duration;
         temp.ancestor = ancestor;
         temp.level = level;
         temp.id = callGroup.id;
-        temp.loopCount = 0;
+        temp.hasLoops = false;
         temp.loopAdjust = 0;
 
         return callGroup.getFunction();

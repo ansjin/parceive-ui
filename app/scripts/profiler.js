@@ -235,10 +235,10 @@ function render(d3, pdh, pvh, size, grad, ld) {
 
     function addLoopProperties(data, parent) {
       data = _.sortByOrder(data, ['level'], [true]);
-      var adjust = parent.loopCount > 0 ? [data[0].level] : [];
+      var adjust = parent.hasLoops ? [data[0].level] : [];
       var add = [];
       _.map(data, function(d) {
-        if(d.loopCount > 0 && adjust.indexOf(d.level + 1) === -1) {
+        if(d.hasLoops > 0 && adjust.indexOf(d.level + 1) === -1) {
           adjust.push(d.level + 1);
         }
         if (adjust.indexOf(d.level) > -1 && add.indexOf(d.level) === -1) {
