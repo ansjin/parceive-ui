@@ -11,7 +11,9 @@ function profilerSvgHelper(d3, size) {
     drawRectSvg: drawRectSvg,
     drawRectSvgZoom: drawRectSvgZoom,
     drawTextSvg: drawTextSvg,
-    drawTextSvgZoom: drawTextSvgZoom
+    drawTextSvgZoom: drawTextSvgZoom,
+    drawLoopLineSvg: drawLoopLineSvg,
+    drawLoopLineSvgZoom: drawLoopLineSvgZoom
   };
 
   return factory;
@@ -136,6 +138,63 @@ function profilerSvgHelper(d3, size) {
           }
         }
         return y + v.textPadY;
+      });
+  }
+
+  function drawLoopLineSvg(selection, nodes, v, isTracing) {
+    selection
+      .data(nodes.filter(function(d) {
+        // only show loop text for calls with
+        // loopIterationCount greater than 0
+        return d.loopIterationCount > 0;
+      }))
+      .enter()
+      .append('line')
+      .attr('class', 'loopline')
+      .attr('stroke', 'blue')
+      .attr('stroke-width', 2)
+      .attr('id', function(d) { return 'loopline_' + d.id; })
+      .attr('x1', function(d) {
+        return v.xScale(d.start);
+      })
+      .attr('x2', function(d) {
+        return v.xScale(d.start);
+      })
+      .attr('width', function(d) {
+        return v.widthScale(d.duration);
+      })
+      .attr('y1', function(d) {
+        var y = v.rectHeight * (d.level - v.adjustLevel) - v.rectHeight;
+        y += (d.loopAdjust - v.adjustLevel) * v.rectHeight; 
+        if (v.zoomId !== null) { y -= v.rectHeight; }
+        return y - Math.floor(v.rectHeight/2);
+      })
+      .attr('y2', function(d) {
+        var y = v.rectHeight * (d.level - v.adjustLevel) - v.rectHeight;
+        y += (d.loopAdjust - v.adjustLevel) * v.rectHeight; 
+        if (v.zoomId !== null) { y -= v.rectHeight; }
+        return y - Math.floor(v.rectHeight/2);
+      })
+      .attr('fill-opacity', function() {
+        var f = 1;
+        if (v.zoomId !== null) { f = 0; }
+        return f;
+      });
+  }
+
+  function drawLoopLineSvgZoom(selection, v, isTracing) {
+    selection
+      .transition()
+      .duration(v.transTime)
+      .ease(v.transType)
+      .attr('fill-opacity', 1)
+      .attr('height', function() {
+        return v.rectHeight;
+      })
+      .attr('y', function(d) {
+        var y = v.rectHeight * (d.level - v.adjustLevel) - v.rectHeight;
+        if (v.showLoop && isTracing) { y += (d.loopAdjust - v.adjustLevel) * v.rectHeight; }
+        return y;
       });
   }
 }

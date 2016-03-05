@@ -55,9 +55,7 @@ function render(d3, pdh, pvh, pvar, psh, size, grad, ld) {
       v.runtimeThreshold = Math.ceil(runtime * (v.thresholdFactor / 100));
     }
 
-    function isTracing() {
-      return v.viewMode === 'T';
-    }
+    function isTracing() { return v.viewMode === 'T'; }
 
     function showHideLoopBtn() {
       var text = isTracing() ? '' : 'hide';
@@ -68,7 +66,7 @@ function render(d3, pdh, pvh, pvar, psh, size, grad, ld) {
       // change loop visibility
       v.showLoop = v.showLoop ? false : true;
 
-      initZoomVars();
+      pvar.initZoomVars(v, isTracing());
       reload();
 
       // update loop button
@@ -77,7 +75,7 @@ function render(d3, pdh, pvh, pvar, psh, size, grad, ld) {
     }
 
     function toggleViewMode() {
-      initZoomVars();
+      pvar.initZoomVars(v, isTracing());
 
       // change view mode
       v.viewMode = v.viewMode === 'T' ? 'P' : 'T';
@@ -90,22 +88,6 @@ function render(d3, pdh, pvh, pvar, psh, size, grad, ld) {
 
       // show/hide loop button
       showHideLoopBtn();
-    }
-
-    function initZoomVars() {
-      // store some variables for use when returning back to the 
-      // view we are toggling out of
-      if (isTracing()) {
-        v.zoomTracingId = v.zoomId;
-        v.zoomTracingHistory = v.zoomHistory;
-        v.zoomTracingAdjustment = v.adjustLevel;
-        v.zoomTracingMaxLevel = v.maxLevel;
-      } else {
-        v.zoomProfilingId = v.zoomId;
-        v.zoomProfilingHistory = v.zoomHistory;
-        v.zoomProfilingAdjustment = v.adjustLevel;
-        v.zoomProfilingMaxLevel = v.maxLevel;
-      }
     }
 
     function reload() {
@@ -153,23 +135,9 @@ function render(d3, pdh, pvh, pvar, psh, size, grad, ld) {
       
       func
         .then(function(data) {
-          buildViewData(data);
+          pvh.buildViewData(data, v, isTracing());
           loadChildren(id, level);
         });
-    }
-
-    function checkCallHistory(id) {
-      // return true if call id is not in call history
-      var history = isTracing() ? v.callHistory : v.callGroupHistory;
-      return history.indexOf(id) === -1;
-    }
-
-    function addCallHistory(id) {
-      if (isTracing()) {
-        v.callHistory.push(id);
-      } else {
-        v.callGroupHistory.push(id);
-      }
     }
 
     function loadChildren(id, level) {
@@ -185,35 +153,15 @@ function render(d3, pdh, pvh, pvar, psh, size, grad, ld) {
         })
         .then(function(data) {
           _.forEach(data, function(d) {
-            if (checkCallHistory(d.id)) {
-              buildViewData(d);
-              addCallHistory(d.id);
+            if (pvh.checkCallHistory(d.id, v, isTracing())) {
+              pvh.buildViewData(d, v, isTracing());
+              pvh.addCallHistory(d.id, v, isTracing());
             }
           });
 
           // update the display
           displayView();
         }, function(err) { console.log(err); });
-    }
-
-    // add an object to the children element of tracing or profiling data
-    // obj parameter can either be call or callGroup data
-    function buildViewData(obj) {
-      if (obj.ancestor === 'null') {
-        if (isTracing()) {
-          v.tracingData = obj;
-        } else {
-          obj.start = 0;
-          obj.end = obj.duration;
-          v.profilingData = obj;
-        }
-      } else {
-        if (isTracing()) {
-          pvh.appendDeep(v.tracingData, obj, isTracing());
-        } else {
-          pvh.appendDeep(v.profilingData, obj, isTracing());
-        }
-      }
     }
 
     // build the profiling or tracing svg, and display it
@@ -260,16 +208,12 @@ function render(d3, pdh, pvh, pvar, psh, size, grad, ld) {
 
       // remove any child elements of svg
       svg.selectAll('*').remove();
-
-      // draw rect svg elements using data
       psh.drawRectSvg(svg.selectAll('rect'), nodes, v, isTracing());
-
-      // draw text svg elements using data
       psh.drawTextSvg(svg.selectAll('text.title'), nodes, false, v, isTracing());
 
       if (v.showLoop && isTracing()) {
-        // draw loop iteration count
         psh.drawTextSvg(svg.selectAll('text.loop'), nodes, true, v, isTracing());
+        // psh.drawLoopLineSvg(svg.selectAll('line.loop'), nodes, v, isTracing());
       }
 
       // set click/dblClick handlers for rect and text
@@ -285,6 +229,7 @@ function render(d3, pdh, pvh, pvar, psh, size, grad, ld) {
         psh.drawTextSvgZoom(svg.selectAll('text.title'), false, v, isTracing());
         if (v.showLoop && isTracing()) {
           psh.drawTextSvgZoom(svg.selectAll('text.loop'), true, v, isTracing());
+          // psh.drawLoopLineSvgZoom(svg.selectAll('line.loop'), nodes, v, isTracing());
         }
       }
 

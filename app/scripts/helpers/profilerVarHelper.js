@@ -8,7 +8,8 @@ profilerVarHelper.$inject = [];
 
 function profilerVarHelper() {
   var factory = {
-    initVar: initVar
+    initVar: initVar,
+    initZoomVars: initZoomVars
   };
 
   return factory;
@@ -62,5 +63,21 @@ function profilerVarHelper() {
       zoomProfilingMaxLevel: 1, // "maxLevel" value for profiling on mode switch
       showLoop: false // show loops in visualization
     };
+  }
+
+  function initZoomVars(v, isTracing) {
+    // store some variables for use when returning back to the 
+    // view we are toggling out of
+    if (isTracing) {
+      v.zoomTracingId = v.zoomId;
+      v.zoomTracingHistory = v.zoomHistory;
+      v.zoomTracingAdjustment = v.adjustLevel;
+      v.zoomTracingMaxLevel = v.maxLevel;
+    } else {
+      v.zoomProfilingId = v.zoomId;
+      v.zoomProfilingHistory = v.zoomHistory;
+      v.zoomProfilingAdjustment = v.adjustLevel;
+      v.zoomProfilingMaxLevel = v.maxLevel;
+    }
   }
 }

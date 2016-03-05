@@ -10,7 +10,10 @@ function profilerViewHelper() {
   var factory = {
     appendDeep: appendDeep,
     findDeep: findDeep,
-    addLoopProperties: addLoopProperties
+    addLoopProperties: addLoopProperties,
+    checkCallHistory: checkCallHistory,
+    addCallHistory: addCallHistory,
+    buildViewData: buildViewData
   };
 
   return factory;
@@ -109,5 +112,39 @@ function profilerViewHelper() {
     data.loopAdjust = 0;
     addChildrenToQueue(data);
     recurse();
+  }
+
+  function checkCallHistory(id, v, isTracing) {
+    // return true if call id is not in call history
+    var history = isTracing ? v.callHistory : v.callGroupHistory;
+    return history.indexOf(id) === -1;
+  }
+
+  function addCallHistory(id, v, isTracing) {
+    if (isTracing) {
+      v.callHistory.push(id);
+    } else {
+      v.callGroupHistory.push(id);
+    }
+  }
+
+  // add an object to the children element of tracing or profiling data
+  // obj parameter can either be call or callGroup data
+  function buildViewData(obj, v, isTracing) {
+    if (obj.ancestor === 'null') {
+      if (isTracing) {
+        v.tracingData = obj;
+      } else {
+        obj.start = 0;
+        obj.end = obj.duration;
+        v.profilingData = obj;
+      }
+    } else {
+      if (isTracing) {
+        appendDeep(v.tracingData, obj, isTracing);
+      } else {
+        appendDeep(v.profilingData, obj, isTracing);
+      }
+    }
   }
 }
