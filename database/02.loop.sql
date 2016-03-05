@@ -16,9 +16,9 @@ INSERT INTO LoopExecution SELECT
   Id,
   Loop,
   ParentIteration,
+  (t.End - t.Start) AS Duration,
   Start,
   End,
-  (t.End - t.Start) AS Duration,
   (SELECT s.Call FROM Segment s, LoopIteration i WHERE s.LoopIteration = i.Id AND i.Execution = t.Id) AS Call,
   (SELECT COUNT(i.Id) FROM LoopIteration i WHERE i.Execution = t.Id ) AS IterationsCount
 FROM Temporary t;
