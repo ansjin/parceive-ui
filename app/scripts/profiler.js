@@ -90,24 +90,6 @@ function render(d3, pdh, pvh, size, grad, ld) {
         mainDuration = call.duration;
         mainCallId = call.id;
         mainCallGroupId = call.callGroupID;
-        
-        // TEST
-        console.log(call);
-        call.getDirectLoopExecutions()
-        .then(function(d) { 
-          console.log('getDirectLoopExecutions', d); 
-          return d[0].getLoopIterations(); 
-        })
-        .then(function(d) { 
-          console.log('getLoopIterations', d); 
-          var promises = d.map(function(o){ return o.getCalls(); });
-          return RSVP.all(promises);
-        })
-        .then(function(data) {
-          console.log('getCalls', data);
-        });  
-        // END TEST
-
         loadView();
       });
     }
@@ -277,40 +259,11 @@ function render(d3, pdh, pvh, size, grad, ld) {
       }
     }
 
-    function addLoopProperties(data) {
-      var hasLoop = data.hasLoops ? 1 : 0;
-      var currLevel = 2;
-      var queue = [];
-
-      var addChildrenToQueue = function(child) {
-        if (child.hasOwnProperty('children') === true) {
-          _.forEach(child.children, function(c) {
-            queue.push(c);
-          });
-        }
-      };
-
-      var recurse = function() {
-        if (queue.length <= 0) { return; }
-        var child = queue.shift();
-        if (child.level > currLevel) {
-          hasLoop++;
-          currLevel = child.level;
-        }
-        child.loopAdjust = hasLoop;
-        addChildrenToQueue(child);
-        recurse();
-      };
-
-      data.loopAdjust = 0;
-      addChildrenToQueue(data);
-      recurse();
-    }
-
     // build the profiling or tracing svg, and display it
     function displayView() {
-      console.log(tracingData);
-      addLoopProperties(tracingData);
+      if (showLoop && isTracing()) {
+        pvh.addLoopProperties(tracingData);
+      }
 
       // initialize some view variables if uninitialized
       if (initView === false) {
@@ -333,6 +286,8 @@ function render(d3, pdh, pvh, size, grad, ld) {
         viewData = isTracing() ? tracingData : profilingData;
       }
 
+      console.log(viewData);
+
       // partition view data using d3's parition layout function
       var nodes = partition.nodes(viewData);
 
@@ -353,11 +308,11 @@ function render(d3, pdh, pvh, size, grad, ld) {
       drawRectSvg(svg.selectAll('rect'), nodes);
 
       // draw text svg elements using data
-      drawTextSvg(svg.selectAll('text.title'), nodes);
+      drawTextSvg(svg.selectAll('text.title'), nodes, false);
 
-      if (showLoop) {
+      if (showLoop && isTracing()) {
         // draw loop iteration count
-        drawLoopTextSvg(svg.selectAll('text.loop'), nodes);
+        drawTextSvg(svg.selectAll('text.loop'), nodes, true);
       }
 
       // set click/dblClick handlers for rect and text
@@ -370,9 +325,9 @@ function render(d3, pdh, pvh, size, grad, ld) {
       // if we are zooming a node to top
       if (zoomId !== null) {
         drawRectSvgZoom(svg.selectAll('rect'));
-        drawTextSvgZoom(svg.selectAll('text.title'));
-        if (showLoop) {
-          drawLoopTextSvgZoom(svg.selectAll('text.loop'));
+        drawTextSvgZoom(svg.selectAll('text.title'), false);
+        if (showLoop && isTracing()) {
+          drawTextSvgZoom(svg.selectAll('text.loop'), true);
         }
       }
 
@@ -557,7 +512,7 @@ function render(d3, pdh, pvh, size, grad, ld) {
         .attr('y', function(d) {
           var y = rectHeight * (d.level - adjustLevel) - rectHeight;
           if (d.level > maxLevel) { maxLevel = d.level; }
-          if (showLoop) { y += (d.loopAdjust - adjustLevel) * rectHeight; }
+          if (showLoop && isTracing()) { y += (d.loopAdjust - adjustLevel) * rectHeight; }
           if (zoomId !== null) { y -= rectHeight; }
           return y;
         })
@@ -584,14 +539,20 @@ function render(d3, pdh, pvh, size, grad, ld) {
         })
         .attr('y', function(d) {
           var y = rectHeight * (d.level - adjustLevel) - rectHeight;
-          if (showLoop) { y += (d.loopAdjust - adjustLevel) * rectHeight; }
+          if (showLoop && isTracing()) { y += (d.loopAdjust - adjustLevel) * rectHeight; }
           return y;
         });
     }
 
-    function drawTextSvg(selection, nodes) {
+    function drawTextSvg(selection, nodes, loopText) {
       selection
         .data(nodes.filter(function(d) {
+          if (loopText) {
+            // only show loop text for calls with
+            // loopIterationCount greater than 0
+            return d.loopIterationCount > 0;
+          }
+
           // only show text for calls with widths big enough
           // to contain the full name of the call
           var rectWidth = size.svgSizeById(d.id).width;
@@ -600,11 +561,13 @@ function render(d3, pdh, pvh, size, grad, ld) {
         }))
         .enter()
         .append('text')
-        .attr('id', function(d) { return 'text_' + d.id; })
-        .attr('class', 'title')
+        .attr('id', function(d) { 
+          return loopText ? 'loop_' + d.id : 'text_' + d.id;
+        })
+        .attr('class', function() { return loopText ? 'loop' : 'title'; })
         .attr('font-family', 'Arial')
         .attr('font-size', '14px')
-        .attr('fill', 'white')
+        .attr('fill', function() { return loopText ? 'black' : 'white'; })
         .attr('x', function(d) {
           var old = xScale(d.start);
           var sliced = Number(old.slice(0, -1));
@@ -614,7 +577,12 @@ function render(d3, pdh, pvh, size, grad, ld) {
         .attr('y', function(d) {
           var y = rectHeight * (d.level - adjustLevel) - rectHeight;
           y += textPadY;
-          if (showLoop) { y += (d.loopAdjust - adjustLevel) * rectHeight; }
+          if (showLoop && isTracing()) { 
+            y += (d.loopAdjust - adjustLevel) * rectHeight;
+            if (loopText) {
+              y+= rectHeight;
+            } 
+          }
           if (zoomId !== null) { y -= 50; }
           return y;
         })
@@ -623,10 +591,10 @@ function render(d3, pdh, pvh, size, grad, ld) {
           if (zoomId !== null) { f = 0; }
           return f;
         })
-        .text(function(d) { return d.name; });
+        .text(function(d) { return loopText ? d.loopIterationCount : d.name; });
     }
 
-    function drawTextSvgZoom(selection) {
+    function drawTextSvgZoom(selection, loopText) {
       selection
         .transition()
         .duration(transTime)
@@ -634,55 +602,12 @@ function render(d3, pdh, pvh, size, grad, ld) {
         .attr('fill-opacity', 1)
         .attr('y', function(d) {
           var y = rectHeight * (d.level - adjustLevel) - rectHeight;
-          if (showLoop) { y += (d.loopAdjust - adjustLevel) * rectHeight; }
-          return y + textPadY;
-        });
-    }
-
-    function drawLoopTextSvg(selection, nodes) {
-      selection
-        .data(nodes.filter(function(d) {
-          // only show loop text for calls with
-          // loopIterationCount greater than 0
-          return d.loopIterationCount > 0;
-        }))
-        .enter()
-        .append('text')
-        .attr('id', function(d) { return 'loop_' + d.id; })
-        .attr('class', 'loop')
-        .attr('font-family', 'Arial')
-        .attr('font-size', '14px')
-        .attr('fill', 'black')
-        .attr('x', function(d) {
-          var old = xScale(d.start);
-          var sliced = Number(old.slice(0, -1));
-          var x = Number(sliced + textPadX) + '%';
-          return x;
-        })
-        .attr('y', function(d) {
-          var y = rectHeight * (d.level - adjustLevel) - rectHeight;
-          y += textPadY;
-          if (showLoop) { y += (d.loopAdjust - adjustLevel) * rectHeight; y+= rectHeight; }
-          if (zoomId !== null) { y -= 50; }
-          return y;
-        })
-        .attr('fill-opacity', function() {
-          var f = 1;
-          if (zoomId !== null) { f = 0; }
-          return f;
-        })
-        .text(function(d) { return d.loopIterationCount; });
-    }
-
-    function drawLoopTextSvgZoom(selection) {
-      selection
-        .transition()
-        .duration(transTime)
-        .ease(transType)
-        .attr('fill-opacity', 1)
-        .attr('y', function(d) {
-          var y = rectHeight * (d.level - adjustLevel) - rectHeight;
-          if (showLoop) { y += (d.loopAdjust - adjustLevel) * rectHeight; y+= rectHeight; }
+          if (showLoop && isTracing()) { 
+            y += (d.loopAdjust - adjustLevel) * rectHeight; 
+            if (loopText) {
+              y+= rectHeight;
+            }
+          }
           return y + textPadY;
         });
     }

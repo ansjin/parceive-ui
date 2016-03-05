@@ -9,7 +9,8 @@ profilerViewHelper.$inject = [];
 function profilerViewHelper() {
   var factory = {
     appendDeep: appendDeep,
-    findDeep: findDeep
+    findDeep: findDeep,
+    addLoopProperties: addLoopProperties
   };
 
   return factory;
@@ -78,5 +79,35 @@ function profilerViewHelper() {
     }
 
     return val;
+  }
+
+  function addLoopProperties(data) {
+    var hasLoop = data.hasLoops ? 1 : 0;
+    var currLevel = 2;
+    var queue = [];
+
+    var addChildrenToQueue = function(child) {
+      if (child.hasOwnProperty('children') === true) {
+        _.forEach(child.children, function(c) {
+          queue.push(c);
+        });
+      }
+    };
+
+    var recurse = function() {
+      if (queue.length <= 0) { return; }
+      var child = queue.shift();
+      if (child.level > currLevel) {
+        hasLoop++;
+        currLevel = child.level;
+      }
+      child.loopAdjust = hasLoop;
+      addChildrenToQueue(child);
+      recurse();
+    };
+
+    data.loopAdjust = 0;
+    addChildrenToQueue(data);
+    recurse();
   }
 }
