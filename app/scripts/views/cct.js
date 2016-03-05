@@ -1,7 +1,41 @@
+function applyMarked(state, nodes, changes) {
+  nodes = nodes.forEach(function(node) {
+    var fnode =  _.find(changes, function(change) {
+      return change.type === node.type && change.id === node.data.id;
+    });
+
+    if (!_.isUndefined(fnode)) {
+      node.isMarked = fnode.isMarked;
+    }
+  });
+
+  state.unsaved.callGroup.selectAll('g.node')
+    .style('filter', function(d) {
+      if (d.isMarked) {
+        return 'url(#marked)';
+      }
+    });
+
+  state.unsaved.refGroup.selectAll('g.reference')
+    .style('filter', function(d) {
+      if (d.isMarked || _.all(d.nodes, function(node) {
+        return node.isMarked;
+      })) {
+        return 'url(#marked)';
+      }
+    });
+}
+
 angular.module('cct-view', ['app'])
 .value('name', 'CCT')
 .value('group', 'Callgraph')
-.value('markedCb', function() {})
+.value('markedCb', function(stateManager, changes) {
+  var state = stateManager.getData();
+  var callgraph = state.unsaved.callgraph;
+  var nodes = callgraph.getNodes();
+
+  applyMarked(state, nodes, changes);
+})
 .value('focusCb', function() {})
 .value('hoverCb', function(stateManager, hovered) {
   var state = stateManager.getData();
@@ -41,12 +75,13 @@ angular.module('cct-view', ['app'])
   }
 })
 .service('render', ['CallGraphDataService', 'LoaderService', 'd3', 'KeyService',
-                    'GradientService', 'jquery',
-function(CallGraphDataService, loader, d3, keyService, GradientService, $) {
+                    'GradientService', 'jquery', 'SizeService',
+function(CallGraphDataService, loader, d3, keyService, GradientService, $,
+          SizeService) {
   var bgColors = d3.scale.category20();
 
   function addZoom(svg) {
-    svg.call(d3.behavior.zoom().scaleExtent([1, 10]).on('zoom', zoom));
+    svg.call(d3.behavior.zoom().on('zoom', zoom));
 
     var defs = svg.append('defs');
 
@@ -67,6 +102,24 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $) {
       .append('feGaussianBlur')
       .attr('in', 'SourceGraphic')
       .attr('stdDeviation', 8);
+
+    var markedFilter = defs.append('filter')
+      .attr('id', 'marked');
+
+    markedFilter.append('feFlood')
+      .attr('flood-color', 'blue')
+      .attr('flood-opacity', '.2')
+      .attr('result','flood');
+
+    var markedFilterMerge = markedFilter.append('feMerge');
+
+    markedFilterMerge
+      .append('feMergeNode')
+      .attr('in', 'SourceGraphic');
+
+    markedFilterMerge
+      .append('feMergeNode')
+      .attr('in', 'flood');
 
     /* jscs: enable */
 
@@ -177,6 +230,7 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $) {
     var edgeGroup = g.select('g.edges-group');
 
     state.unsaved.callGroup = callGroup;
+    state.unsaved.refGroup = refGroup;
 
     function expandAction(d) {
       switch (d.type) {
@@ -351,6 +405,27 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $) {
         return d.height + 6;
       });
 
+    var callGroupNodesEnter = callNodesEnter.filter(function(d) {
+      return d.type === 'CallGroup';
+    });
+
+    callGroupNodesEnter
+      .append('rect')
+      .classed('count-bg', true)
+      .attr('x', function(d) {
+        return SizeService.svgTextSize(d.getLabel()).width -
+               SizeService.svgTextSize(d.data.count).width;
+      })
+      .attr('y', 3)
+      .attr('rx', 2)
+      .attr('ry', 2)
+      .attr('width', function(d) {
+        return SizeService.svgTextSize(d.data.count).width + 4;
+      })
+      .attr('height', function(d) {
+        return SizeService.svgTextSize(d.data.count).height + 2;
+      });
+
     /* Label */
     restNodesEnter
       .append('text')
@@ -371,11 +446,11 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $) {
 
     /* Add counters */
 
-    var callGroupNodesEnter = callNodesEnter.filter(function(d) {
-      return d.type === 'CallGroup' || d.type === 'LoopExecution';
+    var loopExecutionNodesEnter = callNodesEnter.filter(function(d) {
+      return d.type === 'LoopExecution';
     });
 
-    var textCounters = callGroupNodesEnter
+    var textCounters = loopExecutionNodesEnter
       .append('text')
       .attr('x', function(d) {
         return d.width;
@@ -591,6 +666,8 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $) {
       stateManager.hover([]);
     });
 
+    applyMarked(state, calls, stateManager.getMarked());
+
     $(function() {
       $.contextMenu({
         selector: '.node.call',
@@ -625,6 +702,13 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $) {
                   element.toggleReferences().then(rerender, fail);
                 }
               },
+              'recursiveReferences': {
+                name: (element.references ? 'Hide' : 'Show') +
+                      ' Recursive References',
+                callback: function() {
+                  element.toggleRecursiveReferences().then(rerender, fail);
+                }
+              },
               'parent': {
                 name: (element.parent ? 'Hide' : 'Show') +
                       ' Parent',
@@ -632,6 +716,14 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $) {
                   element.toggleParent().then(rerender, fail);
                 }
               },
+              'mark': {
+                name: stateManager.isMarked(element.type, element.data.id) ?
+                  'Unmark' : 'Mark',
+                callback: function() {
+                  stateManager.mark(element.type, element.data.id,
+                    !stateManager.isMarked(element.type, element.data.id));
+                }
+              }
             }
           };
 
@@ -681,6 +773,13 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $) {
                   element.toggleReferences().then(rerender, fail);
                 }
               },
+              'recursiveReferences': {
+                name: (element.references ? 'Hide' : 'Show') +
+                      ' Recursive References',
+                callback: function() {
+                  element.toggleRecursiveReferences().then(rerender, fail);
+                }
+              },
               'parent': {
                 name: (element.parent ? 'Hide' : 'Show') +
                       ' Parent',
@@ -688,6 +787,14 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $) {
                   element.toggleParent().then(rerender, fail);
                 }
               },
+              'mark': {
+                name: stateManager.isMarked(element.type, element.data.id) ?
+                  'Unmark' : 'Mark',
+                callback: function() {
+                  stateManager.mark(element.type, element.data.id,
+                    !stateManager.isMarked(element.type, element.data.id));
+                }
+              }
             }
           };
         }
@@ -726,6 +833,14 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $) {
                       ' References',
                 callback: function() {
                   element.toggleReferences().then(rerender, fail);
+                }
+              },
+              'mark': {
+                name: stateManager.isMarked(element.type, element.data.id) ?
+                  'Unmark' : 'Mark',
+                callback: function() {
+                  stateManager.mark(element.type, element.data.id,
+                    !stateManager.isMarked(element.type, element.data.id));
                 }
               }
             }
@@ -766,6 +881,14 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $) {
                       ' References',
                 callback: function() {
                   element.toggleReferences().then(rerender, fail);
+                }
+              },
+              'mark': {
+                name: stateManager.isMarked(element.type, element.data.id) ?
+                  'Unmark' : 'Mark',
+                callback: function() {
+                  stateManager.mark(element.type, element.data.id,
+                    !stateManager.isMarked(element.type, element.data.id));
                 }
               }
             }

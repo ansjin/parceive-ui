@@ -5,6 +5,10 @@ g.callgraph {
     rect.call-bg {
       stroke-width: 2;
     }
+
+    rect.count-bg {
+      fill: #FFFFFF;
+    }
   }
 
   g.edge {

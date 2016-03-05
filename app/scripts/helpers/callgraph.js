@@ -29,6 +29,15 @@ angular.module('app')
 
         return all;
       });
+
+      this.tree.sort(function(a, b) {
+        switch (a.type) {
+          case 'LoopIteration':
+            return b.data.id - a.data.id;
+          default:
+            return b.data.duration - a.data.duration;
+        }
+      });
     }
 
     CallGraph.prototype.layout = function() {
@@ -204,6 +213,21 @@ angular.module('app')
     Node.prototype.loadReferences = function() {
       var self = this;
       return self.data.getReferences().then(function(references) {
+        self.references = _.map(references, function(reference) {
+          return self.callgraph.addReference(reference);
+        });
+
+        _.forEach(self.references, function(reference) {
+          reference.addNode(self);
+        });
+
+        return self.calls;
+      });
+    };
+
+    Node.prototype.loadRecursiveReferences = function() {
+      var self = this;
+      return self.data.getRecursiveReferences().then(function(references) {
         self.references = _.map(references, function(reference) {
           return self.callgraph.addReference(reference);
         });
@@ -408,6 +432,10 @@ angular.module('app')
       ('references',
        Call.prototype.loadReferences,
        Call.prototype.unloadReferences);
+    Call.prototype.toggleRecursiveReferences = toggleFunction
+     ('references',
+      Node.prototype.loadRecursiveReferences,
+      Node.prototype.unloadReferences);
     Call.prototype.toggleLoopExecutions = toggleFunction
      ('loopExecutions',
       Call.prototype.loadLoopExecutions,
@@ -695,6 +723,10 @@ angular.module('app')
       ('references',
        CallGroup.prototype.loadReferences,
        CallGroup.prototype.unloadReferences);
+    CallGroup.prototype.toggleRecursiveReferences = toggleFunction
+    ('references',
+      Node.prototype.loadRecursiveReferences,
+      Node.prototype.unloadReferences);
     CallGroup.prototype.toggleParent = toggleFunction
       ('parent',
        CallGroup.prototype.loadParent,
