@@ -1,7 +1,10 @@
 addons:
   apt:
+    sources:
+      - ubuntu-toolchain-r-test
     packages:
-    - libelfg0
+      - libelfg0
+      - libstdc++6
 language: node_js
 notifications:
   email: false
