@@ -1,0 +1,5 @@
+<filter>
+	<image>
+		<include>.*</include>
+	</image>
+</filter>

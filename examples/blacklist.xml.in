@@ -1,8 +1,0 @@
-<filter>
-	<image>
-		<include>EXAMPLES_DIR/.*</include>
-	</image>
-	<filepath>
-		<exclude>.*vctools.*</exclude>
-	</filepath>
-</filter>
