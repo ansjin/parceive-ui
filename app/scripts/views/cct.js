@@ -411,20 +411,32 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $,
 
     callGroupNodesEnter
       .append('rect')
-      .classed('count-bg', true)
-      .attr('x', function(d) {
-        return SizeService.svgTextSize(d.getLabel()).width -
-               SizeService.svgTextSize(d.data.count).width;
+      .attr('fill', function(d) {
+        return gradient(d.data.duration);
       })
-      .attr('y', 3)
-      .attr('rx', 2)
-      .attr('ry', 2)
+      .attr('x', function(d) {
+        return SizeService.svgTextSize(d.getLabel()).width + 2;
+      })
+      .attr('y', -7)
+      .attr('rx', 5)
+      .attr('ry', 5)
       .attr('width', function(d) {
         return SizeService.svgTextSize(d.data.count).width + 4;
       })
       .attr('height', function(d) {
         return SizeService.svgTextSize(d.data.count).height + 2;
       });
+
+    callGroupNodesEnter
+      .append('text')
+      .attr('x', function(d) {
+        return SizeService.svgTextSize(d.getLabel()).width + 4;
+      })
+      .attr('fill', 'white')
+      .attr('y', 8)
+      .text(function(d) {
+        return d.data.count;
+      })
 
     /* Label */
     restNodesEnter
@@ -445,7 +457,6 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $,
     });
 
     /* Add counters */
-
     var loopExecutionNodesEnter = callNodesEnter.filter(function(d) {
       return d.type === 'LoopExecution';
     });
@@ -487,22 +498,23 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $,
 
     callNodes.selectAll('g.call > rect.call-bg')
       .attr('fill', function(d) {
-        return d3.rgb(gradient(d.data.duration));
-      }).attr('stroke', function(d) {
+        return gradient(d.data.duration);
+      }).attr('fill-opacity', function(d) {
+        return 0.1;
+      })
+      .attr('stroke', function(d) {
         return gradient(d.data.duration);
       });
 
     callNodes.selectAll('g.callgroup > rect.call-bg')
-      .attr('fill', function(d) {
-        return d3.rgb(gradient(d.data.duration));
-      }).attr('stroke', function(d) {
-        return gradient(d.data.duration);
-      });
-
-    callNodes.selectAll('g.loopexecution > rect.call-bg')
-      .attr('FILL', function(d) {
-        return gradient(d.data.duration);
-      });
+    .attr('fill', function(d) {
+      return gradient(d.data.duration);
+    }).attr('fill-opacity', function(d) {
+      return 0.1;
+    })
+    .attr('stroke', function(d) {
+      return gradient(d.data.duration);
+    });
 
     /* Set initial position so the first transition makes sense */
 

@@ -1,10 +1,10 @@
-var colors = ['green', 'yellow', 'red'];
+var colors = ['#0C0', '#CC0', '#C00'];
 
 angular.module('app')
   .service('GradientService', ['d3', function(d3) {
     function gradient(min, max) {
       return d3.scale.linear()
-        .domain([min, (min + max) / 2, max])
+        .domain([0, max / 2, max])
         .range(colors);
     }
 
