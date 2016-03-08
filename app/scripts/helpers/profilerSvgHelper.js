@@ -99,8 +99,13 @@ function profilerSvgHelper(d3, size) {
       .attr('fill', function() { return loopText ? 'black' : 'white'; })
       .attr('x', function(d) {
         var old = v.xScale(d.start);
+        var pad = loopText ? 0 : v.textPadX;
+        if (loopText) {
+          var mid = Math.floor(d.loopStart + d.loopEnd) / 2;
+          old = v.xScale(mid);
+        }
         var sliced = Number(old.slice(0, -1));
-        var x = Number(sliced + v.textPadX) + '%';
+        var x = Number(sliced + pad) + '%';
         return x;
       })
       .attr('y', function(d) {
@@ -155,10 +160,10 @@ function profilerSvgHelper(d3, size) {
       .attr('stroke-width', 2)
       .attr('id', function(d) { return 'loopline_' + d.id; })
       .attr('x1', function(d) {
-        return v.xScale(d.start);
+        return v.xScale(d.loopStart);
       })
       .attr('x2', function(d) {
-        return v.xScale(d.start);
+        return v.xScale(d.loopEnd);
       })
       .attr('width', function(d) {
         return v.widthScale(d.duration);
@@ -167,13 +172,13 @@ function profilerSvgHelper(d3, size) {
         var y = v.rectHeight * (d.level - v.adjustLevel) - v.rectHeight;
         y += (d.loopAdjust - v.adjustLevel) * v.rectHeight; 
         if (v.zoomId !== null) { y -= v.rectHeight; }
-        return y - Math.floor(v.rectHeight/2);
+        return y + v.rectHeight + v.rectHeight + Math.floor(v.rectHeight/2);
       })
       .attr('y2', function(d) {
         var y = v.rectHeight * (d.level - v.adjustLevel) - v.rectHeight;
         y += (d.loopAdjust - v.adjustLevel) * v.rectHeight; 
         if (v.zoomId !== null) { y -= v.rectHeight; }
-        return y - Math.floor(v.rectHeight/2);
+        return y + v.rectHeight + v.rectHeight + Math.floor(v.rectHeight/2);
       })
       .attr('fill-opacity', function() {
         var f = 1;
@@ -188,13 +193,15 @@ function profilerSvgHelper(d3, size) {
       .duration(v.transTime)
       .ease(v.transType)
       .attr('fill-opacity', 1)
-      .attr('height', function() {
-        return v.rectHeight;
-      })
-      .attr('y', function(d) {
+      .attr('y1', function(d) {
         var y = v.rectHeight * (d.level - v.adjustLevel) - v.rectHeight;
-        if (v.showLoop && isTracing) { y += (d.loopAdjust - v.adjustLevel) * v.rectHeight; }
-        return y;
+        y += (d.loopAdjust - v.adjustLevel) * v.rectHeight; 
+        return y + Math.floor(v.rectHeight/2);
+      })
+      .attr('y2', function(d) {
+        var y = v.rectHeight * (d.level - v.adjustLevel) - v.rectHeight;
+        y += (d.loopAdjust - v.adjustLevel) * v.rectHeight; 
+        return y + Math.floor(v.rectHeight/2);
       });
   }
 }

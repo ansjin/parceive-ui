@@ -74,6 +74,12 @@ function render(d3, pdh, pvh, pvar, psh, size, grad, ld) {
       $('#profiler-loop').text(text + ' Loops');
     }
 
+    function updateTimer() {
+      var value = document.getElementById('profiler-thresh').value;
+      v.thresholdFactor = value;
+      reload();
+    }
+
     function toggleViewMode() {
       pvar.initZoomVars(v, isTracing());
 
@@ -213,7 +219,7 @@ function render(d3, pdh, pvh, pvar, psh, size, grad, ld) {
 
       if (v.showLoop && isTracing()) {
         psh.drawTextSvg(svg.selectAll('text.loop'), nodes, true, v, isTracing());
-        // psh.drawLoopLineSvg(svg.selectAll('line.loop'), nodes, v, isTracing());
+        psh.drawLoopLineSvg(svg.selectAll('line.loop'), nodes, v, isTracing());
       }
 
       // set click/dblClick handlers for rect and text
@@ -448,6 +454,11 @@ function render(d3, pdh, pvh, pvar, psh, size, grad, ld) {
       document.getElementById('profiler-view-toggle')
       .addEventListener('click', function() {
         toggleViewMode();
+      });
+
+      document.getElementById('profiler-thresh')
+      .addEventListener('change', function() {
+        updateTimer();
       });
 
       // add click handler to show/hide loops
