@@ -1,5 +1,5 @@
 function applyMarked(state, nodes, changes) {
-  nodes = nodes.forEach(function(node) {
+  nodes.forEach(function(node) {
     var fnode =  _.find(changes, function(change) {
       return change.type === node.type && change.id === node.data.id;
     });
@@ -9,17 +9,33 @@ function applyMarked(state, nodes, changes) {
     }
   });
 
-  state.unsaved.callGroup.selectAll('g.node')
-    .style('filter', function(d) {
+  var markedNodes = _.filter(nodes, function(node) {
+    return node.isMarked;
+  });
+
+  state.unsaved.callGroup.selectAll('g.node > rect.call-bg')
+    .attr('fill', function(d) {
       if (d.isMarked) {
-        return 'url(#marked)';
+        return d3.rgb(state.unsaved.gradient(d.data.duration));
+      } else {
+        return d3.rgb(state.unsaved.gradient(d.data.duration)).brighter(2);
+      }
+    });
+
+  state.unsaved.callGroup.selectAll('g.node > text')
+    .attr('fill', function(d) {
+      if (d.isMarked) {
+        return 'white';
+      } else {
+        return 'black';
       }
     });
 
   state.unsaved.refGroup.selectAll('g.reference')
     .style('filter', function(d) {
-      if (d.isMarked || _.all(d.nodes, function(node) {
-        return node.isMarked;
+      if (d.isMarked || markedNodes.length > 0 &&
+        _.every(markedNodes, function(node) {
+        return _.includes(node.references, d);
       })) {
         return 'url(#marked)';
       }
@@ -279,11 +295,8 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $,
     var refs = callgraph.getReferences();
     var edges = callgraph.getEdges();
 
-    var durations = _.map(calls, function(call) {
-      return call.data.duration;
-    });
-
-    var gradient = GradientService.gradient(_.min(durations), _.max(durations));
+    var gradient = GradientService.gradient(0, state.unsaved.mainDuration);
+    state.unsaved.gradient = gradient;
 
     var allnodes = calls.concat(refs);
 
@@ -399,7 +412,7 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $,
       .attr('rx', 5)
       .attr('ry', 5)
       .attr('width', function(d) {
-        return d.width + 6;
+        return d.width + 10;
       })
       .attr('height', function(d) {
         return d.height + 6;
@@ -413,25 +426,39 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $,
       .append('rect')
       .classed('count-bg', true)
       .attr('x', function(d) {
-        return SizeService.svgTextSize(d.getLabel()).width -
-               SizeService.svgTextSize(d.data.count).width;
+        return d.width + 10;
       })
-      .attr('y', 3)
+      .attr('y', 0)
       .attr('rx', 2)
       .attr('ry', 2)
       .attr('width', function(d) {
         return SizeService.svgTextSize(d.data.count).width + 4;
       })
       .attr('height', function(d) {
-        return SizeService.svgTextSize(d.data.count).height + 2;
+        return d.height + 6;
+      });
+
+    callGroupNodesEnter
+      .append('text')
+      .classed('count', true)
+      .attr('x', function(d) {
+        return d.width + 10 + 2;
+      })
+      .attr('y', function(d) {
+        return d.height - 1;
+      })
+      .attr('rx', 2)
+      .attr('ry', 2)
+      .text(function(d) {
+        return d.data.count;
       });
 
     /* Label */
     restNodesEnter
       .append('text')
-      .attr('x', 3)
+      .attr('x', 5)
       .attr('y', function(d) {
-        return d.height;
+        return d.height - 1;
       })
       .text(function(d) {
         return d.getLabel();
@@ -485,22 +512,20 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $,
 
     /* Set colors */
 
-    callNodes.selectAll('g.call > rect.call-bg')
+    callNodes.selectAll('g.node > rect.call-bg')
       .attr('fill', function(d) {
-        return d3.rgb(gradient(d.data.duration));
+        return d3.rgb(gradient(d.data.duration)).brighter(2);
       }).attr('stroke', function(d) {
         return gradient(d.data.duration);
       });
 
-    callNodes.selectAll('g.callgroup > rect.call-bg')
-      .attr('fill', function(d) {
-        return d3.rgb(gradient(d.data.duration));
-      }).attr('stroke', function(d) {
+    callNodes.selectAll('g.callgroup > rect.count-bg')
+      .attr('stroke', function(d) {
         return gradient(d.data.duration);
       });
 
     callNodes.selectAll('g.loopexecution > rect.call-bg')
-      .attr('FILL', function(d) {
+      .attr('fill', function(d) {
         return gradient(d.data.duration);
       });
 
@@ -908,6 +933,7 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $,
       loader.getFunctionBySignature('main').then(function(fct) {
         return fct.getCalls();
       }).then(function(calls) {
+        state.unsaved.mainDuration = calls[0].duration;
         return state.unsaved.callgraph.addCallRoot(calls[0]);
       }).then(function() {
         render(svg, stateManager);
