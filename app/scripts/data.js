@@ -569,6 +569,13 @@ var Call = {
   },
 
   /** @instance
+    * @return {bool} Checks if call was made in a loop  */
+  isInLoop: function() {
+    return !_.isUndefined(this.callerexecutionID) &&
+            !_.isNull(this.callerexecutionID);
+  },
+
+  /** @instance
     * @return {external:Promise.<Call>} The parent call */
   getCaller: function() {
     return this._mapper.getRelationship(this, 'caller');
@@ -746,7 +753,7 @@ var CallGroup = {
   singular: 'callgroup',
   plural: 'callgroups',
   properties: ['function', 'caller', 'count', 'parent', 'end', 'start',
-                'duration'],
+                'duration', 'callerexecution'],
 
   relationships: {
     'caller': {
@@ -772,7 +779,17 @@ var CallGroup = {
       type: 'CallGroupReference',
       many: true,
       inverse: 'callgroup'
+    },
+    'callerexecution': {
+      type: 'LoopExecution'
     }
+  },
+
+  /** @instance
+    * @return {bool} Checks if call was made in a loop  */
+  isInLoop: function() {
+    return !_.isUndefined(this.callerexecutionID) &&
+            !_.isNull(this.callerexecutionID);
   },
 
   /** @instance

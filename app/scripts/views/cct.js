@@ -529,6 +529,19 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $,
         return gradient(d.data.duration);
       });
 
+    /* Add loop indicators */
+
+    var callsInLoops = callNodesEnter
+      .filter(function(d) {
+        return (d.type === 'Call' || d.type === 'CallGroup') &&
+                d.data.isInLoop();
+      });
+
+    callsInLoops
+      .append('use')
+      .attr('xlink:href', '#execution')
+      .attr('transform', 'scale(' + 5 / 800 + ')');
+
     /* Set initial position so the first transition makes sense */
 
     callNodesEnter
