@@ -643,7 +643,7 @@ angular.module('app')
     };
 
     CallGroup.prototype.getLabel = function() {
-      return this.function.signature + ' ' + this.data.count;
+      return this.function.signature;
     };
 
     CallGroup.prototype.getDuration = function() {

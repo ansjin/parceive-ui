@@ -13,7 +13,8 @@ var mapping = {
   'Parent': 'parent',
   'Duration': 'duration',
   'Start': 'start',
-  'End': 'end'
+  'End': 'end',
+  'CallerExecution': 'callerexecution'
 };
 
 module.exports = {
