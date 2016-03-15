@@ -12,7 +12,8 @@ function profilerSvgHelper(d3, size) {
     drawRectSvgZoom: drawRectSvgZoom,
     drawTextSvg: drawTextSvg,
     drawTextSvgZoom: drawTextSvgZoom,
-    drawLoopLineSvg: drawLoopLineSvg
+    drawLoopLineSvg: drawLoopLineSvg,
+    drawLoopCircle: drawLoopCircle
   };
 
   return factory;
@@ -147,7 +148,7 @@ function profilerSvgHelper(d3, size) {
       });
   }
 
-  function drawLoopLineSvg(selection, nodes, v, isTracing) {
+  function drawLoopLineSvg(selection, nodes, v) {
     selection
       .data(nodes.filter(function(d) {
         // only show loop text for calls with
@@ -192,6 +193,63 @@ function profilerSvgHelper(d3, size) {
         return y + Math.floor(v.rectHeight/2);
       })
       .attr('y2', function(d) {
+        var y = v.rectHeight * (d.level - v.adjustLevel) - v.rectHeight;
+        y += (d.loopAdjust - v.adjustLevel) * v.rectHeight; 
+        y += v.rectHeight; 
+        return y + Math.floor(v.rectHeight/2);
+      });
+  }
+
+  function drawLoopCircle(selection, nodes, v) {
+    // add circle ends
+    selection
+      .data(nodes.filter(function(d) {
+        return d.loopIterationCount > 0 && d.loopDuration > v.runtimeThreshold;
+      }))
+      .enter()
+      .append('circle')
+      .attr('class', 'end')
+      .attr('fill', function(d) { return v.gradient(d.loopDuration); })
+      .attr('cx', function(d) { return v.xScale(d.loopStart); })
+      .attr('cy', function(d) { 
+        var y = v.rectHeight * (d.level - v.adjustLevel) - v.rectHeight;
+        y += (d.loopAdjust - v.adjustLevel) * v.rectHeight; 
+        y -= v.rectHeight; 
+        return y + Math.floor(v.rectHeight/2);
+      })
+      .attr('r', 4)
+      .transition()
+      .duration(v.transTime)
+      .ease(v.transType)
+      .attr('fill-opacity', 1)
+      .attr('cy', function(d) {
+        var y = v.rectHeight * (d.level - v.adjustLevel) - v.rectHeight;
+        y += (d.loopAdjust - v.adjustLevel) * v.rectHeight; 
+        y += v.rectHeight; 
+        return y + Math.floor(v.rectHeight/2);
+      });
+
+    selection
+      .data(nodes.filter(function(d) {
+        return d.loopIterationCount > 0 && d.loopDuration > v.runtimeThreshold;
+      }))
+      .enter()
+      .append('circle')
+      .attr('class', 'end')
+      .attr('fill', function(d) { return v.gradient(d.loopDuration); })
+      .attr('cx', function(d) { return v.xScale(d.loopEnd); })
+      .attr('cy', function(d) { 
+        var y = v.rectHeight * (d.level - v.adjustLevel) - v.rectHeight;
+        y += (d.loopAdjust - v.adjustLevel) * v.rectHeight; 
+        y -= v.rectHeight; 
+        return y + Math.floor(v.rectHeight/2);
+      })
+      .attr('r', 4)
+      .transition()
+      .duration(v.transTime)
+      .ease(v.transType)
+      .attr('fill-opacity', 1)
+      .attr('cy', function(d) {
         var y = v.rectHeight * (d.level - v.adjustLevel) - v.rectHeight;
         y += (d.loopAdjust - v.adjustLevel) * v.rectHeight; 
         y += v.rectHeight; 

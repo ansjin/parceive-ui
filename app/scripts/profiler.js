@@ -218,7 +218,8 @@ function render(d3, pdh, pvh, pvar, psh, size, grad, ld) {
       psh.drawTextSvg(svg.selectAll('text.title'), nodes, false, v, isTracing());
 
       if (v.showLoop && isTracing()) {
-        psh.drawLoopLineSvg(svg.selectAll('line.loopline'), nodes, v, isTracing());
+        psh.drawLoopLineSvg(svg.selectAll('line.loopline'), nodes, v);
+        psh.drawLoopCircle(svg.selectAll('circle.end'), nodes, v);
         psh.drawTextSvg(svg.selectAll('text.loop'), nodes, true, v, isTracing());
       }
 
