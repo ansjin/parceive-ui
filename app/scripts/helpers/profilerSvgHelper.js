@@ -12,8 +12,7 @@ function profilerSvgHelper(d3, size) {
     drawRectSvgZoom: drawRectSvgZoom,
     drawTextSvg: drawTextSvg,
     drawTextSvgZoom: drawTextSvgZoom,
-    drawLoopLineSvg: drawLoopLineSvg,
-    drawLoopLineSvgZoom: drawLoopLineSvgZoom
+    drawLoopLineSvg: drawLoopLineSvg
   };
 
   return factory;
@@ -165,30 +164,19 @@ function profilerSvgHelper(d3, size) {
       .attr('x2', function(d) {
         return v.xScale(d.loopEnd);
       })
-      .attr('width', function(d) {
-        return v.widthScale(d.duration);
-      })
       .attr('y1', function(d) {
         var y = v.rectHeight * (d.level - v.adjustLevel) - v.rectHeight;
         y += (d.loopAdjust - v.adjustLevel) * v.rectHeight; 
-        if (v.zoomId !== null) { y -= v.rectHeight; }
-        return y + v.rectHeight + v.rectHeight + Math.floor(v.rectHeight/2);
+        y -= v.rectHeight; 
+        return y + Math.floor(v.rectHeight/2);
       })
       .attr('y2', function(d) {
         var y = v.rectHeight * (d.level - v.adjustLevel) - v.rectHeight;
         y += (d.loopAdjust - v.adjustLevel) * v.rectHeight; 
-        if (v.zoomId !== null) { y -= v.rectHeight; }
-        return y + v.rectHeight + v.rectHeight + Math.floor(v.rectHeight/2);
+        y -= v.rectHeight; 
+        return y + Math.floor(v.rectHeight/2);
       })
-      .attr('fill-opacity', function() {
-        var f = 1;
-        if (v.zoomId !== null) { f = 0; }
-        return f;
-      });
-  }
-
-  function drawLoopLineSvgZoom(selection, v, isTracing) {
-    selection
+      .attr('fill-opacity', 0)
       .transition()
       .duration(v.transTime)
       .ease(v.transType)
@@ -196,11 +184,13 @@ function profilerSvgHelper(d3, size) {
       .attr('y1', function(d) {
         var y = v.rectHeight * (d.level - v.adjustLevel) - v.rectHeight;
         y += (d.loopAdjust - v.adjustLevel) * v.rectHeight; 
+        y += v.rectHeight; 
         return y + Math.floor(v.rectHeight/2);
       })
       .attr('y2', function(d) {
         var y = v.rectHeight * (d.level - v.adjustLevel) - v.rectHeight;
         y += (d.loopAdjust - v.adjustLevel) * v.rectHeight; 
+        y += v.rectHeight; 
         return y + Math.floor(v.rectHeight/2);
       });
   }

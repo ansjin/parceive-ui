@@ -225,17 +225,12 @@ function render(d3, pdh, pvh, pvar, psh, size, grad, ld) {
       // set click/dblClick handlers for rect and text
       svgClickHander(svg.selectAll('rect, text.title'));
 
-      // adjust svg height, so scrollbars appear if any
-      // var newSvgHeight = rectHeight * (maxLevel - adjustLevel);
-      // svg.style('height', newSvgHeight + 'px');
-
       // if we are zooming a node to top
       if (v.zoomId !== null) {
         psh.drawRectSvgZoom(svg.selectAll('rect'), v, isTracing());
         psh.drawTextSvgZoom(svg.selectAll('text.title'), false, v, isTracing());
         if (v.showLoop && isTracing()) {
           psh.drawTextSvgZoom(svg.selectAll('text.loop'), true, v, isTracing());
-          // psh.drawLoopLineSvgZoom(svg.selectAll('line.loop'), nodes, v, isTracing());
         }
       }
 
