@@ -218,12 +218,9 @@ function render(d3, pdh, pvh, pvar, psh, size, grad, ld) {
       psh.drawTextSvg(svg.selectAll('text.title'), nodes, false, v, isTracing());
 
       if (v.showLoop && isTracing()) {
+        psh.drawLoopLineSvg(svg.selectAll('line.loopline'), nodes, v, isTracing());
         psh.drawTextSvg(svg.selectAll('text.loop'), nodes, true, v, isTracing());
-        psh.drawLoopLineSvg(svg.selectAll('line.loop'), nodes, v, isTracing());
       }
-
-      // set click/dblClick handlers for rect and text
-      svgClickHander(svg.selectAll('rect, text.title'));
 
       // if we are zooming a node to top
       if (v.zoomId !== null) {
@@ -233,6 +230,10 @@ function render(d3, pdh, pvh, pvar, psh, size, grad, ld) {
           psh.drawTextSvgZoom(svg.selectAll('text.loop'), true, v, isTracing());
         }
       }
+
+      // set event handlers for elements
+      svgClickHander(svg.selectAll('rect, text.title'));
+      loopClickHander(svg.selectAll('line.loopline, text.loop'));
 
       // highlight selected nodes if any are present
       if (isTracing()) {
@@ -253,18 +254,39 @@ function render(d3, pdh, pvh, pvar, psh, size, grad, ld) {
         .on('mouseleave', removeNodeHighlight);
     }
 
-    function highlightNode(d) {
-      // reduce opacity of selected call
-      d3.select(this).attr('fill-opacity', 0.5);
+    function loopClickHander(selection) {
+      selection
+        .on('click', selectLoop)
+        .on('mouseenter', loopTooltip)
+        .on('mouseleave', removeLoopTooltip);
+    }
 
+    function selectLoop(d) {
+      console.log('send select event to CCT view');
+    }
+
+    function loopMenu(d) {
+      console.log('loop menu');
+    }
+
+    function loopTooltip(d) {
+      var duration = (d.loopDuration / v.mainDuration * 100).toFixed(2) + ' %';
+      var name = 'Loop iterations: ' + d.loopIterationCount;
+      addTooltip(name, duration);
+    }
+
+    function removeLoopTooltip(d) {
+      d3.select('#tooltip').classed('hidden', true);
+    }
+
+    function addTooltip(name, duration) {
       var x = d3.event.pageX;
       var y = d3.event.pageY;
-      var duration = d.duration / v.mainDuration * 100;
       var svgWidthPixels = size.svgSizeById(v.profileId).width;
       var tooltipPadding = 20;
       var tooltipWidth = _.max([
         v.minTooltipWidth,
-        size.textSize(d.name, 14).width
+        size.textSize(name, 14).width
       ]);
 
       // show tooltip to the left of the mouse if there is not
@@ -280,13 +302,22 @@ function render(d3, pdh, pvh, pvar, psh, size, grad, ld) {
         .style('width', tooltipWidth + 'px');
       tooltip
         .select('#title')
-        .text(d.name + ' - lvl:' + d.level + ' - adj:' + d.loopAdjust + ' - iter:' + d.loopIterationCount);
+        .text(name);
       tooltip
         .select('#value')
-        .text(duration.toFixed(2) + ' %');
+        .text(duration);
 
       // show the tooltip
       tooltip.classed('hidden', false);
+    }
+
+    function highlightNode(d) {
+      // reduce opacity of selected call
+      d3.select(this).attr('fill-opacity', 0.5);
+
+      var duration = (d.duration / v.mainDuration * 100).toFixed(2) + ' %';
+      var name = d.name;
+      addTooltip(name, duration);
 
       // broadcast hover action through state manager
       var hoverType = isTracing() ? 'Call' : 'CallGroup';

@@ -92,7 +92,9 @@ function profilerSvgHelper(d3, size) {
       .attr('id', function(d) { 
         return loopText ? 'loop_' + d.id : 'text_' + d.id;
       })
-      .attr('class', function() { return loopText ? 'loop' : 'title'; })
+      .attr('class', function() { 
+        return loopText ? 'loop' : 'title'; 
+      })
       .attr('font-family', 'Arial')
       .attr('font-size', '14px')
       .attr('fill', function() { return loopText ? 'black' : 'white'; })
@@ -150,13 +152,15 @@ function profilerSvgHelper(d3, size) {
       .data(nodes.filter(function(d) {
         // only show loop text for calls with
         // loopIterationCount greater than 0
-        return d.loopIterationCount > 0;
+        return d.loopIterationCount > 0 && d.loopDuration > v.runtimeThreshold;
       }))
       .enter()
       .append('line')
       .attr('class', 'loopline')
-      .attr('stroke', 'blue')
-      .attr('stroke-width', 2)
+      .attr('stroke', function(d) {
+        return v.gradient(d.loopDuration);
+      })
+      .attr('stroke-width', 4)
       .attr('id', function(d) { return 'loopline_' + d.id; })
       .attr('x1', function(d) {
         return v.xScale(d.loopStart);
