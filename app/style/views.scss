@@ -63,3 +63,13 @@ div.html-title, div.html-menu {
 .hide {
   display: none;
 }
+
+.loop {
+  font-size:  14px;
+  paint-order: stroke;
+  stroke: #fff;
+  stroke-width: 5px;
+  stroke-linecap: butt;
+  stroke-linejoin: miter;
+  font-weight: 200;
+}

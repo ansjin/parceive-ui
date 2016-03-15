@@ -271,12 +271,18 @@ function render(d3, pdh, pvh, pvar, psh, size, grad, ld) {
     }
 
     function loopTooltip(d) {
+      d3.select('#loopline_'+d.id).attr('stroke-opacity', 0.5);
+      d3.select('.c1'+d.id).attr('fill-opacity', 0.5);
+      d3.select('.c2'+d.id).attr('fill-opacity', 0.5);
       var duration = (d.loopDuration / v.mainDuration * 100).toFixed(2) + ' %';
       var name = 'Loop iterations: ' + d.loopIterationCount;
       addTooltip(name, duration);
     }
 
     function removeLoopTooltip(d) {
+      d3.select('#loopline_' + d.id).attr('stroke-opacity', 1);
+      d3.select('.c1'+d.id).attr('fill-opacity', 1);
+      d3.select('.c2'+d.id).attr('fill-opacity', 1);
       d3.select('#tooltip').classed('hidden', true);
     }
 

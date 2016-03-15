@@ -208,7 +208,7 @@ function profilerSvgHelper(d3, size) {
       }))
       .enter()
       .append('circle')
-      .attr('class', 'end')
+      .attr('class', function(d) { return 'c1' + d.id; })
       .attr('fill', function(d) { return v.gradient(d.loopDuration); })
       .attr('cx', function(d) { return v.xScale(d.loopStart); })
       .attr('cy', function(d) { 
@@ -235,7 +235,7 @@ function profilerSvgHelper(d3, size) {
       }))
       .enter()
       .append('circle')
-      .attr('class', 'end')
+      .attr('class',  function(d) { return 'c2' + d.id; })
       .attr('fill', function(d) { return v.gradient(d.loopDuration); })
       .attr('cx', function(d) { return v.xScale(d.loopEnd); })
       .attr('cy', function(d) { 
