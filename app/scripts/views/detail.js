@@ -8,9 +8,14 @@ angular.module('detail-view', ['app'])
 
   var table = state.unsaved.table;
   var loader = state.unsaved.loader;
+  var mainDuration = state.unsaved.mainDuration;
 
   var promise;
   var element;
+
+  function calcRelDuration(val) {
+    return val / mainDuration * 100 + '%';
+  }
 
   if (hovered.length > 0) {
     element = hovered[0];
@@ -26,13 +31,17 @@ angular.module('detail-view', ['app'])
         break;
       case 'Call':
         promise = loader.getCall(element.id).then(function(call) {
-          return RSVP.hash({
-            'Function': call.getFunction().then(function(fct) {
-              return fct.signature;
-            }),
-            'Start': call.start,
-            'End': call.end,
-            'Duration': call.duration
+          return call.getFunction().then(function(fct) {
+            return fct.getFile().then(function(file) {
+              return {
+                'Function': fct.signature,
+                'Function Location': file.path + ':' + fct.startLine,
+                'Start': call.start,
+                'End': call.end,
+                'Duration': call.duration,
+                'Relative Duration': calcRelDuration(call.duration)
+              };
+            });
           });
         });
         break;
@@ -46,12 +55,35 @@ angular.module('detail-view', ['app'])
         break;
       case 'CallGroup':
         promise = loader.getCallGroup(element.id).then(function(callgroup) {
+          return callgroup.getFunction().then(function(fct) {
+            return fct.getFile().then(function(file) {
+              return {
+                'Function': fct.signature,
+                'Function Location': file.path + ':' + fct.startLine,
+                'Start': callgroup.start,
+                'End': callgroup.end,
+                'Duration': callgroup.duration,
+                'Relative Duration': calcRelDuration(callgroup.duration),
+                'Call count': callgroup.count
+              };
+            });
+          });
+        });
+        break;
+      case 'LoopIteration':
+        promise = loader.getLoopIteration(element.id).then(function(iteration) {
           return RSVP.hash({
-            'Function': callgroup.getFunction().then(function(fct) {
-              return fct.signature;
-            }),
-            'Duration': callgroup.duration,
-            'Call count': callgroup.count
+            'Iteration': iteration.iteration
+          });
+        });
+        break;
+      case 'LoopExecution':
+        promise = loader.getLoopExecution(element.id).then(function(execution) {
+          return RSVP.hash({
+            'Start': execution.start,
+            'End': execution.end,
+            'Duration': execution.duration,
+            'Relative Duration': calcRelDuration(execution.duration)
           });
         });
         break;
@@ -91,12 +123,16 @@ angular.module('detail-view', ['app'])
   return function(svg, stateManager) {
     var state = stateManager.getData();
 
-    _.delay(function() {
+    loader.getFunctionBySignature('main').then(function(fct) {
+      return fct.getCalls().then(function(calls) {
+        state.unsaved.mainDuration = calls[0].duration;
+      });
+    }).then(function() {
       var header = $(svg[0][0]).parent().siblings('div.html-header');
       var table = d3.select(header.children('table')[0]);
 
       state.unsaved.table = table;
       state.unsaved.loader = loader;
-    }, 10);
+    });
   };
 }]);

@@ -9,9 +9,7 @@ CREATE TABLE "CallGroup"(
   Duration INT NOT NULL,
   Start INT NOT NULL,
   End INT NOT NULL,
-  FOREIGN KEY(Function) REFERENCES Function(Id),
-  FOREIGN KEY(Caller) REFERENCES Call(Id),
-  FOREIGN KEY(Parent) REFERENCES CallGroup(Id)
+  CallerExecution INT
 );
 
 INSERT INTO CallGroup SELECT
@@ -22,5 +20,6 @@ INSERT INTO CallGroup SELECT
   NULL AS Parent,
   SUM(End - Start) AS Duration,
   MIN(Start) AS Start,
-  MAX(End) AS End
+  MAX(End) AS End,
+  (SELECT c.CallerExecution FROM Call c WHERE c.Function = Function AND c.Caller = Caller GROUP BY c.Function HAVING COUNT(*) = 1) AS CallerExecution
 FROM Call GROUP BY Function, Caller;

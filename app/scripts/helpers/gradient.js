@@ -1,4 +1,4 @@
-var colors = ['green', 'yellow', 'red'];
+var colors = ['#00AA00', '#AAAA00', '#AA0000'];
 
 angular.module('app')
   .service('GradientService', ['d3', function(d3) {
