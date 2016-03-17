@@ -20,7 +20,10 @@ function profilerSvgHelper(d3, size) {
 
   function drawRectSvg(selection, nodes, v, isTracing) {
     selection
-      .data(nodes)
+      .data(nodes.filter(function(d) {
+        // only show data with duration > runtimethreshold
+        return d.duration > v.runtimeThreshold;
+      }))
       .enter()
       .append('rect')
       .attr('stroke', 'white')
@@ -39,11 +42,13 @@ function profilerSvgHelper(d3, size) {
         return v.widthScale(d.duration);
       })
       .attr('y', function(d) {
-        var y = v.rectHeight * (d.level - v.adjustLevel) - v.rectHeight;
+        // set maxLevel
         if (d.level > v.maxLevel) { v.maxLevel = d.level; }
+
+        var y = v.rectHeight * (d.level - v.adjustLevel) - v.rectHeight;
         if (v.showLoop && isTracing) { y += (d.loopAdjust - v.adjustLevel) * v.rectHeight; }
         if (v.zoomId !== null) { y -= v.rectHeight; }
-        return y;
+        return y + (v.adjustLoopLevel * v.rectHeight);
       })
       .attr('height', function() {
         var h = v.rectHeight;
@@ -69,7 +74,7 @@ function profilerSvgHelper(d3, size) {
       .attr('y', function(d) {
         var y = v.rectHeight * (d.level - v.adjustLevel) - v.rectHeight;
         if (v.showLoop && isTracing) { y += (d.loopAdjust - v.adjustLevel) * v.rectHeight; }
-        return y;
+        return y + (v.adjustLoopLevel * v.rectHeight);
       });
   }
 
@@ -120,7 +125,7 @@ function profilerSvgHelper(d3, size) {
           } 
         }
         if (v.zoomId !== null) { y -= 50; }
-        return y;
+        return y + (v.adjustLoopLevel * v.rectHeight);
       })
       .attr('fill-opacity', function() {
         var f = 1;
@@ -144,7 +149,7 @@ function profilerSvgHelper(d3, size) {
             y+= v.rectHeight;
           }
         }
-        return y + v.textPadY;
+        return y + v.textPadY + (v.adjustLoopLevel * v.rectHeight);
       });
   }
 
@@ -173,13 +178,13 @@ function profilerSvgHelper(d3, size) {
         var y = v.rectHeight * (d.level - v.adjustLevel) - v.rectHeight;
         y += (d.loopAdjust - v.adjustLevel) * v.rectHeight; 
         y -= v.rectHeight; 
-        return y + Math.floor(v.rectHeight/2);
+        return y + Math.floor(v.rectHeight/2) + (v.adjustLoopLevel * v.rectHeight);
       })
       .attr('y2', function(d) {
         var y = v.rectHeight * (d.level - v.adjustLevel) - v.rectHeight;
         y += (d.loopAdjust - v.adjustLevel) * v.rectHeight; 
         y -= v.rectHeight; 
-        return y + Math.floor(v.rectHeight/2);
+        return y + Math.floor(v.rectHeight/2) + (v.adjustLoopLevel * v.rectHeight);
       })
       .attr('fill-opacity', 0)
       .transition()
@@ -190,13 +195,13 @@ function profilerSvgHelper(d3, size) {
         var y = v.rectHeight * (d.level - v.adjustLevel) - v.rectHeight;
         y += (d.loopAdjust - v.adjustLevel) * v.rectHeight; 
         y += v.rectHeight; 
-        return y + Math.floor(v.rectHeight/2);
+        return y + Math.floor(v.rectHeight/2) + (v.adjustLoopLevel * v.rectHeight);
       })
       .attr('y2', function(d) {
         var y = v.rectHeight * (d.level - v.adjustLevel) - v.rectHeight;
         y += (d.loopAdjust - v.adjustLevel) * v.rectHeight; 
         y += v.rectHeight; 
-        return y + Math.floor(v.rectHeight/2);
+        return y + Math.floor(v.rectHeight/2) + (v.adjustLoopLevel * v.rectHeight);
       });
   }
 
@@ -215,7 +220,7 @@ function profilerSvgHelper(d3, size) {
         var y = v.rectHeight * (d.level - v.adjustLevel) - v.rectHeight;
         y += (d.loopAdjust - v.adjustLevel) * v.rectHeight; 
         y -= v.rectHeight; 
-        return y + Math.floor(v.rectHeight/2);
+        return y + Math.floor(v.rectHeight/2) + (v.adjustLoopLevel * v.rectHeight);
       })
       .attr('r', 4)
       .transition()
@@ -226,7 +231,7 @@ function profilerSvgHelper(d3, size) {
         var y = v.rectHeight * (d.level - v.adjustLevel) - v.rectHeight;
         y += (d.loopAdjust - v.adjustLevel) * v.rectHeight; 
         y += v.rectHeight; 
-        return y + Math.floor(v.rectHeight/2);
+        return y + Math.floor(v.rectHeight/2) + (v.adjustLoopLevel * v.rectHeight);
       });
 
     selection
@@ -242,7 +247,7 @@ function profilerSvgHelper(d3, size) {
         var y = v.rectHeight * (d.level - v.adjustLevel) - v.rectHeight;
         y += (d.loopAdjust - v.adjustLevel) * v.rectHeight; 
         y -= v.rectHeight; 
-        return y + Math.floor(v.rectHeight/2);
+        return y + Math.floor(v.rectHeight/2) + (v.adjustLoopLevel * v.rectHeight);
       })
       .attr('r', 4)
       .transition()
@@ -253,7 +258,7 @@ function profilerSvgHelper(d3, size) {
         var y = v.rectHeight * (d.level - v.adjustLevel) - v.rectHeight;
         y += (d.loopAdjust - v.adjustLevel) * v.rectHeight; 
         y += v.rectHeight; 
-        return y + Math.floor(v.rectHeight/2);
+        return y + Math.floor(v.rectHeight/2) + (v.adjustLoopLevel * v.rectHeight);
       });
   }
 }

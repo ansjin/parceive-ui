@@ -458,9 +458,9 @@ function render(d3, pdh, pvh, pvar, psh, size, grad, ld) {
 
     function zoomToLevel(d, loadNodeChildren) {
       v.adjustLevel = d.level - 1;
+      v.adjustLoopLevel = d.loopAdjust + 1;
       v.zoomId = d.id;
       setRuntimeThreshold(d.duration);
-      displayView();
 
       if (loadNodeChildren) {
         loadChildren(d.id, d.level);
@@ -469,6 +469,7 @@ function render(d3, pdh, pvh, pvar, psh, size, grad, ld) {
 
     function zoomToTop() {
       v.adjustLevel = 0;
+      v.adjustLoopLevel = 0;
       v.zoomId = isTracing() ? v.mainCallId : v.mainCallGroupId;
       v.zoomHistory = [];
       v.maxLevel = 1;

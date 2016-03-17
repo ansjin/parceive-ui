@@ -33,6 +33,7 @@ function profilerVarHelper() {
       textPadY: 15, // top padding for the text svg
       textPadX: 0.5, // left padding for the text svg
       adjustLevel: 0, // stores level -1 of bar at the top position of the profiler
+      adjustLoopLevel: 0, // stores amount of loop adjustments above current level
       transTime: 600, // transition time for appending a bar to profiler
       transType: 'elastic', // type of append transition
       maxLevel: 1, // current highest level of bars on the profiler
