@@ -22,6 +22,7 @@ function profilerVarHelper() {
       mainDuration: null, // runtime of main function
       mainCallId: null, // ID of main function
       mainCallGroupId: null, // callGroup ID of main
+      currentTopDuration: null, // duration of the call that is at the top level of the view
       runtimeThreshold: null, // minimum runtime required for children to load
       thresholdFactor: 1, // % of runtime required for children to load
       tracingData: {}, // data object for tracing view

@@ -21,8 +21,8 @@ function profilerSvgHelper(d3, size) {
   function drawRectSvg(selection, nodes, v, isTracing) {
     selection
       .data(nodes.filter(function(d) {
-        // only show data with duration > runtimethreshold
-        return d.duration > v.runtimeThreshold;
+        // only show data with duration >= runtimethreshold
+        return d.duration >= v.runtimeThreshold;
       }))
       .enter()
       .append('rect')
@@ -81,17 +81,20 @@ function profilerSvgHelper(d3, size) {
   function drawTextSvg(selection, nodes, loopText, v, isTracing) {
     selection
       .data(nodes.filter(function(d) {
-        if (loopText) {
-          // only show loop text for calls with
-          // loopIterationCount greater than 0
-          return d.loopIterationCount > 0;
-        }
+        if (d.duration >= v.runtimeThreshold) {
+          if (loopText) {
+            // only show loop text for calls with
+            // loopIterationCount greater than 0
+            return d.loopIterationCount > 0;
+          }
 
-        // only show text for calls with widths big enough
-        // to contain the full name of the call
-        var rectWidth = size.svgSizeById(d.id).width;
-        var textWidth = size.svgTextSize(d.name, 14).width;
-        return rectWidth > textWidth + 20;
+          // only show text for calls with widths big enough
+          // to contain the full name of the call
+          var rectWidth = size.svgSizeById(d.id).width;
+          var textWidth = size.svgTextSize(d.name, 14).width;
+          return rectWidth > textWidth + 20;
+        }
+        return false;
       }))
       .enter()
       .append('text')

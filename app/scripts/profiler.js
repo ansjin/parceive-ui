@@ -51,8 +51,8 @@ function render(d3, pdh, pvh, pvar, psh, size, grad, ld) {
       });
     }
 
-    function setRuntimeThreshold(runtime) {
-      v.runtimeThreshold = Math.ceil(runtime * (v.thresholdFactor / 100));
+    function setRuntimeThreshold() {
+      v.runtimeThreshold = Math.ceil(v.currentTopDuration * (v.thresholdFactor / 100));
     }
 
     function isTracing() { return v.viewMode === 'T'; }
@@ -77,6 +77,7 @@ function render(d3, pdh, pvh, pvar, psh, size, grad, ld) {
     function updateTimer() {
       var value = document.getElementById('profiler-thresh').value;
       v.thresholdFactor = value;
+      setRuntimeThreshold();
       reload();
     }
 
@@ -134,7 +135,8 @@ function render(d3, pdh, pvh, pvar, psh, size, grad, ld) {
       var ancestor = 'null';
       var level = 1;
       
-      setRuntimeThreshold(v.mainDuration);
+      v.currentTopDuration = v.mainDuration;
+      setRuntimeThreshold();
       var func = isTracing()
         ? pdh.getCallObj(id, ancestor, level)
         : pdh.getCallGroupObj(id, ancestor, level);
@@ -460,7 +462,8 @@ function render(d3, pdh, pvh, pvar, psh, size, grad, ld) {
       v.adjustLevel = d.level - 1;
       v.adjustLoopLevel = d.loopAdjust + 1;
       v.zoomId = d.id;
-      setRuntimeThreshold(d.duration);
+      v.currentTopDuration = d.duration;
+      setRuntimeThreshold();
 
       if (loadNodeChildren) {
         loadChildren(d.id, d.level);
@@ -473,7 +476,8 @@ function render(d3, pdh, pvh, pvar, psh, size, grad, ld) {
       v.zoomId = isTracing() ? v.mainCallId : v.mainCallGroupId;
       v.zoomHistory = [];
       v.maxLevel = 1;
-      setRuntimeThreshold(v.mainDuration);
+      v.currentTopDuration = v.mainDuration;
+      setRuntimeThreshold();
       displayView();
     }
 
