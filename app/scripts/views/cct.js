@@ -767,6 +767,14 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $,
                   callgraph.showSharedReferences(stateManager.getMarked())
                     .then(rerender, fail);
                 }
+              },
+              'recursivesharedreferences': {
+                name: 'Show shared references between marked nodes and ' +
+                      'all children of the nodes',
+                callback: function() {
+                  callgraph.showRecursiveSharedReferences(stateManager
+                    .getMarked()).then(rerender, fail);
+                }
               }
             }
           };
@@ -782,6 +790,7 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $,
           if (!stateManager.isMarked(element.type, element.data.id) ||
                stateManager.getMarked().length <= 2) {
             delete data.items.sharedreferences;
+            delete data.items.recursivesharedreferences;
           }
 
           return data;

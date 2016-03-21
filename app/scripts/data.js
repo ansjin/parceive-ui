@@ -1690,6 +1690,13 @@ loader.getSharedReferences = function(callIds, callgroupIds, loopexecutionIds,
     Reference);
 };
 
+loader.getRecursiveSharedReferences = function(callIds, callgroupIds) {
+  return this.getManyURL(
+    'references/recursivesharedreferences?callIds=' + JSON.stringify(callIds) +
+                      '&callgroupIds=' + JSON.stringify(callgroupIds),
+    Reference);
+};
+
 // run management
 
 /** Get name of the currently used database
