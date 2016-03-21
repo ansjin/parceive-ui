@@ -343,7 +343,7 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $,
     // Add nodes
 
     var callNodes = callGroup.selectAll('g.node')
-      .data(calls, function(d) { return d.type + ':' + d.data.id; });
+      .data(calls, function(d) { return d.uuid; });
 
     var callNodesEnter = callNodes
       .enter()
@@ -568,7 +568,7 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $,
     });
 
     var loopBg = loopBgGroup.selectAll('polygon')
-      .data(executions, function(d) { return d.data.id; });
+      .data(executions, function(d) { return d.uuid; });
 
     loopBg.exit().remove();
 
@@ -584,7 +584,7 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $,
     /* Add references */
 
     var refNodes = refGroup.selectAll('g.reference')
-      .data(refs, function(d) { return d.data.id; });
+      .data(refs, function(d) { return d.uuid; });
 
     refNodes
       .exit()
@@ -621,8 +621,7 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $,
 
     var edgeNode = edgeGroup.selectAll('g.edge')
       .data(edges, function(d) {
-        return d[0].type + ':' + d[0].data.id + '-' +
-               d[1].type + ':' + d[1].data.id;
+        return d[0].uuid + d[1].uuid;
       });
 
     edgeNode
@@ -761,6 +760,13 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $,
                   stateManager.mark(element.type, element.data.id,
                     !stateManager.isMarked(element.type, element.data.id));
                 }
+              },
+              'sharedreferences': {
+                name: 'Show shared references between marked nodes',
+                callback: function() {
+                  callgraph.showSharedReferences(stateManager.getMarked())
+                    .then(rerender, fail);
+                }
               }
             }
           };
@@ -771,6 +777,11 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $,
 
           if (element.data.callsOthers === 0) {
             delete data.items.children;
+          }
+
+          if (!stateManager.isMarked(element.type, element.data.id) ||
+               stateManager.getMarked().length <= 2) {
+            delete data.items.sharedreferences;
           }
 
           return data;

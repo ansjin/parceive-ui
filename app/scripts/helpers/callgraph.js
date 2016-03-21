@@ -1,6 +1,6 @@
 angular.module('app')
   .service('CallGraphDataService',
-  ['d3', 'SizeService', function(d3, SizeService) {
+  ['d3', 'SizeService', 'LoaderService', function(d3, SizeService, loader) {
     function CallGraph() {
       this.roots = [];
       this.references = [];
@@ -179,6 +179,51 @@ angular.module('app')
       });
     };
 
+    CallGraph.prototype.showSharedReferences = function(marked) {
+      var self = this;
+      var allNodes = this.getNodes();
+
+      var nodes = _.map(marked, function(data) {
+        return _.find(allNodes, function(node) {
+          return node.type === data.type && node.data.id === data.id;
+        });
+      });
+
+      _.forEach(nodes, function(node) {
+        node.unloadReferences();
+        delete node.references;
+      });
+
+      var callIds = _.chain(nodes)
+        .filter(function(node) {
+          return node.type === 'Call';
+        }).map(function(node) {
+          return node.data.id;
+        }).value();
+
+      var callgroupIds = _.chain(nodes)
+        .filter(function(node) {
+          return node.type === 'CallGroup';
+        }).map(function(node) {
+          return node.data.id;
+        }).value();
+
+      return loader.getSharedReferences(callIds, callgroupIds).then(
+      function(refs) {
+        refs = _.map(refs, function(ref) {
+          return self.addReference(ref);
+        });
+
+        _.forEach(nodes, function(node) {
+          node.references = refs;
+
+          _.forEach(refs, function(ref) {
+            ref.addNode(node);
+          });
+        });
+      });
+    };
+
     /**************************************************************** Helpers */
 
     function toggleFunction(field, load, unload) {
@@ -200,6 +245,8 @@ angular.module('app')
       if (parent) {
         this.parent = parent;
       }
+
+      this.uuid = _.uuid();
     }
 
     Node.prototype.getDuration = function() {
@@ -590,6 +637,7 @@ angular.module('app')
       this.callgraph = callgraph;
 
       this.type = 'Reference';
+      this.uuid = _.uuid();
 
       this.nodes = [];
 

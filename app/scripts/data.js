@@ -1680,6 +1680,13 @@ loader.getFunctionBySignature = function(sig) {
   return promise;
 };
 
+loader.getSharedReferences = function(callIds, callgroupIds) {
+  return this.getManyURL(
+    'references/sharedreferences?callIds=' + JSON.stringify(callIds) +
+                                '&callgroupIds=' + JSON.stringify(callgroupIds),
+    Reference);
+};
+
 // run management
 
 /** Get name of the currently used database
