@@ -21,5 +21,5 @@ INSERT INTO CallGroup SELECT
   SUM(End - Start) AS Duration,
   MIN(Start) AS Start,
   MAX(End) AS End,
-  (SELECT c.CallerExecution FROM Call c WHERE c.Function = Function AND c.Caller = Caller GROUP BY c.Function HAVING COUNT(*) = 1) AS CallerExecution
+  CASE WHEN MIN(CallerExecution) = MAX(CallerExecution) THEN CallerExecution ELSE NULL END AS CallerExecution
 FROM Call GROUP BY Function, Caller;
