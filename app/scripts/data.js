@@ -1680,10 +1680,13 @@ loader.getFunctionBySignature = function(sig) {
   return promise;
 };
 
-loader.getSharedReferences = function(callIds, callgroupIds) {
+loader.getSharedReferences = function(callIds, callgroupIds, loopexecutionIds,
+                                      loopiterationIds) {
   return this.getManyURL(
     'references/sharedreferences?callIds=' + JSON.stringify(callIds) +
-                                '&callgroupIds=' + JSON.stringify(callgroupIds),
+                      '&callgroupIds=' + JSON.stringify(callgroupIds) +
+                      '&loopexecutionIds=' + JSON.stringify(loopexecutionIds) +
+                      '&loopiterationIds=' + JSON.stringify(loopiterationIds),
     Reference);
 };
 

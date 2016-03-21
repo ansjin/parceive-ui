@@ -208,7 +208,22 @@ angular.module('app')
           return node.data.id;
         }).value();
 
-      return loader.getSharedReferences(callIds, callgroupIds).then(
+      var loopexecutionIds = _.chain(nodes)
+        .filter(function(node) {
+          return node.type === 'LoopExecution';
+        }).map(function(node) {
+          return node.data.id;
+        }).value();
+
+      var loopiterationIds = _.chain(nodes)
+        .filter(function(node) {
+          return node.type === 'LoopIteration';
+        }).map(function(node) {
+          return node.data.id;
+        }).value();
+
+      return loader.getSharedReferences(callIds, callgroupIds,
+        loopexecutionIds, loopiterationIds).then(
       function(refs) {
         refs = _.map(refs, function(ref) {
           return self.addReference(ref);
