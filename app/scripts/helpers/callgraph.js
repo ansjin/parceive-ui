@@ -183,11 +183,15 @@ angular.module('app')
       var self = this;
       var allNodes = this.getNodes();
 
-      var nodes = _.map(marked, function(data) {
-        return _.find(allNodes, function(node) {
-          return node.type === data.type && node.data.id === data.id;
-        });
-      });
+      var nodes = _.chain(marked)
+        .map(function(data) {
+          return _.find(allNodes, function(node) {
+            return node.type === data.type && node.data.id === data.id;
+          });
+        })
+        .filter(function(node) {
+          return !_.isUndefined(node);
+        }).value();
 
       _.forEach(nodes, function(node) {
         node.unloadReferences();
