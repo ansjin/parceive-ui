@@ -23,7 +23,8 @@ function pView(d3, size) {
     isSelected: isSelected,
     clickType: clickType,
     setSelectedNodes: setSelectedNodes,
-    resetSelectedNode: resetSelectedNode
+    resetSelectedNode: resetSelectedNode,
+    toggleLoop: toggleLoop
   };
 
   return factory;
@@ -205,5 +206,15 @@ function pView(d3, size) {
   function resetSelectedNode(id, _svg) {
     var d = d3.select('#rect_' + id)[0][0].__data__;
     d3.select('#rect_' + id).attr('fill', _svg.gradient(d.duration));
+  }
+
+  function toggleLoop(_svg, func) {
+    _svg.showLoop = _svg.showLoop ? false : true;
+
+    func();
+
+    // update loop button
+    var text = _svg.showLoop ? 'Hide' : 'Show';
+    $('#profiler-loop').text(text + ' Loops');
   }
 }

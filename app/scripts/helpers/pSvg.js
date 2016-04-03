@@ -122,7 +122,7 @@ function pSvg(d3, size) {
   function drawLoop(_svg, selection) {
     return new Promise(function(resolve, reject) {
       if (!_svg.showLoop) {
-        resolve(true);
+        return resolve(true);
       }
 
       selection
@@ -175,7 +175,7 @@ function pSvg(d3, size) {
   function drawLoopText(_svg, selection) {
     return new Promise(function(resolve, reject) {
       if (!_svg.showLoop) {
-        resolve(true);
+        return resolve(true);
       }
 
       selection
@@ -227,7 +227,7 @@ function pSvg(d3, size) {
   function drawLoopEnd(_svg, selection) {
     return new Promise(function(resolve, reject) {
       if (!_svg.showLoop) {
-        resolve(true);
+        return resolve(true);
       }
 
       // add circle to left end of the loop
@@ -299,7 +299,7 @@ function pSvg(d3, size) {
   function drawLoopTooSmall(_svg, selection) {
     return new Promise(function(resolve, reject) {
       if (!_svg.showLoop) {
-        resolve(true);
+        return resolve(true);
       }
 
       selection

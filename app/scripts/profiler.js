@@ -130,13 +130,6 @@ function render(d3, po, pd, pv, ps) {
     // current view mode
     var _svg = _t;
 
-    // save data objects to stateManager so callback functions like hoverCb, markCb can
-    // access the same object (its data and functions). Assignment is done by reference
-    // so no need to worry about the data being out of date, we will always have the same
-    // data available to all callback functions.
-    stateManager.getData().unsaved._svg = _svg;
-    stateManager.getData().unsaved.pv = pv;
-
     // set main call properties
     po.setMainData(_t, _p)
     .then(function() {
@@ -159,6 +152,7 @@ function render(d3, po, pd, pv, ps) {
     })
     .then(function() {
       setEventHandlers();
+      console.log('init', _svg);
     });
 
     function initDisplay() {
@@ -241,7 +235,7 @@ function render(d3, po, pd, pv, ps) {
         .then(function() {
           // set selected nodes if any
           pv.setSelectedNodes(_svg);
-          console.log('init', _svg);
+          resolve(true);
         });
       });
     }
@@ -271,7 +265,7 @@ function render(d3, po, pd, pv, ps) {
         // add click handler to show/hide loops
         document.getElementById('profiler-loop')
         .addEventListener('click', function() {
-          
+          pv.toggleLoop(_svg, initDisplay);
         });
 
         // add click handler to re-render view on window resize
@@ -280,6 +274,12 @@ function render(d3, po, pd, pv, ps) {
         });
       }, 1000);
     }
+
+    // save data objects to stateManager so external functions like hoverCb, 
+    // markCb can access the same object (its data and functions). 
+    stateManager.getData().unsaved._svg = _svg;
+    stateManager.getData().unsaved.pv = pv;
+    stateManager.getData().unsaved.initDisplay = initDisplay;
 
   };
 }

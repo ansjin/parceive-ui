@@ -50,7 +50,7 @@ function pObject(d3, pd, grad) {
       widthScale: null, // holds function to calculate width of call
       xScale: null, // holds function to calculate x position of call
       clickCount: 0, // click counter for determining double or single click
-      showLoop: true // show loops in visualization
+      showLoop: false // show loops in visualization
     };
   }
 
