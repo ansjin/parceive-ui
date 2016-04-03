@@ -18,7 +18,12 @@ function pView(d3, size) {
     loopHighlightRemove: loopHighlightRemove,
     loopTooltip: loopTooltip,
     removeTooltip: removeTooltip,
-    isHovered: isHovered
+    isHovered: isHovered,
+    isVisible: isVisible,
+    isSelected: isSelected,
+    clickType: clickType,
+    setSelectedNodes: setSelectedNodes,
+    resetSelectedNode: resetSelectedNode
   };
 
   return factory;
@@ -139,11 +144,10 @@ function pView(d3, size) {
     d3.select('#tooltip').classed('hidden', true);
   }
 
-  function isHovered(d, type) {
+  function isHovered(d, type, _svg) {
     if (type === 'Loop') {
-      // check if loop is minimized loop that doesn't have line visualization
-      // ('#loopline_' + d.id) is null object for minimized loops, so do check here
-      if (!d3.select('#loopsmall_' + d.id).empty()) {
+      // check if loop is minimized loop
+      if (d.loopDuration < _svg.runtimeThreshold) {
         return d3.select('#loopsmall_' + d.id).attr('fill-opacity') == 0.5;
       }
 
@@ -151,5 +155,55 @@ function pView(d3, size) {
     } else {
       return d3.select('#rect_' + d.id).attr('fill-opacity') == 0.5;
     }
+  }
+
+  function isSelected(d) {
+    return d3.select('#rect_' + d.id).attr('fill') == 'grey';
+  }
+
+  function isVisible(d, type, _svg) {
+    if (type === 'Loop') {
+      // check if loop is minimized loop
+      if (d.loopDuration < _svg.runtimeThreshold) {
+        return d3.select('#loopsmall_' + d.id).empty();
+      }
+
+      return d3.select('#loopline_' + d.id).empty();
+    } else {
+      return d3.select('#rect_' + d.id).empty();
+    }
+  }
+
+  function clickType(_svg) {
+    _svg.clickCount++;
+
+    return new Promise(function(resolve, reject) {
+      // evaluate click count after defined time
+      window.setTimeout(function() {
+        var type = null; 
+
+        if (_svg.clickCount === 2) {
+          type = 'double';
+        }
+
+        if (_svg.clickCount === 1) {
+          type = 'single';
+        }
+
+        _svg.clickCount = 0;
+        resolve(type);
+      }, 300);
+    });
+  }
+
+  function setSelectedNodes(_svg) {
+    _.forEach(_svg.selectedNodes, function(id) {
+      d3.select('#rect_' + id).attr('fill', 'grey');
+    });
+  }
+
+  function resetSelectedNode(id, _svg) {
+    var d = d3.select('#rect_' + id)[0][0].__data__;
+    d3.select('#rect_' + id).attr('fill', _svg.gradient(d.duration));
   }
 }

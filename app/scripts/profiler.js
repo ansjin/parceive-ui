@@ -11,7 +11,26 @@ angular
 
 // handle focus event
 function focusCb(stateManager, data) {
+  if (data.length < 1) { return; }
+  
+  var _svg = stateManager.getData().unsaved._svg;
+  var pv = stateManager.getData().unsaved.pv;
+  
+  for (var i = 0, len = data.length; i < len; i++) {
+    var obj = data[i];
+    var id = obj.id;
+    var type = obj.type;
+    var d = pv.findDeep(_svg.viewData, id);
 
+    // item not loaded in the profiler viewData
+    // probably a child node with duration too small
+    // or is in viewData but not on svg
+    if (!d.hasOwnProperty('id') && pv.isVisible(d, type, _svg)) { 
+      continue; 
+    }
+
+    console.log('focus', obj);
+  }
 }
 
 // handle marked event
@@ -30,7 +49,20 @@ function markedCb(stateManager, data) {
 
     // item not loaded in the profiler viewData
     // probably a child node with duration too small
-    if (!d.hasOwnProperty('id')) { continue; }
+    // or is in viewData but not on svg
+    if (!d.hasOwnProperty('id') && pv.isVisible(d, type, _svg)) { 
+      continue; 
+    }
+
+    if (_svg.selectedNodes.indexOf(id) < 0) {
+      // select node
+      _svg.selectedNodes.push(id);
+      pv.setSelectedNodes(_svg);
+    } else {
+      // deselect node
+      _svg.selectedNodes.splice(_svg.selectedNodes.indexOf(id), 1);
+      pv.resetSelectedNode(id, _svg);
+    }
   }
 }
 
@@ -49,11 +81,14 @@ function hoverCb(stateManager, data) {
 
     // item not loaded in the profiler viewData
     // probably a child node with duration too small
-    if (!d.hasOwnProperty('id')) { continue; }
+    // or is in viewData but not on svg
+    if (!d.hasOwnProperty('id') && pv.isVisible(d, type, _svg)) { 
+      continue; 
+    }
 
     if (type === 'Loop') {
       // hover for loops
-      if (pv.isHovered(d, 'Loop')) {
+      if (pv.isHovered(d, 'Loop', _svg)) {
         pv.loopHighlightRemove(d);
         pv.removeTooltip(d);
       } else {
@@ -62,7 +97,7 @@ function hoverCb(stateManager, data) {
       }
     } else {
       // hover for calls and callgroups
-      if (pv.isHovered(d, 'Call')) {
+      if (pv.isHovered(d, 'Call', _svg)) {
         pv.callHighlightRemove(d);
         pv.removeTooltip(d);
       } else {
@@ -160,33 +195,43 @@ function render(d3, po, pd, pv, ps) {
         .then(function() {
           // set event handlers for svg elements
           return new Promise(function(resolve, reject) {
+            var hoverType = _svg.isTracing ? 'Call' : 'CallGroup';
+
             // call elements
             svg.selectAll('rect.rect, text.rect')
               .on('click', function(d) { 
-                 
+                 pv.clickType(_svg).then(function(data) {
+                  // handle single click
+                  if (data === 'single') {
+                    // broadcast mark
+                    var isSelected = pv.isSelected(d);
+                    stateManager.mark([{type: hoverType, id: d.id, isMarked: isSelected}]);
+                  }
+
+                  // handle double click
+                  if (data === 'double') {
+                    // broadcast focus
+                    stateManager.focus([{type: hoverType, id: d.id}]);
+                  }
+                 });
               })
               .on('mouseenter', function(d) {
-                // broadcast hover action through state manager
-                var hoverType = _svg.isTracing ? 'Call' : 'CallGroup';
+                // broadcast hover
                 stateManager.hover([{type: hoverType, id: d.id}]);
               })
               .on('mouseleave', function(d) {
-                // broadcast hover action through state manager
-                var hoverType = _svg.isTracing ? 'Call' : 'CallGroup';
+                // broadcast hover
                 stateManager.hover([{type: hoverType, id: d.id}]);
               });
 
             // loop elements
             svg.selectAll('line.loop, circle.loop, circle.small, text.line')
-              .on('click', function(d) {
-                
-              })
               .on('mouseenter', function(d) {
-                // broadcast hover action through state manager
+                // broadcast hover
                 stateManager.hover([{type: 'Loop', id: d.id}]); 
               })
               .on('mouseleave', function(d) {
-                // broadcast hover action through state manager
+                // broadcast hover
                 stateManager.hover([{type: 'Loop', id: d.id}]); 
               });
 
@@ -194,6 +239,8 @@ function render(d3, po, pd, pv, ps) {
           });
         })
         .then(function() {
+          // set selected nodes if any
+          pv.setSelectedNodes(_svg);
           console.log('init', _svg);
         });
       });
