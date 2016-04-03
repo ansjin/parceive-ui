@@ -59,3 +59,13 @@
 div.html-title, div.html-menu {
   display: inline-block;
 }
+
+.line {
+  font-size:  14px;
+  paint-order: stroke;
+  stroke: #fff;
+  stroke-width: 5px;
+  stroke-linecap: butt;
+  stroke-linejoin: miter;
+  font-weight: 200;
+}
