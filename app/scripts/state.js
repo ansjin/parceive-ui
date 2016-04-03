@@ -7,6 +7,7 @@ var marked = {
 
 var getRun;
 var setRun;
+var neighbours;
 
 var manager;
 
@@ -53,22 +54,33 @@ function loadMarked() {
   }
 }
 
+var currentCbId = 0;
+
 function callCb(group, type) {
+  var myId = currentCbId++;
+
   var params = [].slice.call(arguments, 2);
   [].splice.call(params, 0, 0, '');
 
-  _.chain(_.values(state))
-    .filter(function(val) {
-      return val.group === group;
-    })
-    .map(function(val) {
-      return [manager.bindId(val.id), val._cb.unsaved[type]];
-    })
-    .forEach(function(cb) {
-      [].splice.call(params, 0, 1, cb[0]);
-      cb[1].apply(null, params);
-    })
-    .value();
+  neighbours(params[0]).then(function(fullarray) {
+    if (currentCbId !== myId) {
+      return;
+    }
+
+    params[0] = fullarray;
+    _.chain(_.values(state))
+      .filter(function(val) {
+        return val.group === group;
+      })
+      .map(function(val) {
+        return [manager.bindId(val.id), val._cb.unsaved[type]];
+      })
+      .forEach(function(cb) {
+        [].splice.call(params, 0, 1, cb[0]);
+        cb[1].apply(null, params);
+      })
+      .value();
+  });
 }
 
 function mark(id, type, oid, isMarked, doCb, doSave) {
@@ -321,9 +333,11 @@ manager.bindId = function(id) {
 };
 
 angular.module('app')
-  .service('StateService', ['LoaderService', function(loader) {
+  .service('StateService', ['LoaderService', 'LoadNeighboursService',
+    function(loader, neighbours) {
     getRun = loader.getRun;
     setRun = loader.setRun;
+    neighbours = neighbours;
 
     return manager;
   }]);
