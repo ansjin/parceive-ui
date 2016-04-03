@@ -25,7 +25,8 @@ function pView(d3, size) {
     setSelectedNodes: setSelectedNodes,
     resetSelectedNode: resetSelectedNode,
     toggleLoop: toggleLoop,
-    toggleViewMode: toggleViewMode
+    toggleViewMode: toggleViewMode,
+    updateDurationSlider: updateDurationSlider
   };
 
   return factory;
@@ -225,5 +226,16 @@ function pView(d3, size) {
     // show/hide toggle loop button
     var value = _svg.isTracing ? 'inline-block' : 'none';
     $('#profiler-loop').css('display', value);
+
+    // update duration slider
+    $('#profiler-thresh').val(_svg.thresholdFactor);
+    updateDurationSlider(_svg);
+  }
+
+  function updateDurationSlider(_svg) {
+    var value = $('#profiler-thresh').val();
+    _svg.thresholdFactor = value;
+    $('#thresh-lbl').attr('title', 'Showing calls with >= ' + value + '% duration of ' + _svg.currentTop.name); 
+    $('#thresh-lbl').text(value + '%');   
   }
 }

@@ -259,9 +259,12 @@ function render(d3, po, pd, pv, ps) {
           initDisplay();
         });
 
+        // add on-change handler to update duration slider
         document.getElementById('profiler-thresh')
         .addEventListener('change', function() {
-          
+          pv.updateDurationSlider(_svg);
+          po.setRuntimeThreshold(_svg);
+          initDisplay();
         });
 
         // add click handler to show/hide loops
@@ -273,7 +276,7 @@ function render(d3, po, pd, pv, ps) {
 
         // add click handler to re-render view on window resize
         window.addEventListener('resize', function() {
-          
+          initDisplay();
         });
       }, 1000);
     }

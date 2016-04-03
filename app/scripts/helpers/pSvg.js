@@ -80,6 +80,10 @@ function pSvg(d3, size) {
           // only show text for calls with duration >= runtimethreshold
           // and duration <= duration of current top level object
           // and widths big enough to contain the full name of the call
+          if (document.getElementById('rect_' + d.id) == null) {
+            return false;
+          }
+
           var rectWidth = size.svgSizeById('rect_' + d.id).width;
           var textPad = 20; // left and right padding
           var textWidth = size.svgTextSize(d.name, 14).width + textPad;
@@ -306,6 +310,10 @@ function pSvg(d3, size) {
         .data(_svg.nodes.filter(function(d) {
           // only show loop for calls with loopIterationCount greater than 0
           // and loop duration < current threshold
+          if (document.getElementById('rect_' + d.id) == null) {
+            return false;
+          }
+
           return d.loopIterationCount > 0 
           && d.loopDuration < _svg.runtimeThreshold;
         }))

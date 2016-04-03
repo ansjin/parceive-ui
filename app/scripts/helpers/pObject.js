@@ -13,7 +13,8 @@ function pObject(d3, pd, grad) {
     getObject: getObject,
     setMainData: setMainData,
     initViewData: initViewData,
-    loadChildren: loadChildren
+    loadChildren: loadChildren,
+    setRuntimeThreshold: setRuntimeThreshold
   };
 
   return factory;
