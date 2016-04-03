@@ -254,7 +254,9 @@ function render(d3, po, pd, pv, ps) {
         // add click handler to toggle view modes
         document.getElementById('profiler-view-toggle')
         .addEventListener('click', function() {
-          
+          _svg = _svg.isTracing ? _p : _t;
+          pv.toggleViewMode(_svg);
+          initDisplay();
         });
 
         document.getElementById('profiler-thresh')
@@ -265,7 +267,8 @@ function render(d3, po, pd, pv, ps) {
         // add click handler to show/hide loops
         document.getElementById('profiler-loop')
         .addEventListener('click', function() {
-          pv.toggleLoop(_svg, initDisplay);
+          pv.toggleLoop(_svg);
+          initDisplay();
         });
 
         // add click handler to re-render view on window resize

@@ -24,7 +24,8 @@ function pView(d3, size) {
     clickType: clickType,
     setSelectedNodes: setSelectedNodes,
     resetSelectedNode: resetSelectedNode,
-    toggleLoop: toggleLoop
+    toggleLoop: toggleLoop,
+    toggleViewMode: toggleViewMode
   };
 
   return factory;
@@ -208,13 +209,21 @@ function pView(d3, size) {
     d3.select('#rect_' + id).attr('fill', _svg.gradient(d.duration));
   }
 
-  function toggleLoop(_svg, func) {
+  function toggleLoop(_svg) {
     _svg.showLoop = _svg.showLoop ? false : true;
-
-    func();
 
     // update loop button
     var text = _svg.showLoop ? 'Hide' : 'Show';
     $('#profiler-loop').text(text + ' Loops');
+  }
+
+  function toggleViewMode(_svg) {
+    // update toggle button
+    var state = !_svg.isTracing ? 'Tracing' : 'Profiling';
+    $('#profiler-view-toggle').text('Switch to ' + state);
+
+    // show/hide toggle loop button
+    var value = _svg.isTracing ? 'inline-block' : 'none';
+    $('#profiler-loop').css('display', value);
   }
 }
