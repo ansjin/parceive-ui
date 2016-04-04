@@ -9,6 +9,10 @@ var getRun;
 var setRun;
 var neighbours;
 
+var globalFct = {
+  neighbours: null,
+};
+
 var manager;
 
 var removeUnsaved = function(key, val) {
@@ -56,18 +60,15 @@ function loadMarked() {
 
 var currentCbId = 0;
 
-function callCb(group, type) {
+function callCb(group, type, elements) {
   var myId = currentCbId++;
 
-  var params = [].slice.call(arguments, 2);
-  [].splice.call(params, 0, 0, '');
-
-  neighbours(params[0]).then(function(fullarray) {
-    if (currentCbId !== myId) {
+  globalFct.neighbours(elements).then(function(fullarray) {
+    if (currentCbId !== myId + 1) {
       return;
     }
 
-    params[0] = fullarray;
+    elements = fullarray;
     _.chain(_.values(state))
       .filter(function(val) {
         return val.group === group;
@@ -76,8 +77,7 @@ function callCb(group, type) {
         return [manager.bindId(val.id), val._cb.unsaved[type]];
       })
       .forEach(function(cb) {
-        [].splice.call(params, 0, 1, cb[0]);
-        cb[1].apply(null, params);
+        cb[1].apply(null, [cb[0], elements]);
       })
       .value();
   });
@@ -337,7 +337,7 @@ angular.module('app')
     function(loader, neighbours) {
     getRun = loader.getRun;
     setRun = loader.setRun;
-    neighbours = neighbours;
+    globalFct.neighbours = neighbours;
 
     return manager;
   }]);

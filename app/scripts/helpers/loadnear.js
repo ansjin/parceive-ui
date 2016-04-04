@@ -4,6 +4,10 @@ angular.module('app')
       var ret = _.clone(data);
 
       function addToRet(type, item) {
+        if (_.isNull(item)) {
+          return;
+        }
+
         ret.push({
           type: type,
           id: item.id,
@@ -13,7 +17,7 @@ angular.module('app')
 
       function addAllToRet(type, items) {
         _.forEach(items, function(item) {
-          addToRet(type, item.id);
+          addToRet(type, item);
         });
       }
 
@@ -22,7 +26,14 @@ angular.module('app')
           case 'Call':
             return loader.getCall(element.id).then(function(call) {
               return RSVP.all([
-                call.getParent().then(_.partial(addToRet, 'Call')),
+                call.getCaller().then(_.partial(addToRet, 'Call')),
+                call.getCaller().then(function(caller) {
+                  if (_.isNull(caller)) {
+                    return null;
+                  }
+                  return caller.getCallGroup()
+                               .then(_.partial(addToRet, 'CallGroup'));
+                }),
                 call.getCalls().then(_.partial(addAllToRet, 'Call')),
                 call.getCallGroup().then(_.partial(addToRet, 'CallGroup')),
                 call.getCallGroups().then(_.partial(addAllToRet, 'CallGroup')),
@@ -33,9 +44,19 @@ angular.module('app')
             return loader.getCallGroup(element.id).then(function(callgroup) {
               return RSVP.all([
                 callgroup.getParent().then(_.partial(addToRet, 'CallGroup')),
+                callgroup.getCaller().then(_.partial(addToRet, 'Call')),
                 callgroup.getCalls().then(_.partial(addAllToRet, 'Call')),
                 callgroup.getCallGroups()
                   .then(_.partial(addAllToRet, 'CallGroup')),
+                callgroup.getCallGroups()
+                  .then(function(callgroups) {
+                    return RSVP.all(
+                      _.map(callgroups, function(callgroup) {
+                        return callgroup.getCalls()
+                                        .then(_.partial(addAllToRet, 'Call'));
+                      })
+                    );
+                  }),
                 callgroup.getReferences()
                   .then(_.partial(addAllToRet, 'Reference'))
               ]);
@@ -53,6 +74,8 @@ angular.module('app')
         }
       })).then(function() {
         return ret;
+      }, function(err) {
+        alert(err);
       });
     };
   }]);
