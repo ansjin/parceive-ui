@@ -15,6 +15,8 @@ function focusCb(stateManager, data) {
   
   var _svg = stateManager.getData().unsaved._svg;
   var pv = stateManager.getData().unsaved.pv;
+  var po = stateManager.getData().unsaved.po;
+  var initDisplay = stateManager.getData().unsaved.initDisplay;
   
   for (var i = 0, len = data.length; i < len; i++) {
     var obj = data[i];
@@ -29,7 +31,32 @@ function focusCb(stateManager, data) {
       continue; 
     }
 
-    console.log('focus', obj);
+    if (id === _svg.currentTop.id) {
+      // zoom out
+      console.log('zoom out')
+      if ((id === _svg.mainCallId && type === 'Call') ||
+         (id === _svg.mainCallGroupId && type === 'CallGroup') ||
+         _svg.zoomHistory.length < 1) {
+        // already zoomed out to the max
+        continue;
+      }
+
+      // get last item in history stack
+      var prev = _svg.zoomHistory.pop();
+      _svg.currentTop = prev;
+      d = prev;
+    } else {
+      // zoom in
+      console.log('zoom in')
+      _svg.zoomHistory.push(_svg.currentTop);
+      _svg.currentTop = d;
+    }
+
+    po.setRuntimeThreshold(_svg);
+    po.loadChildren(_svg, d.id, d.level)
+    .then(function() {
+      initDisplay();
+    });
   }
 }
 
@@ -285,6 +312,7 @@ function render(d3, po, pd, pv, ps) {
     // markCb can access the same object (its data and functions). 
     stateManager.getData().unsaved._svg = _svg;
     stateManager.getData().unsaved.pv = pv;
+    stateManager.getData().unsaved.po = po;
     stateManager.getData().unsaved.initDisplay = initDisplay;
 
   };
