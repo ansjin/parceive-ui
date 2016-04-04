@@ -440,11 +440,11 @@ function getRelationship(http, manager, instance, relationship) {
 
     promise = deferred.promise;
   } else {
-    if (_.isUndefined(instance[relationship])) {
+    if (_.isNull(instance[relationship])) {
       return RSVP.Promise.resolve(instance[relationship]);
     }
 
-    if (_.isUndefined(instance[relationship + 'ID'])) {
+    if (_.isNull(instance[relationship + 'ID'])) {
       return RSVP.Promise.resolve();
     }
 
