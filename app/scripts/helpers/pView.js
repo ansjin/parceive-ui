@@ -107,14 +107,14 @@ function pView(d3, size) {
     tooltip.classed('hidden', false);
   }
 
-  function callHighlight(d) {
-    d3.select('#rect_' + d.id).attr('fill-opacity', 0.5);
-    d3.select('#text_' + d.id).attr('fill-opacity', 0.5);    
+  function callHighlight(d, svg) {
+    svg.select('#rect_' + d.id).attr('fill-opacity', 0.5);
+    svg.select('#text_' + d.id).attr('fill-opacity', 0.5);    
   }
 
-  function callHighlightRemove(d) {
-    d3.select('#rect_' + d.id).attr('fill-opacity', 1);
-    d3.select('#text_' + d.id).attr('fill-opacity', 1);
+  function callHighlightRemove(d, svg) {
+    svg.select('#rect_' + d.id).attr('fill-opacity', 1);
+    svg.select('#text_' + d.id).attr('fill-opacity', 1);
   }
 
   function callTooltip(d, _svg) {
@@ -122,20 +122,20 @@ function pView(d3, size) {
     addTooltip(d.name, duration, _svg);
   }
 
-  function loopHighlight(d) {
-    d3.select('#loopline_' + d.id).attr('stroke-opacity', 0.5);
-    d3.select('#looptext_' + d.id).attr('fill-opacity', 0.5);
-    d3.select('#loopsmall_' + d.id).attr('fill-opacity', 0.5);
-    d3.select('#loopendright_'+ d.id).attr('fill-opacity', 0.5);
-    d3.select('#loopendleft_'+ d.id).attr('fill-opacity', 0.5);
+  function loopHighlight(d, svg) {
+    svg.select('#loopline_' + d.id).attr('stroke-opacity', 0.5);
+    svg.select('#looptext_' + d.id).attr('fill-opacity', 0.5);
+    svg.select('#loopsmall_' + d.id).attr('fill-opacity', 0.5);
+    svg.select('#loopendright_'+ d.id).attr('fill-opacity', 0.5);
+    svg.select('#loopendleft_'+ d.id).attr('fill-opacity', 0.5);
   }
 
-  function loopHighlightRemove(d) {
-    d3.select('#loopline_' + d.id).attr('stroke-opacity', 1);
-    d3.select('#looptext_' + d.id).attr('fill-opacity', 1);
-    d3.select('#loopsmall_' + d.id).attr('fill-opacity', 1);
-    d3.select('#loopendright_'+ d.id).attr('fill-opacity', 1);
-    d3.select('#loopendleft_'+ d.id).attr('fill-opacity', 1);
+  function loopHighlightRemove(d, svg) {
+    svg.select('#loopline_' + d.id).attr('stroke-opacity', 1);
+    svg.select('#looptext_' + d.id).attr('fill-opacity', 1);
+    svg.select('#loopsmall_' + d.id).attr('fill-opacity', 1);
+    svg.select('#loopendright_'+ d.id).attr('fill-opacity', 1);
+    svg.select('#loopendleft_'+ d.id).attr('fill-opacity', 1);
   }
 
   function loopTooltip(d, _svg) {
@@ -147,33 +147,33 @@ function pView(d3, size) {
     d3.select('#tooltip').classed('hidden', true);
   }
 
-  function isHovered(d, type, _svg) {
+  function isHovered(d, type, _svg, svg) {
     if (type === 'Loop') {
       // check if loop is minimized loop
       if (d.loopDuration < _svg.runtimeThreshold) {
-        return d3.select('#loopsmall_' + d.id).attr('fill-opacity') == 0.5;
+        return svg.select('#loopsmall_' + d.id).attr('fill-opacity') == 0.5;
       }
 
-      return d3.select('#loopline_' + d.id).attr('stroke-opacity') == 0.5;
+      return svg.select('#loopline_' + d.id).attr('stroke-opacity') == 0.5;
     } else {
-      return d3.select('#rect_' + d.id).attr('fill-opacity') == 0.5;
+      return svg.select('#rect_' + d.id).attr('fill-opacity') == 0.5;
     }
   }
 
-  function isSelected(d) {
-    return d3.select('#rect_' + d.id).attr('fill') == 'grey';
+  function isSelected(d, svg) {
+    return svg.select('#rect_' + d.id).attr('fill') == 'grey';
   }
 
-  function isVisible(d, type, _svg) {
+  function isVisible(d, type, _svg, svg) {
     if (type === 'Loop') {
       // check if loop is minimized loop
       if (d.loopDuration < _svg.runtimeThreshold) {
-        return d3.select('#loopsmall_' + d.id).empty();
+        return svg.select('#loopsmall_' + d.id).empty();
       }
 
-      return d3.select('#loopline_' + d.id).empty();
+      return svg.select('#loopline_' + d.id).empty();
     } else {
-      return d3.select('#rect_' + d.id).empty();
+      return svg.select('#rect_' + d.id).empty();
     }
   }
 
@@ -199,15 +199,15 @@ function pView(d3, size) {
     });
   }
 
-  function setSelectedNodes(_svg) {
+  function setSelectedNodes(_svg, svg) {
     _.forEach(_svg.selectedNodes, function(id) {
-      d3.select('#rect_' + id).attr('fill', 'grey');
+      svg.select('#rect_' + id).attr('fill', 'grey');
     });
   }
 
-  function resetSelectedNode(id, _svg) {
-    var d = d3.select('#rect_' + id)[0][0].__data__;
-    d3.select('#rect_' + id).attr('fill', _svg.gradient(d.duration));
+  function resetSelectedNode(id, _svg, svg) {
+    var d = svg.select('#rect_' + id)[0][0].__data__;
+    svg.select('#rect_' + id).attr('fill', _svg.gradient(d.duration));
   }
 
   function toggleLoop(_svg) {

@@ -65,6 +65,7 @@ function markedCb(stateManager, data) {
   if (data.length < 1) { return; }
   
   var _svg = stateManager.getData().unsaved._svg;
+  var svg = stateManager.getData().unsaved.svg;
   var pv = stateManager.getData().unsaved.pv;
   
   for (var i = 0, len = data.length; i < len; i++) {
@@ -77,18 +78,18 @@ function markedCb(stateManager, data) {
     // item not loaded in the profiler viewData
     // probably a child node with duration too small
     // or is in viewData but not on svg
-    if (!d.hasOwnProperty('id') && pv.isVisible(d, type, _svg)) { 
+    if (!d.hasOwnProperty('id') && pv.isVisible(d, type, _svg, svg)) { 
       continue; 
     }
 
     if (_svg.selectedNodes.indexOf(id) < 0) {
       // select node
       _svg.selectedNodes.push(id);
-      pv.setSelectedNodes(_svg);
+      pv.setSelectedNodes(_svg, svg);
     } else {
       // deselect node
       _svg.selectedNodes.splice(_svg.selectedNodes.indexOf(id), 1);
-      pv.resetSelectedNode(id, _svg);
+      pv.resetSelectedNode(id, _svg, svg);
     }
   }
 }
@@ -98,6 +99,7 @@ function hoverCb(stateManager, data) {
   if (data.length < 1) { return; }
 
   var _svg = stateManager.getData().unsaved._svg;
+  var svg = stateManager.getData().unsaved.svg;
   var pv = stateManager.getData().unsaved.pv;
 
   for (var i = 0, len = data.length; i < len; i++) {
@@ -109,26 +111,26 @@ function hoverCb(stateManager, data) {
     // item not loaded in the profiler viewData
     // probably a child node with duration too small
     // or is in viewData but not on svg
-    if (!d.hasOwnProperty('id') && pv.isVisible(d, type, _svg)) { 
+    if (!d.hasOwnProperty('id') && pv.isVisible(d, type, _svg, svg)) { 
       continue; 
     }
 
     if (type === 'Loop') {
       // hover for loops
-      if (pv.isHovered(d, 'Loop', _svg)) {
-        pv.loopHighlightRemove(d);
+      if (pv.isHovered(d, 'Loop', _svg, svg)) {
+        pv.loopHighlightRemove(d, svg);
         pv.removeTooltip(d);
       } else {
-        pv.loopHighlight(d);
+        pv.loopHighlight(d, svg);
         pv.loopTooltip(d, _svg);
       }
     } else {
       // hover for calls and callgroups
-      if (pv.isHovered(d, 'Call', _svg)) {
-        pv.callHighlightRemove(d);
+      if (pv.isHovered(d, 'Call', _svg, svg)) {
+        pv.callHighlightRemove(d, svg);
         pv.removeTooltip(d);
       } else {
-        pv.callHighlight(d);
+        pv.callHighlight(d, svg);
         pv.callTooltip(d, _svg);
       }
     }
@@ -225,7 +227,7 @@ function render(d3, po, pd, pv, ps) {
                   // handle single click
                   if (data === 'single') {
                     // broadcast mark
-                    var isSelected = pv.isSelected(d);
+                    var isSelected = pv.isSelected(d, svg);
                     stateManager.mark([{type: hoverType, id: d.id, isMarked: isSelected}]);
                   }
 
@@ -311,6 +313,7 @@ function render(d3, po, pd, pv, ps) {
     // save data objects to stateManager so external functions like hoverCb, 
     // markCb can access the same object (its data and functions). 
     stateManager.getData().unsaved._svg = _svg;
+    stateManager.getData().unsaved.svg = svg;
     stateManager.getData().unsaved.pv = pv;
     stateManager.getData().unsaved.po = po;
     stateManager.getData().unsaved.initDisplay = initDisplay;
