@@ -52,7 +52,28 @@ angular.module('cct-view', ['app'])
 
   applyMarked(state, nodes, changes);
 })
-.value('focusCb', function() {})
+.value('focusCb', function(stateManager, focused) {
+  var element = _.find(focused, function(el) {
+    return !el.neighbour;
+  });
+
+  var state = stateManager.getData();
+
+  var callgraph = state.unsaved.callgraph;
+
+  switch (element.type) {
+    case 'Call':
+      callgraph.addCallAndLink(element.id);
+      break;
+    case 'CallGroup':
+      callgraph.addCallGroupAndLink(element.id);
+      break;
+    default:
+      return;
+  }
+
+  state.unsaved.rerender();
+})
 .value('hoverCb', function(stateManager, hovered) {
   var state = stateManager.getData();
   var callgraph = state.unsaved.callgraph;
@@ -67,6 +88,7 @@ angular.module('cct-view', ['app'])
   } else {
     _.forEach(nodes, function(node) {
       node.isHovered = false;
+      node.isNeighbourHovered = false;
     });
 
     _.forEach(hovered, function(toFind) {
@@ -75,7 +97,11 @@ angular.module('cct-view', ['app'])
       });
 
       if (node) {
-        node.isHovered = true;
+        if (toFind.neighbour) {
+          node.isNeighbourHovered = true;
+        } else {
+          node.isHovered = true;
+        }
       }
     });
 
@@ -84,6 +110,8 @@ angular.module('cct-view', ['app'])
       .style('opacity', function(d) {
         if (d.isHovered) {
           return 1;
+        } else if (d.isNeighbourHovered) {
+          return (d.normalOpacity ? d.normalOpacity : 1) - 0.3;
         } else {
           return (d.normalOpacity ? d.normalOpacity : 1) - 0.5;
         }
@@ -247,6 +275,7 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $,
 
     state.unsaved.callGroup = callGroup;
     state.unsaved.refGroup = refGroup;
+    state.unsaved.rerender = rerender;
 
     function expandAction(d) {
       switch (d.type) {
@@ -725,6 +754,12 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $,
                   element.toggleChildren().then(rerender, fail);
                 }
               },
+              'focus': {
+                name: 'Focus',
+                callback: function() {
+                  stateManager.focus([{type: element.type, id: element.id}]);
+                }
+              },
               'expand': {
                 name: (element.loopExecutions ? 'Hide' : 'Show') +
                       ' Loop Executions',
@@ -816,6 +851,12 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $,
                 name: (element.children ? 'Hide' : 'Show') + ' Children',
                 callback: function() {
                   element.toggleChildren().then(rerender, fail);
+                }
+              },
+              'focus': {
+                name: 'Focus',
+                callback: function() {
+                  stateManager.focus([{type: element.type, id: element.id}]);
                 }
               },
               'expand': {
