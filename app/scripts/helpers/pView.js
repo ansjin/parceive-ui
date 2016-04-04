@@ -76,6 +76,13 @@ function pView(d3, size) {
   }
 
   function addTooltip(name, duration, _svg) {
+    // exit quickly if mouse is not over svg
+    // because tooltip can be triggered from other views
+    // via stateManeger
+    if (!$('#' + _svg.profileId).is(':hover')) {
+      return;
+    }
+
     var x = d3.event.pageX;
     var y = d3.event.pageY;
     var svgWidthPixels = size.svgSizeById(_svg.profileId).width;
