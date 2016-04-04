@@ -33,7 +33,6 @@ function focusCb(stateManager, data) {
 
     if (id === _svg.currentTop.id) {
       // zoom out
-      console.log('zoom out')
       if ((id === _svg.mainCallId && type === 'Call') ||
          (id === _svg.mainCallGroupId && type === 'CallGroup') ||
          _svg.zoomHistory.length < 1) {
@@ -47,7 +46,6 @@ function focusCb(stateManager, data) {
       d = prev;
     } else {
       // zoom in
-      console.log('zoom in')
       _svg.zoomHistory.push(_svg.currentTop);
       _svg.currentTop = d;
     }
