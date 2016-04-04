@@ -18,7 +18,9 @@ angular.module('detail-view', ['app'])
   }
 
   if (hovered.length > 0) {
-    element = hovered[0];
+    element = _.find(hovered, function(e) {
+      return !e.neighbour;
+    });
 
     switch (element.type) {
       case 'File':
