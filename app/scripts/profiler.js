@@ -33,7 +33,6 @@ function focusCb(stateManager, data) {
 
     if (id === _svg.currentTop.id) {
       // zoom out
-      console.log('zoom out')
       if ((id === _svg.mainCallId && type === 'Call') ||
          (id === _svg.mainCallGroupId && type === 'CallGroup') ||
          _svg.zoomHistory.length < 1) {
@@ -47,7 +46,6 @@ function focusCb(stateManager, data) {
       d = prev;
     } else {
       // zoom in
-      console.log('zoom in')
       _svg.zoomHistory.push(_svg.currentTop);
       _svg.currentTop = d;
     }
@@ -327,7 +325,9 @@ function render(d3, po, pd, pv, ps) {
 
     // reset zoom to main
     function resetZoom() {
-
+      var elementType = _svg.isTracing ? 'Call' : 'CallGroup';
+      var id = _svg.isTracing ? _svg.mainCallId : _svg.mainCallGroupId;
+      stateManager.focus([{type: elementType, id: id}]);
     }
 
     // save data objects to stateManager so external functions like hoverCb, 
@@ -406,7 +406,7 @@ function render(d3, po, pd, pv, ps) {
             }
           };
 
-          var resetZoom = {
+          var zoomToTop = {
             // reset zoom to 'main' call
             name: 'Reset Zoom',
             callback: function() {
@@ -418,7 +418,7 @@ function render(d3, po, pd, pv, ps) {
           // top level element
           if (_svg.currentTop.id !== _svg.mainCallId
             && _svg.currentTop.id !== _svg.mainCallGroupId) {
-            contextMenu.items.reset_zoom = resetZoom;
+            contextMenu.items.reset_zoom = zoomToTop;
           }
 
           // add zoom in or out if the current element is not
