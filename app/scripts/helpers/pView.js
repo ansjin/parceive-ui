@@ -26,7 +26,8 @@ function pView(d3, size) {
     resetSelectedNode: resetSelectedNode,
     toggleLoop: toggleLoop,
     toggleViewMode: toggleViewMode,
-    updateDurationSlider: updateDurationSlider
+    updateDurationSlider: updateDurationSlider,
+    getSvgWidth: getSvgWidth
   };
 
   return factory;
@@ -85,7 +86,7 @@ function pView(d3, size) {
 
     var x = d3.event.pageX;
     var y = d3.event.pageY;
-    var svgWidthPixels = size.svgSizeById(_svg.profileId).width;
+    var svgWidthPixels = getSvgWidth(_svg);
     var tooltipPadding = 20;
     var tooltipWidth = _.max([
       _svg.minTooltipWidth,
@@ -152,6 +153,10 @@ function pView(d3, size) {
 
   function removeTooltip(d) {
     d3.select('#tooltip').classed('hidden', true);
+  }
+
+  function getSvgWidth(_svg) {
+    return size.svgSizeById(_svg.profileId).width;
   }
 
   function isHovered(d, type, _svg, svg) {

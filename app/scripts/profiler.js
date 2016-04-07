@@ -218,7 +218,7 @@ function render(d3, po, pd, pv, ps) {
         .then(function() {
           // set event handlers for svg elements
           return new Promise(function(resolve, reject) {
-            var hoverType = _svg.isTracing ? 'Call' : 'CallGroup';
+            var elementType = _svg.isTracing ? 'Call' : 'CallGroup';
 
             // call elements
             svg.selectAll('rect.rect, text.rect')
@@ -228,23 +228,23 @@ function render(d3, po, pd, pv, ps) {
                   if (data === 'single') {
                     // broadcast mark
                     var isSelected = pv.isSelected(d, svg);
-                    stateManager.mark([{type: hoverType, id: d.id, isMarked: isSelected}]);
+                    stateManager.mark([{type: elementType, id: d.id, isMarked: isSelected}]);
                   }
 
                   // handle double click
                   if (data === 'double') {
                     // broadcast focus
-                    stateManager.focus([{type: hoverType, id: d.id}]);
+                    stateManager.focus([{type: elementType, id: d.id}]);
                   }
                  });
               })
               .on('mouseenter', function(d) {
                 // broadcast hover
-                stateManager.hover([{type: hoverType, id: d.id}]);
+                stateManager.hover([{type: elementType, id: d.id}]);
               })
               .on('mouseleave', function(d) {
                 // broadcast hover
-                stateManager.hover([{type: hoverType, id: d.id}]);
+                stateManager.hover([{type: elementType, id: d.id}]);
               });
 
             // loop elements
@@ -263,7 +263,7 @@ function render(d3, po, pd, pv, ps) {
         })
         .then(function() {
           // set selected nodes if any
-          pv.setSelectedNodes(_svg);
+          pv.setSelectedNodes(_svg, svg);
           resolve(true);
         });
       });
@@ -277,30 +277,25 @@ function render(d3, po, pd, pv, ps) {
         // add click handler to zoom view to top
         document.getElementById('profiler-reset')
         .addEventListener('click', function() {
-          
+          resetZoom();
         });
 
         // add click handler to toggle view modes
         document.getElementById('profiler-view-toggle')
         .addEventListener('click', function() {
-          _svg = _svg.isTracing ? _p : _t;
-          pv.toggleViewMode(_svg);
-          initDisplay();
+          toggleViewMode();
         });
 
         // add on-change handler to update duration slider
         document.getElementById('profiler-thresh')
         .addEventListener('change', function() {
-          pv.updateDurationSlider(_svg);
-          po.setRuntimeThreshold(_svg);
-          initDisplay();
+          updateDuration();
         });
 
         // add click handler to show/hide loops
         document.getElementById('profiler-loop')
         .addEventListener('click', function() {
-          pv.toggleLoop(_svg);
-          initDisplay();
+          showHideLoops();
         });
 
         // add click handler to re-render view on window resize
@@ -310,6 +305,31 @@ function render(d3, po, pd, pv, ps) {
       }, 1000);
     }
 
+    // toggle view mode
+    function toggleViewMode() {
+      _svg = _svg.isTracing ? _p : _t;
+      pv.toggleLoop(_svg);
+      initDisplay();
+    }
+
+    // show/hide loops
+    function showHideLoops() {
+      pv.toggleLoop(_svg);
+      initDisplay();
+    }
+
+    // update duration with slider value
+    function updateDuration() {
+      pv.updateDurationSlider(_svg);
+      po.setRuntimeThreshold(_svg);
+      initDisplay();
+    }
+
+    // reset zoom to main
+    function resetZoom() {
+
+    }
+
     // save data objects to stateManager so external functions like hoverCb, 
     // markCb can access the same object (its data and functions). 
     stateManager.getData().unsaved._svg = _svg;
@@ -317,6 +337,100 @@ function render(d3, po, pd, pv, ps) {
     stateManager.getData().unsaved.pv = pv;
     stateManager.getData().unsaved.po = po;
     stateManager.getData().unsaved.initDisplay = initDisplay;
+
+    // setup the context menu
+
+    $(function() {
+      $.contextMenu({
+        selector: 'rect.rect, text.rect, line.loop, circle.loop, circle.small, text.line',
+        build: function(menu, e) {
+          var _svg = stateManager.getData().unsaved._svg;
+          var pv = stateManager.getData().unsaved.pv;
+          var svg = stateManager.getData().unsaved.svg;
+          var initDisplay = stateManager.getData().unsaved.initDisplay;
+          var elementType = _svg.isTracing ? 'Call' : 'CallGroup';
+          var d = menu[0].__data__;
+          var isSelected = pv.isSelected(d, svg);
+          var menuWidth = 200;
+          var svgWidthPixels = pv.getSvgWidth(_svg);
+
+          var contextMenu = {
+            position: function(opt) {
+              var x = e.clientX;
+              var y = e.clientY;
+
+              // show tooltip to the left of the mouse if there is not
+              // enough space for it to appear on the right
+              if (menuWidth > svgWidthPixels - x) {
+                x = x - menuWidth;
+              }
+
+              opt.$menu.css({
+                top: y + 'px' ,
+                left: x + 'px'
+              });
+            },
+
+            items: {
+              // mark or unmark element
+              'mark_unmark': {
+                name: isSelected ? 'UnMark' : 'Mark',
+                callback: function() {
+                  stateManager.mark([{type: elementType, id: d.id, isMarked: isSelected}]);
+                }
+              },
+
+              // show or hide loops on svg
+              'show_hide_loops': {
+                name: _svg.showLoop ? 'Hide Loops' : 'Show Loops',
+                callback: function() {
+                  showHideLoops();
+                }
+              },
+
+              // switch to profiling or tracing mode
+              'switch_view_mode': {
+                name: _svg.isTracing ? 'Show Profiling' : 'Show Tracing',
+                callback: function() {
+                  toggleViewMode();
+                }
+              }
+            }
+          };
+
+          var zoomInOut = {
+            // zoom in or out of element
+            name: _svg.currentTop.id === d.id ? 'Zoom out' : 'Zoom in',
+            callback: function() {
+              stateManager.focus([{type: elementType, id: d.id}]);
+            }
+          };
+
+          var resetZoom = {
+            // reset zoom to 'main' call
+            name: 'Reset Zoom',
+            callback: function() {
+              resetZoom();
+            }
+          };
+
+          // add reset zoom if 'main' is not currently the
+          // top level element
+          if (_svg.currentTop.id !== _svg.mainCallId
+            && _svg.currentTop.id !== _svg.mainCallGroupId) {
+            contextMenu.items.reset_zoom = resetZoom;
+          }
+
+          // add zoom in or out if the current element is not
+          // top level (ie. main)
+          if (d.id !== _svg.mainCallId && d.id !== _svg.mainCallGroupId) {
+            contextMenu.items.zoom_in_out = zoomInOut;
+          }
+
+          return contextMenu;
+        }
+      })
+    });
 
   };
 }
