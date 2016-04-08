@@ -260,7 +260,7 @@ function render(d3, po, pd, pv, ps) {
           });
         })
         .then(function() {
-          // set selected nodes if any
+          pv.updateDurationSlider(_svg);
           pv.setSelectedNodes(_svg, svg);
           resolve(true);
         });
