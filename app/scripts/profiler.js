@@ -22,7 +22,7 @@ function focusCb(stateManager, data) {
     var obj = data[i];
     var id = obj.id;
     var type = obj.type;
-    var _svg = obj.data;
+    var _svg = obj.data || {};
     var d = pv.findDeep(_svg.viewData, id);
 
     // item not loaded in the profiler viewData
@@ -71,7 +71,13 @@ function markedCb(stateManager, data) {
     var id = obj.id;
     var type = obj.type;
     var isMarked = obj.isMarked;
-    var _svg = obj.data;
+
+    // check if marked type is Thread
+    if (type === 'Thread') {
+      continue;
+    }
+
+    var _svg = obj.data || {};
     var d = pv.findDeep(_svg.viewData, id);
 
     // item not loaded in the profiler viewData
@@ -104,7 +110,7 @@ function hoverCb(stateManager, data) {
     var obj = data[i];
     var id = obj.id;
     var type = obj.type;
-    var _svg = obj.data;
+    var _svg = obj.data || {};
     var d = pv.findDeep(_svg.viewData, id);
 
     // item not loaded in the profiler viewData
