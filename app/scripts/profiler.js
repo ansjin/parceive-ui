@@ -331,6 +331,11 @@ function render(d3, po, pd, pv, ps) {
       stateManager.focus([{type: elementType, id: id}]);
     }
 
+    // spot selected calls/callgroups
+    function spotData() {
+
+    }
+
     // save data objects to stateManager so external functions like hoverCb, 
     // markCb can access the same object (its data and functions). 
     stateManager.getData().unsaved.svg = svg;
@@ -375,14 +380,6 @@ function render(d3, po, pd, pv, ps) {
                 }
               },
 
-              // show or hide loops on svg
-              'show_hide_loops': {
-                name: _svg.showLoop ? 'Hide Loops' : 'Show Loops',
-                callback: function() {
-                  showHideLoops();
-                }
-              },
-
               // switch to profiling or tracing mode
               'switch_view_mode': {
                 name: _svg.isTracing ? 'Show Profiling' : 'Show Tracing',
@@ -409,6 +406,22 @@ function render(d3, po, pd, pv, ps) {
             }
           };
 
+          var showLoops = {
+            // show or hide loops on svg
+            name: _svg.showLoop ? 'Hide Loops' : 'Show Loops',
+            callback: function() {
+              showHideLoops();
+            }
+          };
+
+          var spotting = {
+            // spot selected calls/callgroups
+            name: (_svg.isTracing) ? 'Spot Calls' : 'Spot Callgroups',
+            callback: function() {
+              spotData();
+            }
+          };
+
           // add reset zoom if 'main' is not currently the
           // top level element
           if (_svg.currentTop.id !== _svg.mainCallId
@@ -420,6 +433,17 @@ function render(d3, po, pd, pv, ps) {
           // top level (ie. main)
           if (d.id !== _svg.mainCallId && d.id !== _svg.mainCallGroupId) {
             contextMenu.items.zoom_in_out = zoomInOut;
+          }
+
+          // add show/hide loops to context menu if in tracing mode
+          if (_svg.isTracing) {
+            contextMenu.items.show_hide_loops = showLoops;
+          }
+
+          // enable call/callgroup spotting if there is more than 
+          // 1 selected item
+          if (_svg.selectedNodes.length > 1) {
+            contextMenu.items.spot_data = spotting;
           }
 
           return contextMenu;
