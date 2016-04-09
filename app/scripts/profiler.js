@@ -306,7 +306,7 @@ function render(d3, po, pd, pv, ps) {
     // toggle view mode
     function toggleViewMode() {
       _svg = _svg.isTracing ? _p : _t;
-      pv.toggleLoop(_svg);
+      pv.toggleViewMode(_svg);
       initDisplay();
     }
 
