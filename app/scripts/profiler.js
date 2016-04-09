@@ -13,7 +13,7 @@ angular
 function focusCb(stateManager, data) {
   if (data.length < 1) { return; }
   
-  var _svg = stateManager.getData().unsaved._svg;
+  var svg = stateManager.getData().unsaved.svg;
   var pv = stateManager.getData().unsaved.pv;
   var po = stateManager.getData().unsaved.po;
   var initDisplay = stateManager.getData().unsaved.initDisplay;
@@ -22,12 +22,13 @@ function focusCb(stateManager, data) {
     var obj = data[i];
     var id = obj.id;
     var type = obj.type;
+    var _svg = obj.data;
     var d = pv.findDeep(_svg.viewData, id);
 
     // item not loaded in the profiler viewData
     // probably a child node with duration too small
     // or is in viewData but not on svg
-    if (!d.hasOwnProperty('id') && pv.isVisible(d, type, _svg)) { 
+    if (!d.hasOwnProperty('id') && pv.isVisible(d, type, _svg, svg)) { 
       continue; 
     }
 
@@ -62,7 +63,6 @@ function focusCb(stateManager, data) {
 function markedCb(stateManager, data) {
   if (data.length < 1) { return; }
   
-  var _svg = stateManager.getData().unsaved._svg;
   var svg = stateManager.getData().unsaved.svg;
   var pv = stateManager.getData().unsaved.pv;
   
@@ -71,6 +71,7 @@ function markedCb(stateManager, data) {
     var id = obj.id;
     var type = obj.type;
     var isMarked = obj.isMarked;
+    var _svg = obj.data;
     var d = pv.findDeep(_svg.viewData, id);
 
     // item not loaded in the profiler viewData
@@ -96,7 +97,6 @@ function markedCb(stateManager, data) {
 function hoverCb(stateManager, data) {
   if (data.length < 1) { return; }
 
-  var _svg = stateManager.getData().unsaved._svg;
   var svg = stateManager.getData().unsaved.svg;
   var pv = stateManager.getData().unsaved.pv;
 
@@ -104,6 +104,7 @@ function hoverCb(stateManager, data) {
     var obj = data[i];
     var id = obj.id;
     var type = obj.type;
+    var _svg = obj.data;
     var d = pv.findDeep(_svg.viewData, id);
 
     // item not loaded in the profiler viewData
@@ -226,34 +227,34 @@ function render(d3, po, pd, pv, ps) {
                   if (data === 'single') {
                     // broadcast mark
                     var isSelected = pv.isSelected(d, svg);
-                    stateManager.mark([{type: elementType, id: d.id, isMarked: isSelected}]);
+                    stateManager.mark([{type: elementType, id: d.id, isMarked: isSelected, data:_svg}]);
                   }
 
                   // handle double click
                   if (data === 'double') {
                     // broadcast focus
-                    stateManager.focus([{type: elementType, id: d.id}]);
+                    stateManager.focus([{type: elementType, id: d.id, data:_svg}]);
                   }
                  });
               })
               .on('mouseenter', function(d) {
                 // broadcast hover
-                stateManager.hover([{type: elementType, id: d.id}]);
+                stateManager.hover([{type: elementType, id: d.id, data:_svg}]);
               })
               .on('mouseleave', function(d) {
                 // broadcast hover
-                stateManager.hover([{type: elementType, id: d.id}]);
+                stateManager.hover([{type: elementType, id: d.id, data:_svg}]);
               });
 
             // loop elements
             svg.selectAll('line.loop, circle.loop, circle.small, text.line')
               .on('mouseenter', function(d) {
                 // broadcast hover
-                stateManager.hover([{type: 'Loop', id: d.id}]); 
+                stateManager.hover([{type: 'Loop', id: d.id, data:_svg}]); 
               })
               .on('mouseleave', function(d) {
                 // broadcast hover
-                stateManager.hover([{type: 'Loop', id: d.id}]); 
+                stateManager.hover([{type: 'Loop', id: d.id, data:_svg}]); 
               });
 
             resolve(true);
@@ -332,22 +333,16 @@ function render(d3, po, pd, pv, ps) {
 
     // save data objects to stateManager so external functions like hoverCb, 
     // markCb can access the same object (its data and functions). 
-    stateManager.getData().unsaved._svg = _svg;
     stateManager.getData().unsaved.svg = svg;
     stateManager.getData().unsaved.pv = pv;
     stateManager.getData().unsaved.po = po;
     stateManager.getData().unsaved.initDisplay = initDisplay;
 
     // setup the context menu
-
     $(function() {
       $.contextMenu({
         selector: 'rect.rect, text.rect, line.loop, circle.loop, circle.small, text.line',
         build: function(menu, e) {
-          var _svg = stateManager.getData().unsaved._svg;
-          var pv = stateManager.getData().unsaved.pv;
-          var svg = stateManager.getData().unsaved.svg;
-          var initDisplay = stateManager.getData().unsaved.initDisplay;
           var elementType = _svg.isTracing ? 'Call' : 'CallGroup';
           var d = menu[0].__data__;
           var isSelected = pv.isSelected(d, svg);
@@ -376,7 +371,7 @@ function render(d3, po, pd, pv, ps) {
               'mark_unmark': {
                 name: isSelected ? 'UnMark' : 'Mark',
                 callback: function() {
-                  stateManager.mark([{type: elementType, id: d.id, isMarked: isSelected}]);
+                  stateManager.mark([{type: elementType, id: d.id, isMarked: isSelected, data:_svg}]);
                 }
               },
 
@@ -402,7 +397,7 @@ function render(d3, po, pd, pv, ps) {
             // zoom in or out of element
             name: _svg.currentTop.id === d.id ? 'Zoom out' : 'Zoom in',
             callback: function() {
-              stateManager.focus([{type: elementType, id: d.id}]);
+              stateManager.focus([{type: elementType, id: d.id, data:_svg}]);
             }
           };
 
