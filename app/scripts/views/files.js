@@ -4,6 +4,7 @@ angular.module('filelist-view', ['app'])
 .value('markedCb', function() {})
 .value('focusCb', function() {})
 .value('hoverCb', function() {})
+.value('spotCb', function() {})
 .service('render', ['LoaderService', 'jquery', 'd3', function(loader, $, d3) {
   return function(svg, stateManager) {
     _.delay(function() {

@@ -45,6 +45,7 @@ function applyMarked(state, nodes, changes) {
 angular.module('cct-view', ['app'])
 .value('name', 'CCT')
 .value('group', 'Callgraph')
+.value('spotCb', function() {})
 .value('markedCb', function(stateManager, changes) {
   var state = stateManager.getData();
   var callgraph = state.unsaved.callgraph;

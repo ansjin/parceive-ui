@@ -1,8 +1,4 @@
-angular.module('source-view', ['app'])
-.value('name', 'Source View')
-.value('group', 'Source Code')
-.value('markedCb', function() {})
-.value('focusCb', function(stateManager, data) {
+function cb(stateManager, data) {
   var state = stateManager.getData();
 
   var file = _.find(data, function(e) {
@@ -14,8 +10,15 @@ angular.module('source-view', ['app'])
 
     state.unsaved.update();
   }
-})
+}
+
+angular.module('source-view', ['app'])
+.value('name', 'Source View')
+.value('group', 'Source Code')
+.value('markedCb', function() {})
+.value('focusCb', cb)
 .value('hoverCb', function() {})
+.value('spotCb', cb)
 .service('render', ['highlight', 'LoaderService', 'jquery', 'd3',
 function(highlight, loader, $, d3) {
   return function(svg, stateManager) {

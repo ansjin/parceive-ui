@@ -7,6 +7,7 @@ angular
   .value('markedCb', markedCb)
   .value('focusCb', focusCb)
   .value('hoverCb', hoverCb)
+  .value('spotCb', function() {})
   .service('render', render);
 
 // handle marked event
@@ -101,7 +102,7 @@ function render(d3, pdh, pvh, size, grad) {
     }
 
     function toggleViewMode() {
-      // store some variables for use when returning back to the 
+      // store some variables for use when returning back to the
       // view we are toggling out of
       if (isTracing()) {
         zoomTracingId = zoomId;

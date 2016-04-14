@@ -7,7 +7,6 @@ var marked = {
 
 var getRun;
 var setRun;
-var neighbours;
 
 var globalFct = {
   neighbours: null,
@@ -261,6 +260,12 @@ manager = {
     callCb(group, 'hover', val);
   },
 
+  spot: function(id, val) {
+    var group = state[id].group;
+
+    callCb(group, 'spot', val);
+  },
+
   setMarkedCallback: function(id, cb) {
     state[id]._cb.unsaved.marked = cb;
   },
@@ -271,6 +276,10 @@ manager = {
 
   setHoverCallback: function(id, cb) {
     state[id]._cb.unsaved.hover = cb;
+  },
+
+  setSpotCallback: function(id, cb) {
+    state[id]._cb.unsaved.spot = cb;
   },
 
   removeMarkedCallback: function(id) {
@@ -285,10 +294,15 @@ manager = {
     delete state[id]._cb.unsaved.hover;
   },
 
+  removeSpotCallback: function(id) {
+    delete state[id]._cb.unsaved.spot;
+  },
+
   clearCallbacks: function(id) {
     delete state[id]._cb.unsaved.focus;
     delete state[id]._cb.unsaved.marked;
-    delete state[id]._cb.unsaved.focus;
+    delete state[id]._cb.unsaved.hover;
+    delete state[id]._cb.unsaved.spot;
   },
 
   checkFocus: function(array, type, id) {
@@ -313,7 +327,8 @@ manager.bindId = function(id) {
   var functionsToBind = ['mark', 'clearMarked', 'getData', 'isMarked', 'getId',
    'getMarked', 'hover', 'focus', 'setMarkedCallback', 'setFocusCallback',
    'setHoverCallback', 'removeMarkedCallback', 'removeFocusCallback',
-   'removeHoverCallback', 'clearCallbacks'];
+   'removeHoverCallback', 'clearCallbacks', 'spot', 'removeSpotCallback',
+   'setSpotCallback'];
 
   var bound = _.zipObject(
     _.map(functionsToBind, function(fct) {

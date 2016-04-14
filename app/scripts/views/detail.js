@@ -3,6 +3,7 @@ angular.module('detail-view', ['app'])
 .value('group', 'Misc')
 .value('markedCb', function() {})
 .value('focusCb', function() {})
+.value('spotCb', function() {})
 .value('hoverCb', function(stateManager, hovered) {
   var state = stateManager.getData();
 
