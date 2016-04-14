@@ -103,6 +103,7 @@ angular.module('cct-view', ['app'])
 function(CallGraphDataService, loader, d3, keyService, GradientService, $,
           SizeService) {
   var bgColors = d3.scale.category20();
+  var refColors = d3.scale.category10();
 
   function addZoom(svg) {
     svg.call(d3.behavior.zoom().on('zoom', zoom));
@@ -610,7 +611,10 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $,
 
     refNodesEnter
       .append('circle')
-      .attr('r', 10);
+      .attr('r', 10)
+      .style('fill', function(d) {
+        return refColors(d.data.type);
+      });
 
     refNodesEnter
       .append('text')
