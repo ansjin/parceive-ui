@@ -552,6 +552,18 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $,
       .attr('xlink:href', '#execution')
       .attr('transform', 'scale(' + 5 / 800 + ')');
 
+    var callWithLoops = callNodesEnter
+      .filter(function(d) {
+        return d.type === 'Call' && d.data.loopCount > 0;
+      });
+
+    callWithLoops
+      .append('use')
+      .attr('xlink:href', '#execution')
+      .attr('transform', function(d) {
+        return 'translate(' + (d.width - 10) + ', 0) scale(' + 5 / 800 + ')';
+      });
+
     /* Set initial position so the first transition makes sense */
 
     callNodesEnter
