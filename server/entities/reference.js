@@ -17,6 +17,8 @@ module.exports = {
 };
 
 var accesses = require('./access');
+var callreferences = require('./callreference');
+var callgroupreferences = require('./callgroupreference');
 
 router.get('/', function(req, res) {
   util.handleAllQuery(req.db, mapping, res, 'SELECT * FROM Reference');
@@ -30,6 +32,16 @@ router.get('/many/:ids/accesses', function(req, res) {
 router.get('/many/:ids', function(req, res) {
   util.handleManyQuery(req.db, mapping, res, req.params.ids,
     'Reference WHERE Id');
+});
+
+router.get('/many/:ids/callreferences', function(req, res) {
+  util.handleManyQuery(req.db, callreferences.mapping, res, req.params.ids,
+    'CallReference WHERE Reference');
+});
+
+router.get('/many/:ids/callgroupreferences', function(req, res) {
+  util.handleManyQuery(req.db, callgroupreferences.mapping, res, req.params.ids,
+    'CallGroupReference WHERE Reference');
 });
 
 router.get('/sharedreferences', function(req, res) {
