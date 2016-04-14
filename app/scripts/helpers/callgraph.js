@@ -288,34 +288,6 @@ angular.module('app')
       });
     };
 
-    CallGraph.prototype.link = function(node) {
-      //TODO
-    };
-
-    CallGraph.prototype.addCallAndLink = function(id) {
-      var self = this;
-
-      return loader.getCall(id).then(function(call) {
-        var node = self.addCall(call);
-
-        node.load().then(function() {
-          return self.link(node);
-        });
-      });
-    };
-
-    CallGraph.prototype.addCallGroupAndLink = function(id) {
-      var self = this;
-
-      return loader.getCallGroup(id).then(function(callgroup) {
-        var node = self.addCallGroup(callgroup);
-
-        node.load().then(function() {
-          return self.link(callgroup);
-        });
-      });
-    };
-
     /**************************************************************** Helpers */
 
     function toggleFunction(field, load, unload) {

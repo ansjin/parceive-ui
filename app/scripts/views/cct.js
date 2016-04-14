@@ -53,28 +53,7 @@ angular.module('cct-view', ['app'])
 
   applyMarked(state, nodes, changes);
 })
-.value('focusCb', function(stateManager, focused) {
-  var element = _.find(focused, function(el) {
-    return !el.neighbour;
-  });
-
-  var state = stateManager.getData();
-
-  var callgraph = state.unsaved.callgraph;
-
-  switch (element.type) {
-    case 'Call':
-      callgraph.addCallAndLink(element.id);
-      break;
-    case 'CallGroup':
-      callgraph.addCallGroupAndLink(element.id);
-      break;
-    default:
-      return;
-  }
-
-  state.unsaved.rerender();
-})
+.value('focusCb', function() {})
 .value('hoverCb', function(stateManager, hovered) {
   var state = stateManager.getData();
   var callgraph = state.unsaved.callgraph;
