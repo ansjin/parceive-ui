@@ -70,7 +70,7 @@ angular.module('app')
               ]);
             });
           default:
-            return RSVP.Promise.resolv();
+            return RSVP.Promise.resolve();
         }
       })).then(function() {
         return ret;
