@@ -979,6 +979,32 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $,
         }
       });
     });
+
+    $(function() {
+      $.contextMenu({
+        selector: '.reference',
+        build: function(menu) {
+          var element = menu[0].__data__;
+          return {
+            position: function(opt) {
+              var rect = opt.$trigger[0].getBoundingClientRect();
+              opt.$menu.css({
+                top: rect.top + element.height,
+                left: rect.left + element.width
+              });
+            },
+            items: {
+              'showlinks': {
+                name: 'Show links to expanded nodes',
+                callback: function() {
+                  element.loadLinks().then(rerender, fail);
+                }
+              }
+            }
+          };
+        }
+      });
+    });
   }
 
   return function(svg, stateManager) {

@@ -737,6 +737,32 @@ angular.module('app')
       this.nodes.push(call);
     };
 
+    Reference.prototype.loadLinks = function() {
+      var self = this;
+      var nodes = self.callgraph.getNodes();
+
+      function process(all) {
+        _.forEach(all, function(call) {
+          _.forEach(nodes, function(node) {
+            if (node.data === call && !_.includes(node.references, self)) {
+              self.addNode(node);
+
+              if (_.isUndefined(node.references)) {
+                node.references = [];
+              }
+
+              node.references.push(self);
+            }
+          });
+        });
+      }
+
+      return RSVP.all([
+        self.data.getCalls().then(process),
+        self.data.getCallGroups().then(process)
+      ]);
+    };
+
     /************************************************************** CallGroup */
 
     function CallGroup(callgraph, callgroup, parent) {
