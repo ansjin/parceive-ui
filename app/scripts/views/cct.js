@@ -53,7 +53,37 @@ angular.module('cct-view', ['app'])
 
   applyMarked(state, nodes, changes);
 })
-.value('focusCb', function() {})
+.value('focusCb', function(stateManager, focused) {
+  var state = stateManager.getData();
+  var callgraph = state.unsaved.callgraph;
+  var svg = state.unsaved.svg;
+
+  var nodes = callgraph.getNodes();
+
+  var interesting = _.filter(focused, function(el) {
+    return !el.neighbour && (
+                            el.type === 'Call' || el.type === 'CallGroup' ||
+                            el.type === 'LoopIteration' ||
+                            el.type === 'LoopExecution'
+                          );
+  });
+
+  if (interesting.length === 0) {
+    return;
+  }
+
+  var node = _.find(nodes, function(node) {
+    return _.any(interesting, function(el) {
+      return el.id === node.data.id && el.type === node.type;
+    });
+  });
+
+  if (_.isUndefined(node)) {
+    return;
+  }
+
+  svg.focus([node.x, node.y])
+})
 .value('hoverCb', function(stateManager, hovered) {
   var state = stateManager.getData();
   var callgraph = state.unsaved.callgraph;
@@ -85,6 +115,7 @@ angular.module('cct-view', ['app'])
       }
     });
 
+    state.unsaved.svg = svg;
     state.unsaved.callGroup.selectAll('g.node')
       .transition('opacity')
       .style('opacity', function(d) {
@@ -106,7 +137,9 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $,
   var refColors = d3.scale.category10();
 
   function addZoom(svg) {
-    svg.call(d3.behavior.zoom().on('zoom', zoom));
+    var zoom = d3.behavior.zoom();
+
+    svg.call(zoom.on('zoom', zoomEvent));
 
     var defs = svg.append('defs');
 
@@ -165,9 +198,31 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $,
     g.append('g')
       .attr('class', 'calls-group');
 
-    function zoom() {
+    function zoomEvent() {
       g.attr('transform', 'translate(' + d3.event.translate +
                 ')scale(' + d3.event.scale + ')');
+    }
+
+    svg.focus = function(pos) {
+      var x = pos[0];
+      var y = pos[1];
+
+      var svgSize = SizeService.svgSize(svg);
+
+      var cx = svgSize.width / 2;
+      var cy = svgSize.height / 2;
+
+      var tx = cx - x;
+      var ty = cy - y;
+
+      pos = [tx, ty];
+
+      zoom.translate(pos);
+      zoom.scale(1);
+
+      g
+        .transition()
+        .attr('transform', 'translate(' + pos[0] + ', ' + pos[1]+ ')scale(1)');
     }
   }
 
@@ -753,7 +808,8 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $,
               'focus': {
                 name: 'Focus',
                 callback: function() {
-                  stateManager.focus([{type: element.type, id: element.id}]);
+                  stateManager.focus([{type: element.type, id: element.data.id
+                                      }]);
                 }
               },
               'expand': {
@@ -852,7 +908,8 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $,
               'focus': {
                 name: 'Focus',
                 callback: function() {
-                  stateManager.focus([{type: element.type, id: element.id}]);
+                  stateManager.focus([{type: element.type, id: element.data.id
+                                      }]);
                 }
               },
               'expand': {
