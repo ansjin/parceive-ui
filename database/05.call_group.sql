@@ -1,17 +1,3 @@
-DROP TABLE IF EXISTS CallGroup;
-
-CREATE TABLE "CallGroup"(
-  Id INT PRIMARY KEY NOT NULL,
-  Function INT NOT NULL,
-  Caller INT,
-  Count INT NOT NULL,
-  Parent INT,
-  Duration INT NOT NULL,
-  Start INT NOT NULL,
-  End INT NOT NULL,
-  CallerExecution INT
-);
-
 INSERT INTO CallGroup SELECT
   ROWID AS Id,
   Function,

@@ -1,15 +1,3 @@
-DROP TABLE IF EXISTS CallReference;
-CREATE TABLE "CallReference"
-(
-    Id INTEGER PRIMARY KEY AUTOINCREMENT,
-    Call INT NOT NULL,
-    Reference INT NOT NULL,
-    Read INT NOT NULL,
-    Write INT NOT NULL,
-    FOREIGN KEY(Call) REFERENCES Call(Id),
-    FOREIGN KEY(Reference) REFERENCES Reference(Id)
-);
-
 INSERT INTO CallReference SELECT
   NULL,
   s.Call AS Call,

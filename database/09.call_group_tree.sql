@@ -1,13 +1,3 @@
-DROP TABLE IF EXISTS CallGroupTree;
-CREATE TABLE "CallGroupTree"
-(
-    Ancestor INT NOT NULL,
-    Descendant INT NOT NULL,
-    Depth INT NOT NULL,
-    FOREIGN KEY(Ancestor) REFERENCES CallGroup(Id),
-    FOREIGN KEY(Descendant) REFERENCES CallGroup(Id)
-);
-
 WITH Tree AS
 (
     SELECT

@@ -1,21 +1,3 @@
-ALTER TABLE Call RENAME TO Temporary;
-
-CREATE TABLE "Call"(
-    Id INT PRIMARY KEY NOT NULL,
-    Thread INT NOT NULL,
-    Function INT NOT NULL,
-    Instruction INT NOT NULL,
-    Start INT,
-    End INT,
-    Caller INT,
-    CallerIteration INT,
-    CallerExecution INT,
-    CallGroup INT,
-    CallsOther INT,
-    LoopCount INT,
-    Duration INT
-);
-
 INSERT INTO Call SELECT
   Id,
   Thread,
@@ -30,7 +12,7 @@ INSERT INTO Call SELECT
   NULL AS CallsOther, -- filled in by UPDATE
   (SELECT COUNT(*) FROM LoopExecution e WHERE e.Call = t.Id) AS LoopCount,
   (End - Start)
-FROM Temporary t WHERE End != -1 AND Start != -1;
-DROP TABLE Temporary;
+FROM CallOld t WHERE End != -1 AND Start != -1;
+DROP TABLE CallOld;
 
 UPDATE Call SET CallerExecution = (SELECT i.Execution FROM LoopIteration i WHERE i.Id = CallerIteration);
