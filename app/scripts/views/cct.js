@@ -45,11 +45,26 @@ function applyMarked(state, nodes, changes) {
 angular.module('cct-view', ['app'])
 .value('name', 'CCT')
 .value('group', 'Callgraph')
-.value('spotCb', function() {})
+.value('spotCb', function(stateManager, elements) {
+  elements = _.filter(elements, function(element) {
+    return !element.neighbour && (
+      element.type === 'Call' || element.type === 'CallGroup'
+    );
+  });
+
+  var state = stateManager.getData();
+  var callgraph = state.unsaved.callgraph;
+
+  callgraph.spot(elements).then(state.unsaved.rerender);
+})
 .value('markedCb', function(stateManager, changes) {
   var state = stateManager.getData();
   var callgraph = state.unsaved.callgraph;
   var nodes = callgraph.getNodes();
+
+  changes = _.filter(changes, function(change) {
+    return !change.neighbour;
+  })
 
   applyMarked(state, nodes, changes);
 })
@@ -848,6 +863,12 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $,
                     !stateManager.isMarked(element.type, element.data.id));
                 }
               },
+              'spot': {
+                name: 'Spot marked nodes',
+                callback: function() {
+                  stateManager.spot(stateManager.getMarked());
+                }
+              },
               'sharedreferences': {
                 name: 'Show shared references between marked nodes',
                 callback: function() {
@@ -878,6 +899,10 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $,
                stateManager.getMarked().length <= 2) {
             delete data.items.sharedreferences;
             delete data.items.recursivesharedreferences;
+          }
+
+          if (stateManager.getMarked().length < 2) {
+            delete data.items.spot;
           }
 
           return data;

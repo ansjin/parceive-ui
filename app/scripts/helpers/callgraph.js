@@ -179,6 +179,25 @@ angular.module('app')
       });
     };
 
+    CallGraph.prototype.spot = function(elements) {
+      var self = this;
+
+      self.roots = [];
+      self.references = [];
+
+      return RSVP.all(_.map(elements, function(element) {
+        if (element.type === 'Call') {
+          return loader.getCall(element.id).then(function(call) {
+            return self.addCallRoot(call);
+          });
+        } else if (element.type === 'CallGroup') {
+          return loader.getCallGroup(element.id).then(function(callgroup) {
+            return self.addCallGroupRoot(callgroup);
+          });
+        }
+      }));
+    };
+
     CallGraph.prototype.showSharedReferences = function(marked) {
       var self = this;
       var allNodes = this.getNodes();
