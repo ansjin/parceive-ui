@@ -1,8 +1,6 @@
-/* global hljs */
+/* global prettyPrintOne */
 
 angular.module('app')
   .service('highlight', function() {
-    hljs.configure({languages: ['cpp']});
-
-    return hljs;
+    return prettyPrintOne;
   });

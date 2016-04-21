@@ -582,6 +582,13 @@ var Call = {
   },
 
   /** @instance
+    * @return {external:Promise.<Instruction>} The calling instruction in the
+    *         parent */
+  getInstruction: function() {
+    return this._mapper.getRelationship(this, 'instruction');
+  },
+
+  /** @instance
     * @return {external:Promise.<Function>} The function that this call calls */
   getFunction: function() {
     return this._mapper.getRelationship(this, 'function');

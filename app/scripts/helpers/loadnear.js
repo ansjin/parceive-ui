@@ -37,7 +37,11 @@ angular.module('app')
                 call.getCalls().then(_.partial(addAllToRet, 'Call')),
                 call.getCallGroup().then(_.partial(addToRet, 'CallGroup')),
                 call.getCallGroups().then(_.partial(addAllToRet, 'CallGroup')),
-                call.getReferences().then(_.partial(addAllToRet, 'Reference'))
+                call.getReferences().then(_.partial(addAllToRet, 'Reference')),
+                call.getFunction().then(_.partial(addToRet, 'Function')),
+                call.getFunction().then(function(fct) {
+                  return fct.getFile().then(_.partial(addToRet, 'File'));
+                })
               ]);
             });
           case 'CallGroup':

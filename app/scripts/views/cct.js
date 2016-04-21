@@ -130,7 +130,6 @@ angular.module('cct-view', ['app'])
       }
     });
 
-    state.unsaved.svg = svg;
     state.unsaved.callGroup.selectAll('g.node')
       .transition('opacity')
       .style('opacity', function(d) {

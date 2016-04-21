@@ -9,6 +9,7 @@ angular.module('filelist-view', ['app'])
   return function(svg, stateManager) {
     _.delay(function() {
       var header = $(svg[0][0]).parent().siblings('div.html-header');
+      header.css('overflow', 'auto');
       var table = d3.select(header.children('table')[0]);
 
       loader.getFiles().then(function(files) {

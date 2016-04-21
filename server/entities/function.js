@@ -5,8 +5,8 @@ var util = require('./util');
 
 var mapping = {
   'Id': 'id',
-  'Signature': 'signature',
-  'Type': 'type',
+  'Prototype': 'signature',
+  'Name': 'name',
   'File': 'file',
   'Line': 'startLine',
   'Duration': 'duration'
@@ -26,7 +26,7 @@ router.get('/', function(req, res) {
 
 router.get('/signature/:sig', function(req, res) {
   util.handleOneQuery(req.db, mapping, res,
-    'SELECT * FROM Function WHERE Signature=?', req.params.sig);
+    'SELECT * FROM Function WHERE Name=?', req.params.sig);
 });
 
 router.get('/many/:ids/calls', function(req, res) {
