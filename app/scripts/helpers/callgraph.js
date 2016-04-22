@@ -40,6 +40,12 @@ angular.module('app')
       });
     }
 
+    CallGraph.prototype.addToRoots = function(node) {
+        if (!_.includes(this.roots, node)) {
+          this.roots.push(node);
+        }
+    };
+
     CallGraph.prototype.layout = function() {
       var root = {
         calls: this.getRoots()
@@ -65,13 +71,13 @@ angular.module('app')
 
     CallGraph.prototype.addCallRoot = function(call) {
       var node = this.addCall(call);
-      this.roots.push(node);
+      this.addToRoots(node);
       return node.load();
     };
 
     CallGraph.prototype.addCallGroupRoot = function(callgroup) {
       var node = this.addCallGroup(callgroup);
-      this.roots.push(node);
+      this.addToRoots(node);
       return node.load();
     };
 
@@ -195,7 +201,35 @@ angular.module('app')
             return self.addCallGroupRoot(callgroup);
           });
         }
-      }));
+      })).then(function() {
+        var oldRoots;
+        function loadAllParents() {
+          oldRoots = _.clone(self.roots);
+          return RSVP.all([
+            _.map(self.roots, function(root) {
+              return root.loadParent();
+            })
+          ]);
+        }
+
+        function doParentLoad() {
+          if (self.roots.length > 1 && !_.isEqual(self.roots, oldRoots)) {
+            return loadAllParents().then(doParentLoad);
+          }
+        }
+
+        return doParentLoad();
+      }).then(function() {
+        self.roots = _.map(self.roots, function(root) {
+          var last = root;
+          while (last.calls && last.calls.length === 1 && !_.any(elements, function (e) {
+            return e.type === last.type && e.id === last.data.id;
+          })) {
+            last = last.calls[0];
+          }
+          return last;
+        });
+      });
     };
 
     CallGraph.prototype.showSharedReferences = function(marked) {
@@ -433,7 +467,7 @@ angular.module('app')
     };
 
     Node.prototype.unloadChildren = function() {
-      _.forEach(this.children, function(child) {
+      _.forEach(this.calls, function(child) {
         child.unloadChildren();
         child.unloadAssociations();
       });
@@ -442,7 +476,7 @@ angular.module('app')
     };
 
     Node.prototype.unloadParent = function(keepReferences) {
-      if (_.isUndefined(this.parent)) {
+      if (_.isUndefined(this.parent) || _.isNull(this.parent)) {
         return;
       }
 
@@ -456,7 +490,7 @@ angular.module('app')
       this.parent.unloadAssociations();
 
       this.callgraph.roots.remove(this.parent);
-      this.callgraph.roots.push(this);
+      this.callgraph.addToRoots(this);
 
       delete this.parent;
 
@@ -502,21 +536,29 @@ angular.module('app')
     Call.prototype.loadParent = function() {
       var self = this;
 
-      if (self.parent) {
+      if (self.parent || _.isNull(self.parent)) {
         return RSVP.resolve();
       }
 
       return self.data.getCaller().then(function(caller) {
-        self.parent = self.callgraph.addCall(caller);
-
-        if (_.isUndefined(self.parent)) {
+        if (_.isNull(caller)) {
+          self.parent = null;
           return RSVP.resolve();
         }
 
-        self.callgraph.roots.remove(self);
-        self.callgraph.roots.push(self.parent);
+        self.parent = self.callgraph.addCall(caller);
 
-        self.parent.calls = [self];
+        self.callgraph.roots.remove(self);
+        if (!self.parent.parent) {
+          self.callgraph.addToRoots(self.parent);
+        }
+
+
+        if (self.parent.calls) {
+          self.parent.calls.push(self);
+        } else {
+          self.parent.calls = [self];
+        }
 
         return self.parent.load();
       });
@@ -819,16 +861,23 @@ angular.module('app')
       var self = this;
 
       return self.data.getCaller().then(function(caller) {
-        self.parent = self.callgraph.addCall(caller);
-
-        if (_.isUndefined(self.parent)) {
+        if (_.isNull(caller)) {
+          self.parent = null;
           return RSVP.resolve();
         }
 
-        self.callgraph.roots.remove(self);
-        self.callgraph.roots.push(self.parent);
+        self.parent = self.callgraph.addCall(caller);
 
-        self.parent.calls = [self];
+        self.callgraph.roots.remove(self);
+        if (!self.parent.parent) {
+          self.callgraph.addToRoots(self.parent);
+        }
+
+        if (self.parent.calls) {
+          self.parent.calls.push(self);
+        } else {
+          self.parent.calls = [self];
+        }
 
         return self.parent.load();
       });
@@ -861,7 +910,7 @@ angular.module('app')
 
           var addedRoots = _.forEach(calls, function(call) {
             var node = self.callgraph.addCall(call, self.parent);
-            self.callgraph.roots.push(node);
+            self.callgraph.addToRoots(node);
             return node;
           });
 
