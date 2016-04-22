@@ -1,6 +1,6 @@
 angular.module('app')
   .service('CallGraphDataService',
-  ['d3', 'SizeService', function(d3, SizeService) {
+  ['d3', 'SizeService', 'LoaderService', function(d3, SizeService, loader) {
     function CallGraph() {
       this.roots = [];
       this.references = [];
@@ -179,6 +179,115 @@ angular.module('app')
       });
     };
 
+    CallGraph.prototype.showSharedReferences = function(marked) {
+      var self = this;
+      var allNodes = this.getNodes();
+
+      var nodes = _.chain(marked)
+        .map(function(data) {
+          return _.find(allNodes, function(node) {
+            return node.type === data.type && node.data.id === data.id;
+          });
+        })
+        .filter(function(node) {
+          return !_.isUndefined(node);
+        }).value();
+
+      _.forEach(nodes, function(node) {
+        node.unloadReferences();
+        delete node.references;
+      });
+
+      var callIds = _.chain(nodes)
+        .filter(function(node) {
+          return node.type === 'Call';
+        }).map(function(node) {
+          return node.data.id;
+        }).value();
+
+      var callgroupIds = _.chain(nodes)
+        .filter(function(node) {
+          return node.type === 'CallGroup';
+        }).map(function(node) {
+          return node.data.id;
+        }).value();
+
+      var loopexecutionIds = _.chain(nodes)
+        .filter(function(node) {
+          return node.type === 'LoopExecution';
+        }).map(function(node) {
+          return node.data.id;
+        }).value();
+
+      var loopiterationIds = _.chain(nodes)
+        .filter(function(node) {
+          return node.type === 'LoopIteration';
+        }).map(function(node) {
+          return node.data.id;
+        }).value();
+
+      return loader.getSharedReferences(callIds, callgroupIds,
+        loopexecutionIds, loopiterationIds).then(
+      function(refs) {
+        refs = _.map(refs, function(ref) {
+          return self.addReference(ref);
+        });
+
+        _.forEach(nodes, function(node) {
+          node.references = refs;
+
+          _.forEach(refs, function(ref) {
+            ref.addNode(node);
+          });
+        });
+      });
+    };
+
+    CallGraph.prototype.showRecursiveSharedReferences = function(marked) {
+      var self = this;
+      var allNodes = this.getNodes();
+
+      var nodes = _.map(marked, function(data) {
+        return _.find(allNodes, function(node) {
+          return node.type === data.type && node.data.id === data.id;
+        });
+      });
+
+      _.forEach(nodes, function(node) {
+        node.unloadReferences();
+        delete node.references;
+      });
+
+      var callIds = _.chain(nodes)
+        .filter(function(node) {
+          return node.type === 'Call';
+        }).map(function(node) {
+          return node.data.id;
+        }).value();
+
+      var callgroupIds = _.chain(nodes)
+        .filter(function(node) {
+          return node.type === 'CallGroup';
+        }).map(function(node) {
+          return node.data.id;
+        }).value();
+
+      return loader.getRecursiveSharedReferences(callIds, callgroupIds).then(
+      function(refs) {
+        refs = _.map(refs, function(ref) {
+          return self.addReference(ref);
+        });
+
+        _.forEach(nodes, function(node) {
+          node.references = refs;
+
+          _.forEach(refs, function(ref) {
+            ref.addNode(node);
+          });
+        });
+      });
+    };
+
     /**************************************************************** Helpers */
 
     function toggleFunction(field, load, unload) {
@@ -200,6 +309,8 @@ angular.module('app')
       if (parent) {
         this.parent = parent;
       }
+
+      this.uuid = _.uuid();
     }
 
     Node.prototype.getDuration = function() {
@@ -590,6 +701,7 @@ angular.module('app')
       this.callgraph = callgraph;
 
       this.type = 'Reference';
+      this.uuid = _.uuid();
 
       this.nodes = [];
 
@@ -623,6 +735,32 @@ angular.module('app')
 
     Reference.prototype.addNode = function(call) {
       this.nodes.push(call);
+    };
+
+    Reference.prototype.loadLinks = function() {
+      var self = this;
+      var nodes = self.callgraph.getNodes();
+
+      function process(all) {
+        _.forEach(all, function(call) {
+          _.forEach(nodes, function(node) {
+            if (node.data === call && !_.includes(node.references, self)) {
+              self.addNode(node);
+
+              if (_.isUndefined(node.references)) {
+                node.references = [];
+              }
+
+              node.references.push(self);
+            }
+          });
+        });
+      }
+
+      return RSVP.all([
+        self.data.getCalls().then(process),
+        self.data.getCallGroups().then(process)
+      ]);
     };
 
     /************************************************************** CallGroup */

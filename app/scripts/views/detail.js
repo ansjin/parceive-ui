@@ -3,6 +3,7 @@ angular.module('detail-view', ['app'])
 .value('group', 'Misc')
 .value('markedCb', function() {})
 .value('focusCb', function() {})
+.value('spotCb', function() {})
 .value('hoverCb', function(stateManager, hovered) {
   var state = stateManager.getData();
 
@@ -18,7 +19,9 @@ angular.module('detail-view', ['app'])
   }
 
   if (hovered.length > 0) {
-    element = hovered[0];
+    element = _.find(hovered, function(e) {
+      return !e.neighbour;
+    });
 
     switch (element.type) {
       case 'File':

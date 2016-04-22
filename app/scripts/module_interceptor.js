@@ -43,7 +43,8 @@ mod.service('viewProperties', ['StateService',  function(StateService) {
       render: $injector.get('render'),
       markedCb: $injector.get('markedCb'),
       focusCb: $injector.get('focusCb'),
-      hoverCb: $injector.get('hoverCb')
+      hoverCb: $injector.get('hoverCb'),
+      spotCb: $injector.get('spotCb')
     };
   };
 }]);

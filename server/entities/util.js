@@ -193,5 +193,7 @@ module.exports = {
   handleManyQuery: handleManyQuery,
   handleOneQuery: handleOneQuery,
   handleAllQuery: handleAllQuery,
-  handleRelationshipQuery: handleRelationshipQuery
+  handleRelationshipQuery: handleRelationshipQuery,
+  sendAll: sendAll,
+  prepareDBArgs: prepareDBArgs
 };

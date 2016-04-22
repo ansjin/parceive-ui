@@ -50,6 +50,7 @@ angular.module('app')
         bound.setFocusCallback(data.focusCb);
         bound.setMarkedCallback(data.markedCb);
         bound.setHoverCallback(data.hoverCb);
+        bound.setSpotCallback(data.spotCb);
 
         $scope.views.push(view);
       }

@@ -440,11 +440,11 @@ function getRelationship(http, manager, instance, relationship) {
 
     promise = deferred.promise;
   } else {
-    if (_.isUndefined(instance[relationship])) {
+    if (_.isNull(instance[relationship])) {
       return RSVP.Promise.resolve(instance[relationship]);
     }
 
-    if (_.isUndefined(instance[relationship + 'ID'])) {
+    if (_.isNull(instance[relationship + 'ID'])) {
       return RSVP.Promise.resolve();
     }
 
@@ -1231,6 +1231,16 @@ var Reference = {
       type: 'Access',
       many: true,
       inverse: 'reference'
+    },
+    'callreferences': {
+      type: 'CallReference',
+      many: true,
+      inverse: 'reference'
+    },
+    'callgroupreferences': {
+      type: 'CallGroupReference',
+      many: true,
+      inverse: 'reference'
     }
   },
 
@@ -1238,8 +1248,7 @@ var Reference = {
     * @return {external:Promise.<Instruction>} The instruction that allocates
     *                                           this reference */
   getAllocator: function() {
-    return this._mapper.getRelationship(this,
-      this._mapper.types.Instruction, 'allocator');
+    return this._mapper.getRelationship(this, 'allocator');
   },
 
   /** @instance
@@ -1247,6 +1256,43 @@ var Reference = {
     */
   getAccesses: function() {
     return this._mapper.getRelationship(this, 'accesses');
+  },
+
+  /** @instance
+    * @return {external:Promise.<CallReference[]>}
+    */
+  getCallReferences: function() {
+    return this._mapper.getRelationship(this, 'callreferences');
+  },
+
+  /** @instance
+    * @return {external:Promise.<CallGroupReference[]>}
+    */
+  getCallGroupReferences: function() {
+    return this._mapper.getRelationship(this, 'callgroupreferences');
+  },
+
+  /** @instance
+    * @return {external:Promise.<Call[]>} Calls that access this reference
+    */
+  getCalls: function() {
+    return this.getCallReferences().then(function(callreferences) {
+      return RSVP.all(_.map(callreferences, function(callreference) {
+        return callreference.getCall();
+      }));
+    });
+  },
+
+  /** @instance
+    * @return {external:Promise.<CallGroup[]>} CallGroups that access this
+    *            reference
+    */
+  getCallGroups: function() {
+    return this.getCallGroupReferences().then(function(callgroupreferences) {
+      return RSVP.all(_.map(callgroupreferences, function(callgroupreference) {
+        return callgroupreference.getCallGroup();
+      }));
+    });
   }
 };
 
@@ -1678,6 +1724,23 @@ loader.getFunctionBySignature = function(sig) {
   });
 
   return promise;
+};
+
+loader.getSharedReferences = function(callIds, callgroupIds, loopexecutionIds,
+                                      loopiterationIds) {
+  return this.getManyURL(
+    'references/sharedreferences?callIds=' + JSON.stringify(callIds) +
+                      '&callgroupIds=' + JSON.stringify(callgroupIds) +
+                      '&loopexecutionIds=' + JSON.stringify(loopexecutionIds) +
+                      '&loopiterationIds=' + JSON.stringify(loopiterationIds),
+    Reference);
+};
+
+loader.getRecursiveSharedReferences = function(callIds, callgroupIds) {
+  return this.getManyURL(
+    'references/recursivesharedreferences?callIds=' + JSON.stringify(callIds) +
+                      '&callgroupIds=' + JSON.stringify(callgroupIds),
+    Reference);
 };
 
 // run management

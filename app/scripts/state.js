@@ -8,6 +8,10 @@ var marked = {
 var getRun;
 var setRun;
 
+var globalFct = {
+  neighbours: null,
+};
+
 var manager;
 
 var removeUnsaved = function(key, val) {
@@ -53,22 +57,29 @@ function loadMarked() {
   }
 }
 
-function callCb(group, type) {
-  var params = [].slice.call(arguments, 2);
-  [].splice.call(params, 0, 0, '');
+var currentCbId = 0;
 
-  _.chain(_.values(state))
-    .filter(function(val) {
-      return val.group === group;
-    })
-    .map(function(val) {
-      return [manager.bindId(val.id), val._cb.unsaved[type]];
-    })
-    .forEach(function(cb) {
-      [].splice.call(params, 0, 1, cb[0]);
-      cb[1].apply(null, params);
-    })
-    .value();
+function callCb(group, type, elements) {
+  var myId = currentCbId++;
+
+  globalFct.neighbours(elements).then(function(fullarray) {
+    if (currentCbId !== myId + 1) {
+      return;
+    }
+
+    elements = fullarray;
+    _.chain(_.values(state))
+      .filter(function(val) {
+        return val.group === group;
+      })
+      .map(function(val) {
+        return [manager.bindId(val.id), val._cb.unsaved[type]];
+      })
+      .forEach(function(cb) {
+        cb[1].apply(null, [cb[0], elements]);
+      })
+      .value();
+  });
 }
 
 function mark(id, type, oid, isMarked, doCb, doSave) {
@@ -249,6 +260,12 @@ manager = {
     callCb(group, 'hover', val);
   },
 
+  spot: function(id, val) {
+    var group = state[id].group;
+
+    callCb(group, 'spot', val);
+  },
+
   setMarkedCallback: function(id, cb) {
     state[id]._cb.unsaved.marked = cb;
   },
@@ -259,6 +276,10 @@ manager = {
 
   setHoverCallback: function(id, cb) {
     state[id]._cb.unsaved.hover = cb;
+  },
+
+  setSpotCallback: function(id, cb) {
+    state[id]._cb.unsaved.spot = cb;
   },
 
   removeMarkedCallback: function(id) {
@@ -273,10 +294,15 @@ manager = {
     delete state[id]._cb.unsaved.hover;
   },
 
+  removeSpotCallback: function(id) {
+    delete state[id]._cb.unsaved.spot;
+  },
+
   clearCallbacks: function(id) {
     delete state[id]._cb.unsaved.focus;
     delete state[id]._cb.unsaved.marked;
-    delete state[id]._cb.unsaved.focus;
+    delete state[id]._cb.unsaved.hover;
+    delete state[id]._cb.unsaved.spot;
   },
 
   checkFocus: function(array, type, id) {
@@ -301,7 +327,8 @@ manager.bindId = function(id) {
   var functionsToBind = ['mark', 'clearMarked', 'getData', 'isMarked', 'getId',
    'getMarked', 'hover', 'focus', 'setMarkedCallback', 'setFocusCallback',
    'setHoverCallback', 'removeMarkedCallback', 'removeFocusCallback',
-   'removeHoverCallback', 'clearCallbacks'];
+   'removeHoverCallback', 'clearCallbacks', 'spot', 'removeSpotCallback',
+   'setSpotCallback'];
 
   var bound = _.zipObject(
     _.map(functionsToBind, function(fct) {
@@ -321,9 +348,11 @@ manager.bindId = function(id) {
 };
 
 angular.module('app')
-  .service('StateService', ['LoaderService', function(loader) {
+  .service('StateService', ['LoaderService', 'LoadNeighboursService',
+    function(loader, neighbours) {
     getRun = loader.getRun;
     setRun = loader.setRun;
+    globalFct.neighbours = neighbours;
 
     return manager;
   }]);
