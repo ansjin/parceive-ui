@@ -205,6 +205,9 @@ gulp.task('tests', ['build', 'test-build'], function(cb) {
 
   app.use(entities);
 
+  var bodyParser = require('body-parser');
+  app.use(bodyParser.urlencoded({ extended: true }));
+
   var server = app.listen(12345, function() {
     var exec = require('child_process').exec;
 
@@ -227,7 +230,10 @@ gulp.task('server', ['build', 'test-build'], function() {
   //server
   var entities = require('./server/entities');
 
-  var dbRoute = express();
+  var app = express();
+
+  var bodyParser = require('body-parser');
+  app.use(bodyParser.urlencoded({ extended: true }));
 
   dbRoute.use(entities);
 
@@ -255,7 +261,7 @@ gulp.task('server', ['build', 'test-build'], function() {
     root: 'build/',
     port: 8080,
     middleware: function() {
-      return [dbRoute];
+      return [app];
     }
   });
 });
