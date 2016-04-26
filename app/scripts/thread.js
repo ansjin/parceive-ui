@@ -7,6 +7,7 @@ angular
   .value('focusCb', focusCb)
   .value('markedCb', markedCb)
   .value('hoverCb', hoverCb)
+  .value('spotCb', spotCb)
   .service('render', render);
 
 // handle focus event
@@ -22,6 +23,11 @@ function markedCb(stateManager, data) {
 // handle hover event
 function hoverCb(stateManager, data) {
 
+}
+
+// handle spot event
+function spotCb(stateManager, data) {
+  
 }
 
 // inject view dependencies

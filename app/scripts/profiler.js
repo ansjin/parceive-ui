@@ -7,7 +7,7 @@ angular
   .value('focusCb', focusCb)
   .value('markedCb', markedCb)
   .value('hoverCb', hoverCb)
-  .value('spotCb', function() {})
+  .value('spotCb', spotCb)
   .service('render', render);
 
 // handle focus event
@@ -25,6 +25,11 @@ function focusCb(stateManager, data) {
     var type = obj.type;
     var _svg = obj.data || {};
     var d = pv.findDeep(_svg.viewData, id);
+    var isNeighbour = obj.neighbour;
+
+    if (isNeighbour) {
+      continue;
+    }
 
     // item not loaded in the profiler viewData
     // probably a child node with duration too small
@@ -72,6 +77,11 @@ function markedCb(stateManager, data) {
     var id = obj.id;
     var type = obj.type;
     var isMarked = obj.isMarked;
+    var isNeighbour = obj.neighbour;
+
+    if (isNeighbour) {
+      continue;
+    }
 
     // check if marked type is Thread
     if (type === 'Thread') {
@@ -111,6 +121,12 @@ function hoverCb(stateManager, data) {
     var obj = data[i];
     var id = obj.id;
     var type = obj.type;
+    var isNeighbour = obj.neighbour;
+
+    if (isNeighbour) {
+      continue;
+    }
+
     var _svg = obj.data || {};
     var d = pv.findDeep(_svg.viewData, id);
 
@@ -141,6 +157,11 @@ function hoverCb(stateManager, data) {
       }
     }
   }
+}
+
+// handle spot event
+function spotCb(stateManager, data) {
+  
 }
 
 // inject view dependencies
