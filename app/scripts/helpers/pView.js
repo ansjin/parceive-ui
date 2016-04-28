@@ -116,13 +116,16 @@ function pView(d3, size) {
   }
 
   function callHighlight(d, svg) {
+    callHighlightRemove(d, svg);
+
     svg.select('#rect_' + d.id).attr('fill-opacity', 0.5);
     svg.select('#text_' + d.id).attr('fill-opacity', 0.5);    
   }
 
   function callHighlightRemove(d, svg) {
-    svg.select('#rect_' + d.id).attr('fill-opacity', 1);
-    svg.select('#text_' + d.id).attr('fill-opacity', 1);
+    svg.selectAll('rect.rect').each(function(d, i) {
+      d3.select(this).attr('fill-opacity', 1);
+    });
   }
 
   function callTooltip(d, _svg) {
@@ -131,6 +134,8 @@ function pView(d3, size) {
   }
 
   function loopHighlight(d, svg) {
+    loopHighlightRemove(d, svg);
+
     svg.select('#loopline_' + d.id).attr('stroke-opacity', 0.5);
     svg.select('#looptext_' + d.id).attr('fill-opacity', 0.5);
     svg.select('#loopsmall_' + d.id).attr('fill-opacity', 0.5);
@@ -139,11 +144,21 @@ function pView(d3, size) {
   }
 
   function loopHighlightRemove(d, svg) {
-    svg.select('#loopline_' + d.id).attr('stroke-opacity', 1);
-    svg.select('#looptext_' + d.id).attr('fill-opacity', 1);
-    svg.select('#loopsmall_' + d.id).attr('fill-opacity', 1);
-    svg.select('#loopendright_'+ d.id).attr('fill-opacity', 1);
-    svg.select('#loopendleft_'+ d.id).attr('fill-opacity', 1);
+    svg.selectAll('text.line').each(function(d, i) {
+      d3.select(this).attr('fill-opacity', 1);
+    });
+
+    svg.selectAll('circle.loop').each(function(d, i) {
+      d3.select(this).attr('fill-opacity', 1);
+    });
+
+    svg.selectAll('circle.small').each(function(d, i) {
+      d3.select(this).attr('fill-opacity', 1);
+    });
+
+    svg.selectAll('line.loop').each(function(d, i) {
+      d3.select(this).attr('stroke-opacity', 1);
+    });
   }
 
   function loopTooltip(d, _svg) {
