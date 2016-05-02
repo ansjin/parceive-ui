@@ -120,11 +120,18 @@ function mark(id, type, oid, isMarked, doCb, doSave) {
 
     obj.isMarked = isMarked;
 
-    var str = JSON.stringify(obj);
-    if (isMarked) {
-      marked[group].push(str);
-    } else {
-      marked[group].splice(marked[group].indexOf(str), 1);
+    var existing = _.findIndex(marked[group], function(element) {
+      element = JSON.parse(element);
+
+      return element.id === obj.id;
+    });
+
+    if (isMarked && existing === -1) {
+      marked[group].push(JSON.stringify(obj));
+    } else if (!isMarked) {
+      if (existing >= 0) {
+        marked[group].splice(existing, 1);
+      }
     }
 
     if (doCb) {

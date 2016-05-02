@@ -930,6 +930,20 @@ var File = {
     * @return {external:Promise.<string>} The content of the file */
   getContent: function() {
     return this._mapper.httpGet(getFileContentTemplate({id: this.id}));
+  },
+
+  /** @instance
+    * @return {external:Promise.<SourceLocation[]>} The known locations in this
+    *         File
+  */
+  getSourceLocations: function() {
+    return this.getFunctions().then(function(fcts) {
+      return RSVP.all(_.map(fcts, function(fct) {
+        return fct.getSourceLocations();
+      }));
+    }).then(function(array) {
+      return _.flatten(array);
+    });
   }
 };
 
@@ -949,6 +963,11 @@ var FunctionType = {
       type: 'Call',
       many: true,
       inverse: 'function'
+    },
+    'sourcelocations': {
+      type: 'SourceLocation',
+      many: true,
+      inverse: 'function'
     }
   },
 
@@ -963,7 +982,15 @@ var FunctionType = {
     * @return {external:Promise.<Call[]>} The calls made to this function */
   getCalls: function() {
     return this._mapper.getRelationship(this, 'calls');
-  }
+  },
+
+  /** @instance
+    * @return {external:Promise.<SourceLocation[]>} The known locations in this
+    *          Function
+  */
+  getSourceLocations: function() {
+    return this._mapper.getRelationship(this, 'sourcelocations');
+  },
 };
 
 /** @class
@@ -1487,6 +1514,36 @@ var Segment = {
 
 /** @class
   * @implements Type */
+var SourceLocation = {
+  typeName: 'SourceLocation',
+  singular: 'sourcelocation',
+  plural: 'sourcelocations',
+  properties: ['line', 'column', 'function'],
+  relationships: {
+    'function': {
+      type: 'Function'
+    },
+  },
+
+  /** @return {external:Promise.<Function>} The function that contains this
+    *         location
+    * @instance */
+  getFunction: function() {
+    return this._mapper.getRelationship(this, 'function');
+  },
+
+  /** @return {external:Promise.<Function>} The file that contains this
+    *         location
+    * @instance */
+  getFile: function() {
+    return this.getFunction().then(function (fct) {
+      return fct.getFile();
+    });
+  }
+};
+
+/** @class
+  * @implements Type */
 var Thread = {
   typeName: 'Thread',
   singular: 'thread',
@@ -1549,6 +1606,7 @@ var loader = {
     LoopExecutionReference: LoopExecutionReference,
     LoopIterationReference: LoopIterationReference,
     Segment: Segment,
+    SourceLocation: SourceLocation,
     Thread: Thread
   }
 };

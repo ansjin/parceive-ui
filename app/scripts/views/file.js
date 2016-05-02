@@ -11,15 +11,22 @@ function initCb(loader, highlight, jump) {
     });
 
     var filePromise;
+    var sourceLocationsPromise;
 
     if (file) {
       state.file = file.id;
       stateManager.save();
 
-      filePromise = loader.getFile(file.id).then(function(file) {
+      var getFile = loader.getFile(file.id);
+
+      filePromise = getFile.then(function(file) {
         return file.getContent().then(function(data) {
           return highlight(data, "C++", true);
         });
+      });
+
+      sourceLocationsPromise = getFile.then(function(file) {
+        return file.getSourceLocations();
       });
     }
 
@@ -87,6 +94,7 @@ function initCb(loader, highlight, jump) {
 
     RSVP.hash({
       'fileContents': filePromise,
+      'sourceLocations': sourceLocationsPromise,
       'highlightLocations': linesPromise,
       'jump': jump
     })
@@ -114,6 +122,110 @@ function(highlight, loader, $, d3) {
       state.unsaved.update = function(data, jump) {
         if (!_.isUndefined(data.fileContents)) {
           codeElement.html(data.fileContents);
+
+          codeElement.attr('id', stateManager.getId());
+
+          var locations = data.sourceLocations;
+          $(function() {
+            $.contextMenu({
+              selector: '#' + stateManager.getId() + ' ol > li',
+              build: function(menu) {
+                var line = menu.index();
+                var location = _.find(locations,
+                  function(location) {
+                    return location.line === line;
+                  });
+                var currentFile = stateManager.getData().file;
+                var currentTag = _.find(stateManager.getMarked(),
+                  function(element) {
+                    return element.type === 'TagInstruction' &&
+                            element.file ===  currentFile &&
+                            element.line === line;
+                  });
+
+                if (_.isUndefined(location)) {
+                  return {
+                    items: {
+                      'notKnown': {
+                        name: 'Line is not available in debug information',
+                        disabled: true
+                      }
+                    }
+                  };
+                } else if(_.isUndefined(currentTag)) {
+                  function genMarking(tagName, action) {
+                    return {
+                      'type': 'TagInstruction',
+                      'tag': tagName,
+                      'location': location.id,
+                      'line': line,
+                      'file': currentFile,
+                      'id': currentFile + '-' + line,
+                      'action': action,
+                      'isMarked': true
+                    }
+                  }
+
+                  function mark(tagName, action) {
+                    stateManager.mark(genMarking(tagName, action));
+                  }
+
+                  function genTagMenu(tagName) {
+                    return {
+                      name: 'Add ' + tagName + ' Tag Instruction',
+                      items: {
+                        'startTag': {
+                          name: 'Start Tag',
+                          callback: function() {
+                            mark(tagName, 'Start');
+                          }
+                        },
+
+                        'endTag': {
+                          name: 'End Tag',
+                          callback: function() {
+                            mark(tagName, 'End');
+                          }
+                        }
+                      }
+                    }
+                  }
+
+                  var tagMenu = {};
+
+                  var tags = _.filter(stateManager.getMarked(), function(element) {
+                    return element.type === 'Tag';
+                  });
+
+                  _.forEach(tags, function(tag){
+                    tagMenu[tag.name] = genTagMenu(tag.name);
+                  })
+
+                  return {
+                    items: {
+                      'addTag': {
+                        name: "Add Tag Instruction",
+                        items: tagMenu
+                      }
+                    }
+                  };
+                } else {
+                  return {
+                    items: {
+                      'removeTag': {
+                        name: 'Remove Tag Instruction',
+                        callback: function( ){
+                          currentTag.isMarked = false;
+                          stateManager.mark(currentTag);
+                        }
+                      }
+                    }
+                  };
+                }
+
+              }
+            });
+          });
         }
 
         codeElement.selectAll('ol > li').style('background-color', null);
@@ -143,14 +255,15 @@ function(highlight, loader, $, d3) {
         codeElement.text('Loading');
 
         loader.getFile(state.file).then(function(file) {
-          return file.getContent().then(function(data) {
-            return highlight(data, "C++", true);
+          return RSVP.hash({
+            'fileContents': file.getContent().then(function(data) {
+              return highlight(data, "C++", true);
+            }),
+            'sourceLocations': file.getSourceLocations(),
+            'highlightLocations': []
           });
-        }).then(function(contents) {
-          state.unsaved.update({
-            'highlightLocations': [],
-            'fileContents': contents
-          });
+        }).then(function(data) {
+          state.unsaved.update(data);
         });
       }
     }, 10);

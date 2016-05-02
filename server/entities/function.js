@@ -19,6 +19,7 @@ module.exports = {
 
 var calls = require('./call');
 var loops = require('./loop');
+var sourcelocations = require('./sourcelocation');
 
 router.get('/', function(req, res) {
   util.handleAllQuery(req.db, mapping, res, 'SELECT * FROM Function');
@@ -37,6 +38,11 @@ router.get('/many/:ids/calls', function(req, res) {
 router.get('/many/:ids/loops', function(req, res) {
   util.handleManyQuery(req.db, loops.mapping, res, req.params.ids,
     'Loop WHERE Function');
+});
+
+router.get('/many/:ids/sourcelocations', function(req, res) {
+  util.handleManyQuery(req.db, sourcelocations.mapping, res, req.params.ids,
+    'sourcelocation WHERE Function');
 });
 
 router.get('/many/:ids', function(req, res) {
