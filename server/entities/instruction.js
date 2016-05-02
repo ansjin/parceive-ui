@@ -17,6 +17,7 @@ module.exports = {
 
 var accesses = require('./access');
 var calls = require('./call');
+var instructiontaginstances = require('./instructiontaginstances');
 
 router.get('/', function(req, res) {
   util.handleAllQuery(req.db, mapping, res, 'SELECT * FROM Instruction');
@@ -30,6 +31,11 @@ router.get('/many/:ids/accesses', function(req, res) {
 router.get('/many/:ids/calls', function(req, res) {
   util.handleManyQuery(req.db, calls.mapping, res, req.params.ids,
     'Call WHERE Instruction');
+});
+
+router.get('/many/:ids/instructiontaginstances', function(req, res) {
+  util.handleManyQuery(req.db, instructiontaginstances.mapping, res,
+    req.params.ids, 'InstructionTagIstance WHERE Instruction');
 });
 
 router.get('/many/:ids', function(req, res) {

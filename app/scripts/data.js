@@ -1013,6 +1013,11 @@ var Instruction = {
       type: 'Call',
       many: true,
       inverse: 'instruction'
+    },
+    'instructiontaginstances': {
+      type: 'InstructionTagInstance',
+      many: true,
+      inverse: 'tag'
     }
   },
 
@@ -1055,7 +1060,52 @@ var Instruction = {
     return this.getAccesses().then(function(access) {
       return access.getReference();
     });
-  }
+  },
+
+  /** @return {external:Promise.<InstructionTagInstance[]>} many to many table
+    * @instance */
+  getInstructionTagInstances: function() {
+    return this._mapper.getRelationship(this, 'instructiontaginstances');
+  },
+
+  /** @return {external:Promise.<TagInstance[]>} Tag instances
+    * @instance */
+  gettagInstances: function() {
+    return this.getInstructionTagInstances().then(function(itis) {
+      return RSVP.all(_.map(itis, function(iti) {
+        return iti.getTagInstance();
+      }));
+    });
+  },
+};
+
+/** @class
+  * @implements Type */
+var InstructionTagInstance = {
+  typeName: 'InstructionTagInstance',
+  singular: 'instructiontaginstance',
+  plural: 'instructiontaginstances',
+  properties: ['tag', 'instruction'],
+  relationships: {
+    'tag': {
+      type: 'Tag'
+    },
+    'instruction': {
+      type: 'Instruction'
+    }
+  },
+
+  /** @instance
+    * @return {external:Promise.<TagInstance>} The Tag instance */
+  getTagInstance: function() {
+    return this._mapper.getRelationship(this, 'tag');
+  },
+
+  /** @instance
+    * @return {external:Promise.<Instruction>} The Instruction */
+  getInstruction: function() {
+    return this._mapper.getRelationship(this, 'instruction');
+  },
 };
 
 /** @class
@@ -1540,6 +1590,83 @@ var SourceLocation = {
       return fct.getFile();
     });
   }
+};
+
+/** @class
+  * @implements Type */
+var Tag = {
+  typeName: 'Tag',
+  singular: 'tag',
+  plural: 'tags',
+  properties: ['name', 'type'],
+  relationships: {
+    'taginstances': {
+      type: 'TagInstance',
+      many: true,
+      inverse: 'tag'
+    },
+    'taginstructions': {
+      type: 'TagInstruction',
+      many: true,
+      inverse: 'tag'
+    }
+  },
+
+  /** @return {external:Promise.<TagInstance[]>} Instances of this tag
+    * @instance */
+  getTagInstances: function() {
+    return this._mapper.getRelationship(this, 'taginstances');
+  },
+
+  /** @return {external:Promise.<TagInstruction[]>} Locations of this tag
+    * @instance */
+  getTagInstructions: function() {
+    return this._mapper.getRelationship(this, 'taginstructions');
+  }
+};
+
+/** @class
+  * @implements Type */
+var TagInstance = {
+  typeName: 'TagInstance',
+  singular: 'taginstance',
+  plural: 'taginstances',
+  properties: ['tag', 'thread', 'start', 'end'],
+  relationships: {
+    'tag': {
+      type: 'Tag'
+    },
+    'thread': {
+      type: 'Thread'
+    },
+    'instructiontaginstances': {
+      type: 'InstructionTagInstance',
+      many: true,
+      inverse: 'tag'
+    }
+  },
+
+  /** @return {external:Promise.<InstructionTagInstance[]>} many to many table
+    * @instance */
+  getInstructionTagInstances: function() {
+    return this._mapper.getRelationship(this, 'instructiontaginstances');
+  },
+
+  /** @return {external:Promise.<Instruction[]>} Instructions for this instance
+    * @instance */
+  getInstructions: function() {
+    return this.getInstructionTagInstances().then(function(itis) {
+      return RSVP.all(_.map(itis, function(iti) {
+        return iti.getInstruction();
+      }));
+    });
+  },
+
+  /** @return {external:Promise.<Tag>} The tag for this instance
+    * @instance */
+  getTag: function() {
+    return this._mapper.getRelationship(this, 'tag');
+  },
 };
 
 /** @class

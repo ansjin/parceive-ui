@@ -128,6 +128,18 @@ function handleManyQuery(db, mapping, res, ids, table, ending) {
   sendAll(stmt, mapping, res);
 }
 
+function handleManyManyQuery(db, mapping, res, ids, table1, joinColumn, table2,
+  inColumn) {
+
+  var prep = prepareDBArgs(ids);
+
+  var stmt = db.prepare('SELECT * FROM ' + table1 + 'WHERE Id IN ( SELECT ' +
+                          joinColumn + ' FROM ' + table2 + ' WHERE ' +
+                          inColumn + ' IN ' + prep + ')');
+
+  sendAll(stmt, mapping, res);
+}
+
 /** @function
     @memberof server.util
     @summary This function reads all the rows of a relationship query and sends
@@ -191,6 +203,7 @@ function handleOneQuery(db, mapping, res, sql, id) {
 module.exports = {
   mapper: mapper,
   handleManyQuery: handleManyQuery,
+  handleManyManyQuery: handleManyManyQuery,
   handleOneQuery: handleOneQuery,
   handleAllQuery: handleAllQuery,
   handleRelationshipQuery: handleRelationshipQuery,
