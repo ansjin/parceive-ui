@@ -17,7 +17,7 @@ module.exports = {
 
 var accesses = require('./access');
 var calls = require('./call');
-var instructiontaginstances = require('./instructiontaginstances');
+var instructiontaginstances = require('./instructiontaginstance');
 
 router.get('/', function(req, res) {
   util.handleAllQuery(req.db, mapping, res, 'SELECT * FROM Instruction');

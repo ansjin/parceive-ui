@@ -122,8 +122,7 @@ CREATE TABLE Function(
   Prototype VARCHAR,
   File INTEGER,
   Line INTEGER,
-  Column INTEGER,
   Duration INTEGER,
   FOREIGN KEY(File) REFERENCES File(Id),
-  CONSTRAINT UniqueFunction UNIQUE (Name, Prototype, File, Line, Column)
+  CONSTRAINT UniqueFunction UNIQUE (Name, Prototype, File, Line)
 );

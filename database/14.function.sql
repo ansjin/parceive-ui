@@ -4,7 +4,6 @@ INSERT INTO Function SELECT
   Prototype,
   File,
   Line,
-	Column,
   (SELECT SUM(c.Duration) FROM Call c WHERE c.Function = t.Id) AS Duration
 FROM FunctionOld t;
 DROP TABLE FunctionOld;
