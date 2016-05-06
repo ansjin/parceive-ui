@@ -33,22 +33,31 @@ function spotCb(stateManager, data) {
 // inject view dependencies
 render.$inject = [
   'd3',
-  'GradientService',
-  'LoaderService'
+  'pData'
 ];
 
 // render the view
-function render(d3, grad, load) {
+function render(d3, pd) {
   return function(svg, stateManager) {
     // data holder for this view
-    var _svg = {};
+    var _svg = {
+      viewData: {},
+      profileId: Date.now()
+    };
 
     // get thread data for current database
-    function getThreadData() {
-      return new Promise(function(resolve, reject) {
+    pd.getThreadData()
+    .then(function(data) {
+      _svg.viewData = data;
+    });
 
-        resolve(true);
-      });
+    // nest thread data
+    function nestData(data) {
+      var obj = data[0];
+
+      for (var i = 1, len = data.length; i < len; i++) {
+        
+      }
     }
   }
 }

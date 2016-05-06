@@ -360,8 +360,9 @@ function render(d3, po, pd, pv, ps) {
     }
 
     // spot selected calls/callgroups
-    function spotData() {
-
+    function spotData(d) {
+       var elementType = _svg.isTracing ? 'Call' : 'CallGroup';
+       stateManager.spot([{type: elementType, id: d.id, data:_svg.selectedNodes}]);
     }
 
     // save data objects to stateManager so external functions like hoverCb, 
@@ -446,7 +447,7 @@ function render(d3, po, pd, pv, ps) {
             // spot selected calls/callgroups
             name: (_svg.isTracing) ? 'Spot Calls' : 'Spot Callgroups',
             callback: function() {
-              spotData();
+              spotData(d);
             }
           };
 

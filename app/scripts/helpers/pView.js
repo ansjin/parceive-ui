@@ -1,4 +1,4 @@
-// everything that has to do with functions caried out on the view
+// everything that has to do with functions carried out on the view
 
 angular
   .module('app')
@@ -124,6 +124,10 @@ function pView(d3, size) {
 
   function callHighlightRemove(d, svg) {
     svg.selectAll('rect.rect').each(function(d, i) {
+      d3.select(this).attr('fill-opacity', 1);
+    });
+
+    svg.selectAll('text.rect').each(function(d, i) {
       d3.select(this).attr('fill-opacity', 1);
     });
   }
