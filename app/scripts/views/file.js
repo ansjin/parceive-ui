@@ -3,7 +3,7 @@ function initCb(loader, highlight, jump) {
     var state = stateManager.getData();
 
     var file = _.find(data, function(e) {
-      return e.type === 'File' && (jump | !e.neighbour);
+      return e.type === 'File' && (jump || !e.neighbour);
     });
 
     data = _.filter(data, function(e) {
@@ -32,7 +32,7 @@ function initCb(loader, highlight, jump) {
 
     var functionLines = RSVP.all(_.chain(data)
         .filter(function (d){
-          return d.type === 'Function' || d.type === 'Call'
+          return d.type === 'Function' || d.type === 'Call';
         })
         .map(function(d) {
           switch(d.type) {
@@ -84,7 +84,7 @@ function initCb(loader, highlight, jump) {
       }).value()).then(function(lines) {
         return _.filter(lines, function(line) {
           return !_.isNull(line);
-        })
+        });
       });
 
     var linesPromise = RSVP.all([functionLines, callLines])
@@ -106,9 +106,9 @@ angular.module('source-view', ['app'])
 .value('name', 'Source View')
 .value('group', 'Source Code')
 .value('markedCb', function() {})
-.service('focusCb', ['LoaderService', 'highlight', function(loader, highlight) {return initCb(loader, highlight, true)}])
-.service('hoverCb', ['LoaderService', 'highlight', function(loader, highlight) {return initCb(loader, highlight, false)}])
-.service('spotCb', ['LoaderService', 'highlight', function(loader, highlight) {return initCb(loader, highlight, true)}])
+.service('focusCb', ['LoaderService', 'highlight', function(loader, highlight) {return initCb(loader, highlight, true);}])
+.service('hoverCb', ['LoaderService', 'highlight', function(loader, highlight) {return initCb(loader, highlight, false);}])
+.service('spotCb', ['LoaderService', 'highlight', function(loader, highlight) {return initCb(loader, highlight, true);}])
 .service('render', ['highlight', 'LoaderService', 'jquery', 'd3',
 function(highlight, loader, $, d3) {
   return function(svg, stateManager) {
@@ -130,7 +130,7 @@ function(highlight, loader, $, d3) {
             $.contextMenu({
               selector: '#' + stateManager.getId() + ' ol > li',
               build: function(menu) {
-                var line = menu.index();
+                var line = menu.index() + 1;
                 var location = _.find(locations,
                   function(location) {
                     return location.line === line;
@@ -153,7 +153,7 @@ function(highlight, loader, $, d3) {
                     }
                   };
                 } else if(_.isUndefined(currentTag)) {
-                  function genMarking(tagName, action) {
+                  var genMarking = function(tagName, action) {
                     return {
                       'type': 'TagInstruction',
                       'tag': tagName,
@@ -163,33 +163,33 @@ function(highlight, loader, $, d3) {
                       'id': currentFile + '-' + line,
                       'action': action,
                       'isMarked': true
-                    }
-                  }
+                    };
+                  };
 
-                  function mark(tagName, action) {
+                  var mark = function(tagName, action) {
                     stateManager.mark(genMarking(tagName, action));
-                  }
+                  };
 
-                  function genTagMenu(tagName) {
-                    return {
+                  var genTagMenu = function(tagName) {
+                    var data = {
                       name: 'Add ' + tagName + ' Tag Instruction',
                       items: {
-                        'startTag': {
-                          name: 'Start Tag',
-                          callback: function() {
-                            mark(tagName, 'Start');
-                          }
-                        },
 
-                        'endTag': {
-                          name: 'End Tag',
-                          callback: function() {
-                            mark(tagName, 'End');
-                          }
-                        }
                       }
-                    }
-                  }
+                    };
+
+                    data.items['startTag:' + tagName] = {
+                      name: 'Start Tag',
+                      callback: _.partial(mark, tagName, 'Start')
+                    };
+
+                    data.items['endTag:' + tagName] =  {
+                      name: 'Stop Tag',
+                      callback: _.partial(mark, tagName, 'Stop')
+                    };
+
+                    return data;
+                  };
 
                   var tagMenu = {};
 
@@ -199,7 +199,7 @@ function(highlight, loader, $, d3) {
 
                   _.forEach(tags, function(tag){
                     tagMenu[tag.name] = genTagMenu(tag.name);
-                  })
+                  });
 
                   return {
                     items: {
@@ -232,7 +232,7 @@ function(highlight, loader, $, d3) {
 
         _.forEach(data.highlightLocations, function(location) {
           var line = codeElement.select('ol > li:nth-child(' +
-                                        (location.line) + ')');
+                                        location.line + ')');
 
           if (location.type === 'Call') {
             line.style('background-color', '#88FFFF');
@@ -245,7 +245,7 @@ function(highlight, loader, $, d3) {
           var dst = data.highlightLocations[0].line;
 
           var line = codeElement.select('ol > li:nth-child(' +
-                                        (dst) + ')');
+                                        dst + ')');
 
           line[0][0].scrollIntoView();
         }

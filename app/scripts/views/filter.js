@@ -23,7 +23,7 @@ function Cb(stateManager) {
     }).index;
   });
 
-  var data = {
+  data = {
     'tags': _.map(tags, function(tag) {
       return {
         'name': tag.name,
@@ -35,9 +35,9 @@ function Cb(stateManager) {
         'tag': tagInstruction.tag,
         'type': tagInstruction.action,
         'location': tagInstruction.location
-      }
+      };
     })
-  }
+  };
 
   pre.text(JSON.stringify(data, null, 2));
 }

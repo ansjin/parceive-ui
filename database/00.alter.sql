@@ -5,9 +5,12 @@ CREATE TABLE LoopExecution(
   Id INTEGER PRIMARY KEY NOT NULL,
   Loop INTEGER NOT NULL,
   ParentIteration INTEGER,
-  Duration INTEGER,
   Start INTEGER,
   End INTEGER,
+  StartTime VARCHAR,
+  EndTime VARCHAR,
+  Duration INTEGER,
+  DurationMs INTEGER,
   Call INTEGER,
   IterationsCount INTEGER,
   FOREIGN KEY(Loop) REFERENCES Loop(Id),
@@ -23,13 +26,16 @@ CREATE TABLE Call(
     Instruction INTEGER,
     Start INTEGER,
     End INTEGER,
+    StartTime VARCHAR,
+    EndTime VARCHAR,
+    Duration INTEGER,
+    DurationMs INTEGER,
     Caller INTEGER,
     CallerIteration INTEGER,
     CallerExecution INTEGER,
     CallGroup INTEGER,
     CallsOther INTEGER,
     LoopCount INTEGER,
-    Duration INTEGER,
     FOREIGN KEY(Function) REFERENCES Function(Id),
     FOREIGN KEY(Thread) REFERENCES Thread(Id),
     FOREIGN KEY(Instruction) REFERENCES Instruction(Id),
@@ -45,9 +51,12 @@ CREATE TABLE CallGroup(
   Caller INTEGER,
   Count INTEGER,
   Parent INTEGER,
-  Duration INTEGER,
   Start INTEGER,
   End INTEGER,
+  StartTime VARCHAR,
+  EndTime VARCHAR,
+  Duration INTEGER,
+  DurationMs INTEGER,
   CallerExecution INTEGER,
   FOREIGN KEY(Function) REFERENCES Function(Id),
   FOREIGN KEY(Caller) REFERENCES Caller(Id),
@@ -73,7 +82,7 @@ CREATE TABLE CallGroupTree
     FOREIGN KEY(Descendant) REFERENCES CallGroup(Id)
 );
 
-CREATE TABLE "CallReference"
+CREATE TABLE CallReference
 (
     Id INTEGER PRIMARY KEY AUTOINCREMENT,
     Call INTEGER NOT NULL,
@@ -123,6 +132,38 @@ CREATE TABLE Function(
   File INTEGER,
   Line INTEGER,
   Duration INTEGER,
+  DurationMs INTEGER,
   FOREIGN KEY(File) REFERENCES File(Id),
   CONSTRAINT UniqueFunction UNIQUE (Name, Prototype, File, Line)
+);
+
+ALTER TABLE TagInstance RENAME TO TagInstanceOld;
+CREATE TABLE TagInstance (
+  Id	INTEGER PRIMARY KEY NOT NULL,
+  Tag	INTEGER,
+  Thread	INTEGER,
+  Counter	INTEGER,
+  Start INTEGER,
+  End INTEGER,
+  StartTime VARCHAR,
+  EndTime VARCHAR,
+  Duration INTEGER,
+  DurationMs INTEGER,
+  FOREIGN KEY(Tag) REFERENCES Tag(Id),
+  FOREIGN KEY(Thread) REFERENCES Thread(Id)
+);
+
+ALTER TABLE Thread RENAME TO ThreadOld;
+CREATE TABLE Thread(
+  Id INTEGER PRIMARY KEY NOT NULL,
+  CreateInstruction INTEGER,
+  JoinInstruction INTEGER,
+  Process INTEGER,
+  StartTime VARCHAR,
+  EndTSC INTEGER,
+  EndTime VARCHAR,
+  TSCPerMillisecond REAL,
+  Parent INTEGER,
+  FOREIGN KEY(CreateInstruction) REFERENCES Instruction(Id),
+  FOREIGN KEY(JoinInstruction) REFERENCES Instruction(Id)
 );

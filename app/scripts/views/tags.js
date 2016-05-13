@@ -6,7 +6,7 @@ function Cb(stateManager) {
     return element.type === 'Tag';
   });
 
-  var data = table.selectAll('tr').data(tags)
+  var data = table.selectAll('tr').data(tags);
   var enter = data.enter()
     .append('tr');
 

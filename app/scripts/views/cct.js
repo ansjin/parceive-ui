@@ -64,7 +64,7 @@ angular.module('cct-view', ['app'])
 
   changes = _.filter(changes, function(change) {
     return !change.neighbour;
-  })
+  });
 
   applyMarked(state, nodes, changes);
 })
@@ -97,7 +97,7 @@ angular.module('cct-view', ['app'])
     return;
   }
 
-  svg.focus([node.x, node.y])
+  svg.focus([node.x, node.y]);
 })
 .value('hoverCb', function(stateManager, hovered) {
   var state = stateManager.getData();
@@ -237,7 +237,7 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $,
       g
         .transition()
         .attr('transform', 'translate(' + pos[0] + ', ' + pos[1]+ ')scale(1)');
-    }
+    };
   }
 
   function calcEdgePoints(d) {

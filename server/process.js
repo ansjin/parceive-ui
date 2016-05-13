@@ -114,9 +114,18 @@ function processAll(source, destination, temporary) {
         });
 
         return RSVP.all(promises).then(function(sqls) {
-          return RSVP.all(_.map(files, function(file) {
-            return process(file, sqls, source, destination, temporary);
-          }));
+          return readFile('sql/create.sql', 'utf8').then(function(content) {
+            return {
+              content: content.replace(/CREATE TABLE /g,
+                                       'CREATE TABLE IF NOT EXISTS '),
+              name: 'create.sql'
+            };
+          }).then(function(createScript) {
+            sqls.unshift(createScript);
+            return RSVP.all(_.map(files, function(file) {
+              return process(file, sqls, source, destination, temporary);
+            }));
+          });
         });
       });
   });

@@ -9,7 +9,8 @@ var mapping = {
   'Name': 'name',
   'File': 'file',
   'Line': 'startLine',
-  'Duration': 'duration'
+  'Duration': 'duration',
+  'DurationMs': 'durationMs'
 };
 
 module.exports = {
@@ -42,7 +43,7 @@ router.get('/many/:ids/loops', function(req, res) {
 
 router.get('/many/:ids/sourcelocations', function(req, res) {
   util.handleManyQuery(req.db, sourcelocations.mapping, res, req.params.ids,
-    'sourcelocation WHERE Function');
+    'SourceLocation WHERE Function');
 });
 
 router.get('/many/:ids', function(req, res) {

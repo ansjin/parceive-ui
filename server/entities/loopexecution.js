@@ -11,7 +11,10 @@ var mapping = {
   'Call': 'call',
   'IterationsCount': 'iterationsCount',
   'Start': 'start',
-  'End': 'end'
+  'End': 'end',
+  'StartTime': 'startTime',
+  'EndTime': 'endTime',
+  'DurationMs': 'durationMs'
 };
 
 module.exports = {

@@ -5,7 +5,11 @@ var util = require('./util');
 
 var mapping = {
   'Id': 'id',
-  'Instruction': 'instruction',
+  'CreateInstruction': 'createInstruction',
+  'JoinInstruction': 'joinInstruction',
+  'StartTime': 'startTime',
+  'EndTime': 'endTime',
+  'EndTSC': 'endTSC',
   'Process': 'process'
 };
 
