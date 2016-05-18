@@ -33,9 +33,9 @@ angular.module('app')
       this.tree.sort(function(a, b) {
         switch (a.type) {
           case 'LoopIteration':
-            return b.data.id - a.data.id;
+            return a.data.id - b.data.id;
           default:
-            return b.data.start - a.data.start;
+            return a.data.start - b.data.start;
         }
       });
     }
