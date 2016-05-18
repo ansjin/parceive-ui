@@ -35,15 +35,15 @@ angular.module('app')
           case 'LoopIteration':
             return b.data.id - a.data.id;
           default:
-            return b.data.duration - a.data.duration;
+            return b.data.start - a.data.start;
         }
       });
     }
 
     CallGraph.prototype.addToRoots = function(node) {
-        if (!_.includes(this.roots, node)) {
-          this.roots.push(node);
-        }
+      if (!_.includes(this.roots, node)) {
+        this.roots.push(node);
+      }
     };
 
     CallGraph.prototype.layout = function() {
@@ -222,7 +222,8 @@ angular.module('app')
       }).then(function() {
         self.roots = _.map(self.roots, function(root) {
           var last = root;
-          while (last.calls && last.calls.length === 1 && !_.any(elements, function (e) {
+          while (last.calls && last.calls.length === 1 && !_.any(elements,
+          function(e) {
             return e.type === last.type && e.id === last.data.id;
           })) {
             last = last.calls[0];
@@ -552,7 +553,6 @@ angular.module('app')
         if (!self.parent.parent) {
           self.callgraph.addToRoots(self.parent);
         }
-
 
         if (self.parent.calls) {
           self.parent.calls.push(self);
