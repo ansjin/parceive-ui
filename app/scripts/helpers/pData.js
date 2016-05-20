@@ -14,7 +14,8 @@ function pData(LoaderService) {
     getCall: getCall,
     getCallGroup: getCallGroup,
     getCallObj: getCallObj,
-    getCallGroupObj: getCallGroupObj
+    getCallGroupObj: getCallGroupObj,
+    getThreadData: getThreadData
   };
 
   return factory;
@@ -41,6 +42,8 @@ function pData(LoaderService) {
       : obj.getRecursiveCallGroups(runtimeThreshold);
 
     var promise = func.then(function(data) {
+      console.log(data);
+      
       var promises = data.map(function(d) {
         var _id = d[type].id;
         var _ancestor = d[type][ancestor];
@@ -156,5 +159,19 @@ function pData(LoaderService) {
         return new RSVP.resolve(temp);
       });
     return promise;
+  }
+
+  // get thread data (sample)
+  function getThreadData() {
+    return new Promise(function(resolve, reject) {
+      resolve([
+        {id: 1, name: 'Thread 1', ancestor: null},
+        {id: 2, name: 'Thread 2', ancestor: 1},
+        {id: 3, name: 'Thread 3', ancestor: 1},
+        {id: 4, name: 'Thread 4', ancestor: 3},
+        {id: 5, name: 'Thread 5', ancestor: 3},
+        {id: 6, name: 'Thread 6', ancestor: 2}
+      ]);
+    });
   }
 }

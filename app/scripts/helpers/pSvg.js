@@ -19,7 +19,7 @@ function pSvg(d3, size) {
 
   function getYValue(_svg, d) {
     var multiplier = d.level - _svg.currentTop.level;
-    if (_svg.showLoop) {
+    if (_svg.showLoop && _svg.isTracing) {
       multiplier += (d.loopAdjust - _svg.currentTop.loopAdjust);
     }
     return _svg.rectHeight * multiplier;

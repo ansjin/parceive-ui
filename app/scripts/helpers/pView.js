@@ -1,4 +1,4 @@
-// everything that has to do with functions caried out on the view
+// everything that has to do with functions carried out on the view
 
 angular
   .module('app')
@@ -26,7 +26,8 @@ function pView(d3, size) {
     resetSelectedNode: resetSelectedNode,
     toggleLoop: toggleLoop,
     toggleViewMode: toggleViewMode,
-    updateDurationSlider: updateDurationSlider
+    updateDurationSlider: updateDurationSlider,
+    getSvgWidth: getSvgWidth
   };
 
   return factory;
@@ -76,9 +77,16 @@ function pView(d3, size) {
   }
 
   function addTooltip(name, duration, _svg) {
+    // exit quickly if mouse is not over svg
+    // because tooltip can be triggered from other views
+    // via stateManeger
+    if (!$('#' + _svg.profileId).is(':hover')) {
+      return;
+    }
+
     var x = d3.event.pageX;
     var y = d3.event.pageY;
-    var svgWidthPixels = size.svgSizeById(_svg.profileId).width;
+    var svgWidthPixels = getSvgWidth(_svg);
     var tooltipPadding = 20;
     var tooltipWidth = _.max([
       _svg.minTooltipWidth,
@@ -107,14 +115,21 @@ function pView(d3, size) {
     tooltip.classed('hidden', false);
   }
 
-  function callHighlight(d) {
-    d3.select('#rect_' + d.id).attr('fill-opacity', 0.5);
-    d3.select('#text_' + d.id).attr('fill-opacity', 0.5);    
+  function callHighlight(d, svg) {
+    callHighlightRemove(d, svg);
+
+    svg.select('#rect_' + d.id).attr('fill-opacity', 0.5);
+    svg.select('#text_' + d.id).attr('fill-opacity', 0.5);    
   }
 
-  function callHighlightRemove(d) {
-    d3.select('#rect_' + d.id).attr('fill-opacity', 1);
-    d3.select('#text_' + d.id).attr('fill-opacity', 1);
+  function callHighlightRemove(d, svg) {
+    svg.selectAll('rect.rect').each(function(d, i) {
+      d3.select(this).attr('fill-opacity', 1);
+    });
+
+    svg.selectAll('text.rect').each(function(d, i) {
+      d3.select(this).attr('fill-opacity', 1);
+    });
   }
 
   function callTooltip(d, _svg) {
@@ -122,20 +137,32 @@ function pView(d3, size) {
     addTooltip(d.name, duration, _svg);
   }
 
-  function loopHighlight(d) {
-    d3.select('#loopline_' + d.id).attr('stroke-opacity', 0.5);
-    d3.select('#looptext_' + d.id).attr('fill-opacity', 0.5);
-    d3.select('#loopsmall_' + d.id).attr('fill-opacity', 0.5);
-    d3.select('#loopendright_'+ d.id).attr('fill-opacity', 0.5);
-    d3.select('#loopendleft_'+ d.id).attr('fill-opacity', 0.5);
+  function loopHighlight(d, svg) {
+    loopHighlightRemove(d, svg);
+
+    svg.select('#loopline_' + d.id).attr('stroke-opacity', 0.5);
+    svg.select('#looptext_' + d.id).attr('fill-opacity', 0.5);
+    svg.select('#loopsmall_' + d.id).attr('fill-opacity', 0.5);
+    svg.select('#loopendright_'+ d.id).attr('fill-opacity', 0.5);
+    svg.select('#loopendleft_'+ d.id).attr('fill-opacity', 0.5);
   }
 
-  function loopHighlightRemove(d) {
-    d3.select('#loopline_' + d.id).attr('stroke-opacity', 1);
-    d3.select('#looptext_' + d.id).attr('fill-opacity', 1);
-    d3.select('#loopsmall_' + d.id).attr('fill-opacity', 1);
-    d3.select('#loopendright_'+ d.id).attr('fill-opacity', 1);
-    d3.select('#loopendleft_'+ d.id).attr('fill-opacity', 1);
+  function loopHighlightRemove(d, svg) {
+    svg.selectAll('text.line').each(function(d, i) {
+      d3.select(this).attr('fill-opacity', 1);
+    });
+
+    svg.selectAll('circle.loop').each(function(d, i) {
+      d3.select(this).attr('fill-opacity', 1);
+    });
+
+    svg.selectAll('circle.small').each(function(d, i) {
+      d3.select(this).attr('fill-opacity', 1);
+    });
+
+    svg.selectAll('line.loop').each(function(d, i) {
+      d3.select(this).attr('stroke-opacity', 1);
+    });
   }
 
   function loopTooltip(d, _svg) {
@@ -147,33 +174,37 @@ function pView(d3, size) {
     d3.select('#tooltip').classed('hidden', true);
   }
 
-  function isHovered(d, type, _svg) {
+  function getSvgWidth(_svg) {
+    return size.svgSizeById(_svg.profileId).width;
+  }
+
+  function isHovered(d, type, _svg, svg) {
     if (type === 'Loop') {
       // check if loop is minimized loop
       if (d.loopDuration < _svg.runtimeThreshold) {
-        return d3.select('#loopsmall_' + d.id).attr('fill-opacity') == 0.5;
+        return svg.select('#loopsmall_' + d.id).attr('fill-opacity') == 0.5;
       }
 
-      return d3.select('#loopline_' + d.id).attr('stroke-opacity') == 0.5;
+      return svg.select('#loopline_' + d.id).attr('stroke-opacity') == 0.5;
     } else {
-      return d3.select('#rect_' + d.id).attr('fill-opacity') == 0.5;
+      return svg.select('#rect_' + d.id).attr('fill-opacity') == 0.5;
     }
   }
 
-  function isSelected(d) {
-    return d3.select('#rect_' + d.id).attr('fill') == 'grey';
+  function isSelected(d, svg) {
+    return svg.select('#rect_' + d.id).attr('fill') == 'grey';
   }
 
-  function isVisible(d, type, _svg) {
+  function isVisible(d, type, _svg, svg) {
     if (type === 'Loop') {
       // check if loop is minimized loop
       if (d.loopDuration < _svg.runtimeThreshold) {
-        return d3.select('#loopsmall_' + d.id).empty();
+        return svg.select('#loopsmall_' + d.id).empty();
       }
 
-      return d3.select('#loopline_' + d.id).empty();
+      return svg.select('#loopline_' + d.id).empty();
     } else {
-      return d3.select('#rect_' + d.id).empty();
+      return svg.select('#rect_' + d.id).empty();
     }
   }
 
@@ -199,15 +230,15 @@ function pView(d3, size) {
     });
   }
 
-  function setSelectedNodes(_svg) {
+  function setSelectedNodes(_svg, svg) {
     _.forEach(_svg.selectedNodes, function(id) {
-      d3.select('#rect_' + id).attr('fill', 'grey');
+      svg.select('#rect_' + id).attr('fill', 'grey');
     });
   }
 
-  function resetSelectedNode(id, _svg) {
-    var d = d3.select('#rect_' + id)[0][0].__data__;
-    d3.select('#rect_' + id).attr('fill', _svg.gradient(d.duration));
+  function resetSelectedNode(id, _svg, svg) {
+    var d = svg.select('#rect_' + id)[0][0].__data__;
+    svg.select('#rect_' + id).attr('fill', _svg.gradient(d.duration));
   }
 
   function toggleLoop(_svg) {
