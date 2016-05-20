@@ -42,6 +42,8 @@ function pData(LoaderService) {
       : obj.getRecursiveCallGroups(runtimeThreshold);
 
     var promise = func.then(function(data) {
+      console.log(data);
+      
       var promises = data.map(function(d) {
         var _id = d[type].id;
         var _ancestor = d[type][ancestor];
