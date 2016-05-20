@@ -959,7 +959,7 @@ var FunctionType = {
   singular: 'function',
   plural: 'functions',
   properties: ['signature', 'type', 'file', 'startLine', 'duration',
-               'durationMs'],
+               'durationMs', 'name'],
   relationships: {
     'file': {
       type: 'File'

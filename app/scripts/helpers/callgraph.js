@@ -524,7 +524,7 @@ angular.module('app')
     };
 
     Call.prototype.getLabel = function() {
-      return this.function.signature;
+      return this.function.name;
     };
 
     Call.prototype.loadChildren = function() {
@@ -770,7 +770,7 @@ angular.module('app')
     }
 
     Reference.prototype.getLabel = function() {
-      return this.data.signature;
+      return this.data.name;
     };
 
     Reference.prototype.checkUnload = function() {
@@ -842,7 +842,7 @@ angular.module('app')
     };
 
     CallGroup.prototype.getLabel = function() {
-      return this.function.signature;
+      return this.function.name;
     };
 
     CallGroup.prototype.getDuration = function() {
