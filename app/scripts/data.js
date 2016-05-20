@@ -1058,6 +1058,15 @@ var Instruction = {
   },
 
   /** @instance
+    * @summary Internally goes trough Segment and Call
+    * @return {external:Promise.<Thread>} The thread of this instruction. */
+  getThread: function() {
+    return this.getCall().then(function(call) {
+      return call.getThread();
+    });
+  },
+
+  /** @instance
     * @summary Internally goes trough accesses
     * @return {external:Promise.<Reference[]>} The list of references accessed
     *                       by this instruction */
@@ -1714,8 +1723,11 @@ var Thread = {
     'instruction': {
       type: 'Instruction'
     },
-    'parent': {
-      type: 'Parent'
+    'createInstruction': {
+      type: 'Instruction'
+    },
+    'joinInstruction': {
+      type: 'Instruction'
     },
     'calls': {
       type: 'Call',
@@ -1731,17 +1743,38 @@ var Thread = {
     return this._mapper.getRelationship(this, 'instruction');
   },
 
-
-  /** @return {external:Promise.<Thread>} The parent thread
-    * @instance */
-  getParent: function() {
-    return this._mapper.getRelationship(this, 'parent');
-  },
-
   /** @return {external:Promise.<Call[]>} Calls made by this thread
     * @instance */
   getCalls: function() {
     return this._mapper.getRelationship(this, 'calls');
+  },
+
+  /** @return {external:Promise.<Instruction>} Instruction that spawned thread
+    * @instance */
+  getCreateInstruction: function() {
+    return this._mapper.getRelationship(this, 'createInstruction');
+  },
+
+  /** @return {external:Promise.<Instruction>} Instruction that joined thread
+    * @instance */
+  getJoinInstruction: function() {
+    return this._mapper.getRelationship(this, 'joinInstruction');
+  },
+
+  /** @return {external:Promise.<Thread>} Thread that created this one
+    * @instance */
+  getParent: function() {
+    return this.getCreateInstruction().then(function(instruction) {
+      return instruction.getThread();
+    });
+  },
+
+  /** @return {external:Promise.<Thread>} Thread that joined this one
+    * @instance */
+  getJoiningThread: function() {
+    return this.getJoinInstruction().then(function(instruction) {
+      return instruction.getThread();
+    });
   }
 };
 

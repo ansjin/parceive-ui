@@ -163,7 +163,6 @@ CREATE TABLE Thread(
   EndTSC INTEGER,
   EndTime VARCHAR,
   TSCPerMillisecond REAL,
-  Parent INTEGER,
   FOREIGN KEY(CreateInstruction) REFERENCES Instruction(Id),
   FOREIGN KEY(JoinInstruction) REFERENCES Instruction(Id)
 );
