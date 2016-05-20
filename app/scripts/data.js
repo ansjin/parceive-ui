@@ -76,6 +76,9 @@ var getAllTemplate = _.template('<%= type %>');
 var getManyRelationshipTemplate =
   _.template('<%= type %>/many/<%= ids %>/<%= relationship %>');
 var getFileContentTemplate = _.template('files/<%= id %>/content');
+var getSectionConflicts = _.template('taginstances/<%= id %>/sectionconflicts');
+var getNestedTasksTemplate = _.template('taginstances/<%= id %>/tasks');
+var getAllSectionsTemplate = _.template('taginstances/sections');
 
 /** @private
   * @summary Add element to cache
@@ -440,11 +443,11 @@ function getRelationship(http, manager, instance, relationship) {
 
     promise = deferred.promise;
   } else {
-    if (_.isUndefined(instance[relationship])) {
+    if (_.isNull(instance[relationship])) {
       return RSVP.Promise.resolve(instance[relationship]);
     }
 
-    if (_.isUndefined(instance[relationship + 'ID'])) {
+    if (_.isNull(instance[relationship + 'ID'])) {
       return RSVP.Promise.resolve();
     }
 
@@ -508,7 +511,8 @@ var Call = {
   plural: 'calls',
   properties: ['thread', 'function', 'instruction', 'callGroup',
                 'start', 'end', 'caller', 'callsOthers', 'duration',
-                'callerexecution', 'calleriteration', 'loopCount'],
+                'callerexecution', 'calleriteration', 'loopCount',
+                'startTime', 'endTime', 'durationMs'],
   relationships: {
     'thread': {
       type: 'Thread'
@@ -579,6 +583,13 @@ var Call = {
     * @return {external:Promise.<Call>} The parent call */
   getCaller: function() {
     return this._mapper.getRelationship(this, 'caller');
+  },
+
+  /** @instance
+    * @return {external:Promise.<Instruction>} The calling instruction in the
+    *         parent */
+  getInstruction: function() {
+    return this._mapper.getRelationship(this, 'instruction');
   },
 
   /** @instance
@@ -923,6 +934,20 @@ var File = {
     * @return {external:Promise.<string>} The content of the file */
   getContent: function() {
     return this._mapper.httpGet(getFileContentTemplate({id: this.id}));
+  },
+
+  /** @instance
+    * @return {external:Promise.<SourceLocation[]>} The known locations in this
+    *         File
+  */
+  getSourceLocations: function() {
+    return this.getFunctions().then(function(fcts) {
+      return RSVP.all(_.map(fcts, function(fct) {
+        return fct.getSourceLocations();
+      }));
+    }).then(function(array) {
+      return _.flatten(array);
+    });
   }
 };
 
@@ -933,13 +958,19 @@ var FunctionType = {
   typeName: 'Function',
   singular: 'function',
   plural: 'functions',
-  properties: ['signature', 'type', 'file', 'startLine', 'duration'],
+  properties: ['signature', 'type', 'file', 'startLine', 'duration',
+               'durationMs'],
   relationships: {
     'file': {
       type: 'File'
     },
     'calls': {
       type: 'Call',
+      many: true,
+      inverse: 'function'
+    },
+    'sourcelocations': {
+      type: 'SourceLocation',
       many: true,
       inverse: 'function'
     }
@@ -956,7 +987,15 @@ var FunctionType = {
     * @return {external:Promise.<Call[]>} The calls made to this function */
   getCalls: function() {
     return this._mapper.getRelationship(this, 'calls');
-  }
+  },
+
+  /** @instance
+    * @return {external:Promise.<SourceLocation[]>} The known locations in this
+    *          Function
+  */
+  getSourceLocations: function() {
+    return this._mapper.getRelationship(this, 'sourcelocations');
+  },
 };
 
 /** @class
@@ -979,6 +1018,11 @@ var Instruction = {
       type: 'Call',
       many: true,
       inverse: 'instruction'
+    },
+    'instructiontaginstances': {
+      type: 'InstructionTagInstance',
+      many: true,
+      inverse: 'tag'
     }
   },
 
@@ -1014,6 +1058,15 @@ var Instruction = {
   },
 
   /** @instance
+    * @summary Internally goes trough Segment and Call
+    * @return {external:Promise.<Thread>} The thread of this instruction. */
+  getThread: function() {
+    return this.getCall().then(function(call) {
+      return call.getThread();
+    });
+  },
+
+  /** @instance
     * @summary Internally goes trough accesses
     * @return {external:Promise.<Reference[]>} The list of references accessed
     *                       by this instruction */
@@ -1021,6 +1074,51 @@ var Instruction = {
     return this.getAccesses().then(function(access) {
       return access.getReference();
     });
+  },
+
+  /** @return {external:Promise.<InstructionTagInstance[]>} many to many table
+    * @instance */
+  getInstructionTagInstances: function() {
+    return this._mapper.getRelationship(this, 'instructiontaginstances');
+  },
+
+  /** @return {external:Promise.<TagInstance[]>} Tag instances
+    * @instance */
+  gettagInstances: function() {
+    return this.getInstructionTagInstances().then(function(itis) {
+      return RSVP.all(_.map(itis, function(iti) {
+        return iti.getTagInstance();
+      }));
+    });
+  },
+};
+
+/** @class
+  * @implements Type */
+var InstructionTagInstance = {
+  typeName: 'InstructionTagInstance',
+  singular: 'instructiontaginstance',
+  plural: 'instructiontaginstances',
+  properties: ['tag', 'instruction'],
+  relationships: {
+    'tag': {
+      type: 'Tag'
+    },
+    'instruction': {
+      type: 'Instruction'
+    }
+  },
+
+  /** @instance
+    * @return {external:Promise.<TagInstance>} The Tag instance */
+  getTagInstance: function() {
+    return this._mapper.getRelationship(this, 'tag');
+  },
+
+  /** @instance
+    * @return {external:Promise.<Instruction>} The Instruction */
+  getInstruction: function() {
+    return this._mapper.getRelationship(this, 'instruction');
   }
 };
 
@@ -1063,7 +1161,7 @@ var LoopExecution = {
   singular: 'loopexecution',
   plural: 'loopexecutions',
   properties: ['loop', 'parent', 'duration', 'call', 'iterationsCount',
-               'start', 'end'],
+               'start', 'end', 'startTime', 'endTime', 'durationMs'],
   relationships: {
     'loop': {
       type: 'Loop'
@@ -1231,6 +1329,16 @@ var Reference = {
       type: 'Access',
       many: true,
       inverse: 'reference'
+    },
+    'callreferences': {
+      type: 'CallReference',
+      many: true,
+      inverse: 'reference'
+    },
+    'callgroupreferences': {
+      type: 'CallGroupReference',
+      many: true,
+      inverse: 'reference'
     }
   },
 
@@ -1238,8 +1346,7 @@ var Reference = {
     * @return {external:Promise.<Instruction>} The instruction that allocates
     *                                           this reference */
   getAllocator: function() {
-    return this._mapper.getRelationship(this,
-      this._mapper.types.Instruction, 'allocator');
+    return this._mapper.getRelationship(this, 'allocator');
   },
 
   /** @instance
@@ -1247,6 +1354,43 @@ var Reference = {
     */
   getAccesses: function() {
     return this._mapper.getRelationship(this, 'accesses');
+  },
+
+  /** @instance
+    * @return {external:Promise.<CallReference[]>}
+    */
+  getCallReferences: function() {
+    return this._mapper.getRelationship(this, 'callreferences');
+  },
+
+  /** @instance
+    * @return {external:Promise.<CallGroupReference[]>}
+    */
+  getCallGroupReferences: function() {
+    return this._mapper.getRelationship(this, 'callgroupreferences');
+  },
+
+  /** @instance
+    * @return {external:Promise.<Call[]>} Calls that access this reference
+    */
+  getCalls: function() {
+    return this.getCallReferences().then(function(callreferences) {
+      return RSVP.all(_.map(callreferences, function(callreference) {
+        return callreference.getCall();
+      }));
+    });
+  },
+
+  /** @instance
+    * @return {external:Promise.<CallGroup[]>} CallGroups that access this
+    *            reference
+    */
+  getCallGroups: function() {
+    return this.getCallGroupReferences().then(function(callgroupreferences) {
+      return RSVP.all(_.map(callgroupreferences, function(callgroupreference) {
+        return callgroupreference.getCallGroup();
+      }));
+    });
   }
 };
 
@@ -1434,13 +1578,155 @@ var Segment = {
 
 /** @class
   * @implements Type */
+var SourceLocation = {
+  typeName: 'SourceLocation',
+  singular: 'sourcelocation',
+  plural: 'sourcelocations',
+  properties: ['line', 'column', 'function'],
+  relationships: {
+    'function': {
+      type: 'Function'
+    },
+  },
+
+  /** @return {external:Promise.<Function>} The function that contains this
+    *         location
+    * @instance */
+  getFunction: function() {
+    return this._mapper.getRelationship(this, 'function');
+  },
+
+  /** @return {external:Promise.<Function>} The file that contains this
+    *         location
+    * @instance */
+  getFile: function() {
+    return this.getFunction().then(function (fct) {
+      return fct.getFile();
+    });
+  }
+};
+
+/** @class
+  * @implements Type */
+var Tag = {
+  typeName: 'Tag',
+  singular: 'tag',
+  plural: 'tags',
+  properties: ['name', 'type'],
+  relationships: {
+    'taginstances': {
+      type: 'TagInstance',
+      many: true,
+      inverse: 'tag'
+    },
+    'taginstructions': {
+      type: 'TagInstruction',
+      many: true,
+      inverse: 'tag'
+    }
+  },
+
+  /** @return {external:Promise.<TagInstance[]>} Instances of this tag
+    * @instance */
+  getTagInstances: function() {
+    return this._mapper.getRelationship(this, 'taginstances');
+  },
+
+  /** @return {external:Promise.<TagInstruction[]>} Locations of this tag
+    * @instance */
+  getTagInstructions: function() {
+    return this._mapper.getRelationship(this, 'taginstructions');
+  }
+};
+
+/** @class
+  * @implements Type */
+var TagInstance = {
+  typeName: 'TagInstance',
+  singular: 'taginstance',
+  plural: 'taginstances',
+  properties: ['tag', 'thread', 'start', 'end', 'duration', 'startTime',
+               'endTime', 'durationMs'],
+  relationships: {
+    'tag': {
+      type: 'Tag'
+    },
+    'thread': {
+      type: 'Thread'
+    },
+    'instructiontaginstances': {
+      type: 'InstructionTagInstance',
+      many: true,
+      inverse: 'tag'
+    }
+  },
+
+  /** @return {external:Promise.<InstructionTagInstance[]>} many to many table
+    * @instance */
+  getInstructionTagInstances: function() {
+    return this._mapper.getRelationship(this, 'instructiontaginstances');
+  },
+
+  /** @return {external:Promise.<Instruction[]>} Instructions for this instance
+    * @instance */
+  getInstructions: function() {
+    return this.getInstructionTagInstances().then(function(itis) {
+      return RSVP.all(_.map(itis, function(iti) {
+        return iti.getInstruction();
+      }));
+    });
+  },
+
+  /** @return {external:Promise.<Tag>} The tag for this instance
+    * @instance */
+  getTag: function() {
+    return this._mapper.getRelationship(this, 'tag');
+  },
+
+  /** @instance
+    * @return {external:Promise} The memory conflicts between the tasks */
+  getSectionTaskConflicts: function() {
+    var self = this;
+
+    return self._mapper.httpGet(getSectionConflicts({id: self.id})).then(
+      function(data) {
+        return RSVP.all(_.map(data, function (element){
+          return RSVP.hash({
+            task1: self._mapper.getTagInstance(element.task1),
+            task2: self._mapper.getTagInstance(element.task2),
+            access1: self._mapper.getAccess(element.access1),
+            access2: self._mapper.getAccess(element.access2),
+          });
+        }));
+      }
+    );
+  },
+
+  /** @instance
+    * @return {external:Promise.<TagInstance[]>} The tasks that exist inside
+    *         this Section/Pipeline */
+  getNestedTasks: function() {
+    return this._mapper.getManyURL(
+      getNestedTasksTemplate({id: this.id}), TagInstance);
+  }
+};
+
+/** @class
+  * @implements Type */
 var Thread = {
   typeName: 'Thread',
   singular: 'thread',
   plural: 'threads',
-  properties: ['instruction', 'process'],
+  properties: ['instruction', 'process', 'createInstruction', 'joinInstruction',
+               'startTime', 'endTime', 'endTSC', 'process'],
   relationships: {
     'instruction': {
+      type: 'Instruction'
+    },
+    'createInstruction': {
+      type: 'Instruction'
+    },
+    'joinInstruction': {
       type: 'Instruction'
     },
     'calls': {
@@ -1457,20 +1743,38 @@ var Thread = {
     return this._mapper.getRelationship(this, 'instruction');
   },
 
-  /** @return {external:Promise.<Thread>} The parent thread
-    * @instance */
-  getParent: function ThreadGetParent() {
-    return this.getInstruction().then(function(instruction) {
-      return instruction.getCall();
-    }).then(function(call) {
-      return call.getThread();
-    });
-  },
-
   /** @return {external:Promise.<Call[]>} Calls made by this thread
     * @instance */
   getCalls: function() {
     return this._mapper.getRelationship(this, 'calls');
+  },
+
+  /** @return {external:Promise.<Instruction>} Instruction that spawned thread
+    * @instance */
+  getCreateInstruction: function() {
+    return this._mapper.getRelationship(this, 'createInstruction');
+  },
+
+  /** @return {external:Promise.<Instruction>} Instruction that joined thread
+    * @instance */
+  getJoinInstruction: function() {
+    return this._mapper.getRelationship(this, 'joinInstruction');
+  },
+
+  /** @return {external:Promise.<Thread>} Thread that created this one
+    * @instance */
+  getParent: function() {
+    return this.getCreateInstruction().then(function(instruction) {
+      return instruction.getThread();
+    });
+  },
+
+  /** @return {external:Promise.<Thread>} Thread that joined this one
+    * @instance */
+  getJoiningThread: function() {
+    return this.getJoinInstruction().then(function(instruction) {
+      return instruction.getThread();
+    });
   }
 };
 
@@ -1487,6 +1791,7 @@ var loader = {
     File: File,
     Function: FunctionType,
     Instruction: Instruction,
+    InstructionTagInstance: InstructionTagInstance,
     Loop: Loop,
     LoopExecution: LoopExecution,
     LoopIteration: LoopIteration,
@@ -1496,6 +1801,9 @@ var loader = {
     LoopExecutionReference: LoopExecutionReference,
     LoopIterationReference: LoopIterationReference,
     Segment: Segment,
+    SourceLocation: SourceLocation,
+    Tag: Tag,
+    TagInstance: TagInstance,
     Thread: Thread
   }
 };
@@ -1644,6 +1952,20 @@ loader.getSegments = function() {
   return loader.getAll(Segment);
 };
 
+/** @return {external:Promise.<Tag>}
+  * @instance
+  * @param {int|string} id The id of the element */
+loader.getTag = function(id) {
+  return loader.getSpecific(Tag, id);
+};
+
+/** @return {external:Promise.<TagInstance>}
+  * @instance
+  * @param {int|string} id The id of the element */
+loader.getTagInstance = function(id) {
+  return loader.getSpecific(TagInstance, id);
+};
+
 /** @return {external:Promise.<Thread>}
   * @instance
   * @param {int|string} id The id of the element */
@@ -1678,6 +2000,29 @@ loader.getFunctionBySignature = function(sig) {
   });
 
   return promise;
+};
+
+/** @return {external:Promise.<TagInstance[]>} The Sections in this run
+  * @instance */
+loader.getAllSections = function() {
+  return this.getManyURL(getAllSectionsTemplate(), TagInstance);
+};
+
+loader.getSharedReferences = function(callIds, callgroupIds, loopexecutionIds,
+                                      loopiterationIds) {
+  return this.getManyURL(
+    'references/sharedreferences?callIds=' + JSON.stringify(callIds) +
+                      '&callgroupIds=' + JSON.stringify(callgroupIds) +
+                      '&loopexecutionIds=' + JSON.stringify(loopexecutionIds) +
+                      '&loopiterationIds=' + JSON.stringify(loopiterationIds),
+    Reference);
+};
+
+loader.getRecursiveSharedReferences = function(callIds, callgroupIds) {
+  return this.getManyURL(
+    'references/recursivesharedreferences?callIds=' + JSON.stringify(callIds) +
+                      '&callgroupIds=' + JSON.stringify(callgroupIds),
+    Reference);
 };
 
 // run management

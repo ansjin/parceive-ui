@@ -18,6 +18,8 @@ var callgroups = require('./entities/callgroup');
 var loops = require('./entities/loop');
 var loopexecutions = require('./entities/loopexecution');
 var loopiterations = require('./entities/loopiteration');
+var tags = require('./entities/tag');
+var taginstances = require('./entities/taginstance');
 
 router.use('/accesses', accesses.router);
 router.use('/calls', calls.router);
@@ -31,6 +33,8 @@ router.use('/callgroups', callgroups.router);
 router.use('/loops', loops.router);
 router.use('/loopexecutions', loopexecutions.router);
 router.use('/loopiterations', loopiterations.router);
+router.use('/tags', tags.router);
+router.use('/taginstances', taginstances.router);
 
 var dbRouter = express.Router();
 

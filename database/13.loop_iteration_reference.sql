@@ -1,14 +1,3 @@
-DROP TABLE IF EXISTS LoopIterationReference;
-CREATE TABLE "LoopIterationReference"
-(
-    LoopIteration INT NOT NULL,
-    Reference INT NOT NULL,
-    Read INT NOT NULL,
-    Write INT NOT NULL,
-    FOREIGN KEY(LoopIteration) REFERENCES LoopIteration(Id),
-    FOREIGN KEY(Reference) REFERENCES Reference(Id)
-);
-
 INSERT INTO LoopIterationReference SELECT
   s.LoopIteration AS LoopIteration,
   a.Reference AS Reference,

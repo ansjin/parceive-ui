@@ -7,6 +7,7 @@ angular
   .value('focusCb', focusCb)
   .value('markedCb', markedCb)
   .value('hoverCb', hoverCb)
+  .value('spotCb', function() {})
   .service('render', render);
 
 // handle focus event

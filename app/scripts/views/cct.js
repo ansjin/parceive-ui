@@ -45,14 +45,60 @@ function applyMarked(state, nodes, changes) {
 angular.module('cct-view', ['app'])
 .value('name', 'CCT')
 .value('group', 'Callgraph')
+.value('spotCb', function(stateManager, elements) {
+  elements = _.filter(elements, function(element) {
+    return !element.neighbour && (
+      element.type === 'Call' || element.type === 'CallGroup'
+    );
+  });
+
+  var state = stateManager.getData();
+  var callgraph = state.unsaved.callgraph;
+
+  callgraph.spot(elements).then(state.unsaved.rerender);
+})
 .value('markedCb', function(stateManager, changes) {
   var state = stateManager.getData();
   var callgraph = state.unsaved.callgraph;
   var nodes = callgraph.getNodes();
 
+  changes = _.filter(changes, function(change) {
+    return !change.neighbour;
+  });
+
   applyMarked(state, nodes, changes);
 })
-.value('focusCb', function() {})
+.value('focusCb', function(stateManager, focused) {
+  var state = stateManager.getData();
+  var callgraph = state.unsaved.callgraph;
+  var svg = state.unsaved.svg;
+
+  var nodes = callgraph.getNodes();
+
+  var interesting = _.filter(focused, function(el) {
+    return !el.neighbour && (
+                            el.type === 'Call' || el.type === 'CallGroup' ||
+                            el.type === 'LoopIteration' ||
+                            el.type === 'LoopExecution'
+                          );
+  });
+
+  if (interesting.length === 0) {
+    return;
+  }
+
+  var node = _.find(nodes, function(node) {
+    return _.any(interesting, function(el) {
+      return el.id === node.data.id && el.type === node.type;
+    });
+  });
+
+  if (_.isUndefined(node)) {
+    return;
+  }
+
+  svg.focus([node.x, node.y]);
+})
 .value('hoverCb', function(stateManager, hovered) {
   var state = stateManager.getData();
   var callgraph = state.unsaved.callgraph;
@@ -67,6 +113,7 @@ angular.module('cct-view', ['app'])
   } else {
     _.forEach(nodes, function(node) {
       node.isHovered = false;
+      node.isNeighbourHovered = false;
     });
 
     _.forEach(hovered, function(toFind) {
@@ -75,7 +122,11 @@ angular.module('cct-view', ['app'])
       });
 
       if (node) {
-        node.isHovered = true;
+        if (toFind.neighbour) {
+          node.isNeighbourHovered = true;
+        } else {
+          node.isHovered = true;
+        }
       }
     });
 
@@ -84,6 +135,8 @@ angular.module('cct-view', ['app'])
       .style('opacity', function(d) {
         if (d.isHovered) {
           return 1;
+        } else if (d.isNeighbourHovered) {
+          return (d.normalOpacity ? d.normalOpacity : 1) - 0.3;
         } else {
           return (d.normalOpacity ? d.normalOpacity : 1) - 0.5;
         }
@@ -95,9 +148,12 @@ angular.module('cct-view', ['app'])
 function(CallGraphDataService, loader, d3, keyService, GradientService, $,
           SizeService) {
   var bgColors = d3.scale.category20();
+  var refColors = d3.scale.category10();
 
   function addZoom(svg) {
-    svg.call(d3.behavior.zoom().on('zoom', zoom));
+    var zoom = d3.behavior.zoom();
+
+    svg.call(zoom.on('zoom', zoomEvent));
 
     var defs = svg.append('defs');
 
@@ -156,10 +212,32 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $,
     g.append('g')
       .attr('class', 'calls-group');
 
-    function zoom() {
+    function zoomEvent() {
       g.attr('transform', 'translate(' + d3.event.translate +
                 ')scale(' + d3.event.scale + ')');
     }
+
+    svg.focus = function(pos) {
+      var x = pos[0];
+      var y = pos[1];
+
+      var svgSize = SizeService.svgSize(svg);
+
+      var cx = svgSize.width / 2;
+      var cy = svgSize.height / 2;
+
+      var tx = cx - x;
+      var ty = cy - y;
+
+      pos = [tx, ty];
+
+      zoom.translate(pos);
+      zoom.scale(1);
+
+      g
+        .transition()
+        .attr('transform', 'translate(' + pos[0] + ', ' + pos[1]+ ')scale(1)');
+    };
   }
 
   function calcEdgePoints(d) {
@@ -247,6 +325,7 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $,
 
     state.unsaved.callGroup = callGroup;
     state.unsaved.refGroup = refGroup;
+    state.unsaved.rerender = rerender;
 
     function expandAction(d) {
       switch (d.type) {
@@ -343,7 +422,7 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $,
     // Add nodes
 
     var callNodes = callGroup.selectAll('g.node')
-      .data(calls, function(d) { return d.type + ':' + d.data.id; });
+      .data(calls, function(d) { return d.uuid; });
 
     var callNodesEnter = callNodes
       .enter()
@@ -542,6 +621,18 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $,
       .attr('xlink:href', '#execution')
       .attr('transform', 'scale(' + 5 / 800 + ')');
 
+    var callWithLoops = callNodesEnter
+      .filter(function(d) {
+        return d.type === 'Call' && d.data.loopCount > 0;
+      });
+
+    callWithLoops
+      .append('use')
+      .attr('xlink:href', '#execution')
+      .attr('transform', function(d) {
+        return 'translate(' + (d.width - 10) + ', 0) scale(' + 5 / 800 + ')';
+      });
+
     /* Set initial position so the first transition makes sense */
 
     callNodesEnter
@@ -568,7 +659,7 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $,
     });
 
     var loopBg = loopBgGroup.selectAll('polygon')
-      .data(executions, function(d) { return d.data.id; });
+      .data(executions, function(d) { return d.uuid; });
 
     loopBg.exit().remove();
 
@@ -584,7 +675,7 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $,
     /* Add references */
 
     var refNodes = refGroup.selectAll('g.reference')
-      .data(refs, function(d) { return d.data.id; });
+      .data(refs, function(d) { return d.uuid; });
 
     refNodes
       .exit()
@@ -601,7 +692,10 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $,
 
     refNodesEnter
       .append('circle')
-      .attr('r', 10);
+      .attr('r', 10)
+      .style('fill', function(d) {
+        return refColors(d.data.type);
+      });
 
     refNodesEnter
       .append('text')
@@ -621,8 +715,7 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $,
 
     var edgeNode = edgeGroup.selectAll('g.edge')
       .data(edges, function(d) {
-        return d[0].type + ':' + d[0].data.id + '-' +
-               d[1].type + ':' + d[1].data.id;
+        return d[0].uuid + d[1].uuid;
       });
 
     edgeNode
@@ -726,6 +819,13 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $,
                   element.toggleChildren().then(rerender, fail);
                 }
               },
+              'focus': {
+                name: 'Focus',
+                callback: function() {
+                  stateManager.focus([{type: element.type, id: element.data.id
+                                      }]);
+                }
+              },
               'expand': {
                 name: (element.loopExecutions ? 'Hide' : 'Show') +
                       ' Loop Executions',
@@ -761,6 +861,27 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $,
                   stateManager.mark(element.type, element.data.id,
                     !stateManager.isMarked(element.type, element.data.id));
                 }
+              },
+              'spot': {
+                name: 'Spot marked nodes',
+                callback: function() {
+                  stateManager.spot(stateManager.getMarked());
+                }
+              },
+              'sharedreferences': {
+                name: 'Show shared references between marked nodes',
+                callback: function() {
+                  callgraph.showSharedReferences(stateManager.getMarked())
+                    .then(rerender, fail);
+                }
+              },
+              'recursivesharedreferences': {
+                name: 'Show shared references between marked nodes and ' +
+                      'all children of the nodes',
+                callback: function() {
+                  callgraph.showRecursiveSharedReferences(stateManager
+                    .getMarked()).then(rerender, fail);
+                }
               }
             }
           };
@@ -771,6 +892,16 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $,
 
           if (element.data.callsOthers === 0) {
             delete data.items.children;
+          }
+
+          if (!stateManager.isMarked(element.type, element.data.id) ||
+               stateManager.getMarked().length <= 2) {
+            delete data.items.sharedreferences;
+            delete data.items.recursivesharedreferences;
+          }
+
+          if (stateManager.getMarked().length < 2) {
+            delete data.items.spot;
           }
 
           return data;
@@ -796,6 +927,13 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $,
                 name: (element.children ? 'Hide' : 'Show') + ' Children',
                 callback: function() {
                   element.toggleChildren().then(rerender, fail);
+                }
+              },
+              'focus': {
+                name: 'Focus',
+                callback: function() {
+                  stateManager.focus([{type: element.type, id: element.data.id
+                                      }]);
                 }
               },
               'expand': {
@@ -927,6 +1065,32 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $,
                 callback: function() {
                   stateManager.mark(element.type, element.data.id,
                     !stateManager.isMarked(element.type, element.data.id));
+                }
+              }
+            }
+          };
+        }
+      });
+    });
+
+    $(function() {
+      $.contextMenu({
+        selector: '.reference',
+        build: function(menu) {
+          var element = menu[0].__data__;
+          return {
+            position: function(opt) {
+              var rect = opt.$trigger[0].getBoundingClientRect();
+              opt.$menu.css({
+                top: rect.top + element.height,
+                left: rect.left + element.width
+              });
+            },
+            items: {
+              'showlinks': {
+                name: 'Show links to expanded nodes',
+                callback: function() {
+                  element.loadLinks().then(rerender, fail);
                 }
               }
             }

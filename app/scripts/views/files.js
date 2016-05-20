@@ -4,10 +4,12 @@ angular.module('filelist-view', ['app'])
 .value('markedCb', function() {})
 .value('focusCb', function() {})
 .value('hoverCb', function() {})
+.value('spotCb', function() {})
 .service('render', ['LoaderService', 'jquery', 'd3', function(loader, $, d3) {
   return function(svg, stateManager) {
     _.delay(function() {
       var header = $(svg[0][0]).parent().siblings('div.html-header');
+      header.css('overflow', 'auto');
       var table = d3.select(header.children('table')[0]);
 
       loader.getFiles().then(function(files) {

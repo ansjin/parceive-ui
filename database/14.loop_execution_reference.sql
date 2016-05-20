@@ -1,14 +1,3 @@
-DROP TABLE IF EXISTS LoopExecutionReference;
-CREATE TABLE "LoopExecutionReference"
-(
-    LoopExecution INT NOT NULL,
-    Reference INT NOT NULL,
-    Read INT NOT NULL,
-    Write INT NOT NULL,
-    FOREIGN KEY(LoopExecution) REFERENCES LoopExecution(Id),
-    FOREIGN KEY(Reference) REFERENCES Reference(Id)
-);
-
 INSERT INTO LoopExecutionReference SELECT
   i.Execution AS LoopExecution,
   lir.Reference AS Reference,

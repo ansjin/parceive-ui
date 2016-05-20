@@ -14,7 +14,7 @@
     "chai": "~3.4.0",
     "mocha": "~2.3.3",
     "chai-as-promised": "~5.1.0",
-    "highlightjs": "~8.8.0",
+    "code-prettify": "https://github.com/google/code-prettify.git",
     "jQuery-contextMenu": "~2.1.0"
   }
 }

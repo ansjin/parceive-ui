@@ -1,15 +1,3 @@
-DROP TABLE IF EXISTS CallGroupReference;
-CREATE TABLE "CallGroupReference"
-(
-    Id INTEGER PRIMARY KEY AUTOINCREMENT,
-    CallGroup INT NOT NULL,
-    Reference INT NOT NULL,
-    Read INT NOT NULL,
-    Write INT NOT NULL,
-    FOREIGN KEY(CallGroup) REFERENCES CallGroup(Id),
-    FOREIGN KEY(Reference) REFERENCES Reference(Id)
-);
-
 INSERT INTO CallGroupReference SELECT
   NULL,
   c.CallGroup AS CallGroup,
