@@ -88,7 +88,7 @@ function mark(id, type, oid, isMarked, doCb, doSave) {
 
     if (_.isArray(type)) {
       _.forEach(type, function(obj) {
-        this.mark(id, obj.type, obj.id, obj.isMarked, false, false);
+        mark(id, obj.type, obj.id, obj.isMarked, false, false);
       });
 
       callCb(group, 'marked', type);

@@ -1,614 +1,484 @@
-/* global $, window, document */
+/* global $, window, document, console */
 
 angular
   .module('profile-view', ['app'])
   .value('name', 'Profile view')
   .value('group', 'Profile views')
-  .value('markedCb', markedCb)
   .value('focusCb', focusCb)
+  .value('markedCb', markedCb)
   .value('hoverCb', hoverCb)
-  .value('spotCb', function() {})
+  .value('spotCb', spotCb)
   .service('render', render);
 
-// handle marked event
-function markedCb() {
+// handle focus event
+function focusCb(stateManager, data) {
+  if (data.length < 1) { return; }
+  
+  var svg = stateManager.getData().unsaved.svg;
+  var pv = stateManager.getData().unsaved.pv;
+  var po = stateManager.getData().unsaved.po;
+  var initDisplay = stateManager.getData().unsaved.initDisplay;
+  
+  for (var i = 0, len = data.length; i < len; i++) {
+    var obj = data[i];
+    var id = obj.id;
+    var type = obj.type;
+    var _svg = obj.data || {};
+    var d = pv.findDeep(_svg.viewData, id);
+    var isNeighbour = obj.neighbour;
 
+    if (isNeighbour) {
+      continue;
+    }
+
+    // item not loaded in the profiler viewData
+    // probably a child node with duration too small
+    // or is in viewData but not on svg
+    if (!d.hasOwnProperty('id') && pv.isVisible(d, type, _svg, svg)) { 
+      continue; 
+    }
+
+    if (id === _svg.currentTop.id) {
+      // zoom out
+      if ((id === _svg.mainCallId && type === 'Call') ||
+         (id === _svg.mainCallGroupId && type === 'CallGroup') ||
+         _svg.zoomHistory.length < 1) {
+        // already zoomed out to the max
+        continue;
+      }
+
+      // get last item in history stack
+      var prev = _svg.zoomHistory.pop();
+      _svg.currentTop = prev;
+      d = prev;
+    } else {
+      // zoom in
+      _svg.zoomHistory.push(_svg.currentTop);
+      _svg.currentTop = d;
+    }
+
+    po.setRuntimeThreshold(_svg);
+    po.loadChildren(_svg, d.id, d.level)
+    .then(function() {
+      initDisplay();
+    });
+  }
 }
 
-// handle focus event
-function focusCb() {
+// handle marked event
+function markedCb(stateManager, data) {
+  if (data.length < 1) { return; }
+  
+  var svg = stateManager.getData().unsaved.svg;
+  var pv = stateManager.getData().unsaved.pv;
+  
+  for (var i = 0, len = data.length; i < len; i++) {
+    var obj = data[i];
+    var id = obj.id;
+    var type = obj.type;
+    var isMarked = obj.isMarked;
+    var isNeighbour = obj.neighbour;
 
+    if (isNeighbour) {
+      continue;
+    }
+
+    // check if marked type is Thread
+    if (type === 'Thread') {
+      continue;
+    }
+
+    var _svg = obj.data || {};
+    var d = pv.findDeep(_svg.viewData, id);
+
+    // item not loaded in the profiler viewData
+    // probably a child node with duration too small
+    // or is in viewData but not on svg
+    if (!d.hasOwnProperty('id') && pv.isVisible(d, type, _svg, svg)) { 
+      continue; 
+    }
+
+    if (_svg.selectedNodes.indexOf(id) < 0) {
+      // select node
+      _svg.selectedNodes.push(id);
+      pv.setSelectedNodes(_svg, svg);
+    } else {
+      // deselect node
+      _svg.selectedNodes.splice(_svg.selectedNodes.indexOf(id), 1);
+      pv.resetSelectedNode(id, _svg, svg);
+    }
+  }
 }
 
 // handle hover event
-function hoverCb() {
+function hoverCb(stateManager, data) {
+  if (data.length < 1) { return; }
 
+  var svg = stateManager.getData().unsaved.svg;
+  var pv = stateManager.getData().unsaved.pv;
+
+  for (var i = 0, len = data.length; i < len; i++) {
+    var obj = data[i];
+    var id = obj.id;
+    var type = obj.type;
+    var isNeighbour = obj.neighbour;
+
+    if (isNeighbour) {
+      continue;
+    }
+
+    var _svg = obj.data || {};
+    var d = pv.findDeep(_svg.viewData, id);
+
+    // item not loaded in the profiler viewData
+    // probably a child node with duration too small
+    // or is in viewData but not on svg
+    if (!d.hasOwnProperty('id') && pv.isVisible(d, type, _svg, svg)) { 
+      continue; 
+    }
+
+    if (type === 'Loop') {
+      // hover for loops
+      if (pv.isHovered(d, 'Loop', _svg, svg)) {
+        pv.loopHighlightRemove(d, svg);
+        pv.removeTooltip(d);
+      } else {
+        pv.loopHighlight(d, svg);
+        pv.loopTooltip(d, _svg);
+      }
+    } else {
+      // hover for calls and callgroups
+      if (pv.isHovered(d, 'Call', _svg, svg)) {
+        pv.callHighlightRemove(d, svg);
+        pv.removeTooltip(d);
+      } else {
+        pv.callHighlight(d, svg);
+        pv.callTooltip(d, _svg);
+      }
+    }
+  }
+}
+
+// handle spot event
+function spotCb(stateManager, data) {
+  
 }
 
 // inject view dependencies
 render.$inject = [
   'd3',
-  'profilerDataHelper',
-  'profilerViewHelper',
-  'SizeService',
-  'GradientService'
+  'pObject',
+  'pData',
+  'pView',
+  'pSvg'
 ];
 
 // render the view
-function render(d3, pdh, pvh, size, grad) {
+function render(d3, po, pd, pv, ps) {
   return function(svg, stateManager) {
-    var viewMode = 'T'; // valid values T = tracing, P = profiling
-    var initTracingMode = true; // checks if tracing view has been loaded before
-    var initProfilingMode = false; // checks if profiling view has been loaded before
-    var mainDuration = null; // runtime of main function
-    var mainCallId = null; // ID of main function
-    var mainCallGroupId = null; // callGroup ID of main
-    var runtimeThreshold = null; // minimum runtime required for children to load
-    var thresholdFactor = 1; // % of runtime required for children to load
-    var tracingData = {}; // data object for tracing view
-    var profilingData = {}; // data object for profiling view
-    var viewData = {}; // store the current data used to display profiler
-    var callHistory = []; // stores id's of calls that have been retrieved
-    var callGroupHistory = []; // stores id's of call groups that have been retrieved
-    var rectHeight = 22; // height of the bars in the profiler
-    var textPadY = 15; // top padding for the text svg
-    var textPadX = 0.5; // left padding for the text svg
-    var adjustLevel = 0; // stores level -1 of bar at the top position of the profiler
-    var transTime = 600; // transition time for appending a bar to profiler
-    var transType = 'elastic'; // type of append transition
-    var maxLevel = 1; // current highest level of bars on the profiler
-    var svgWidth = '100%'; // width of the svg
-    var svgElem = null; // reference to svg element
-    var svgParentElem = null; // reference to svg's parent element
-    var profileId = null; // random ID to differentiate profiling views on DOM
-    var initView = false; // flag to check if view has been initialized before
-    var partition = null; // holds modified d3 partition value function
-    var zoomId = null; // id of call or callGroup that is currently zoomed to top
-    var zoomHistory = []; // stores previously zoomed nodes
-    var selectedTracingNodes = []; // stores selected nodes for tracing
-    var selectedProfilingNodes = []; // stores selected nodes for profiling
-    var minTooltipWidth = 150; // minimun width of the tooltip
-    var gradient = null; // holds gradient function
-    var widthScale = null; // holds function to calculate width of call
-    var xScale = null; // holds function to calculate x position of call
-    var clickCount = 0; // click counter for determining double or single click
-    var clickData = null; // clicked node data
-    var clickThis = null; // reference to the 'this' for the clicked node
-    var zoomTracingId = null; // hold value of zoomId in trace view on mode switch
-    var zoomProfilingId = null; // hold value of zoomId in profiling view on mode switch
-    var zoomTracingHistory = []; // hold trace view zoom history on mode switch
-    var zoomProfilingHistory = []; // hold profiling view zoom history on mode switch
-    var zoomTracingAdjustment = 0; // "adjustLevel" value for tracing on mode switch
-    var zoomProfilingAdjustment = 0; // "adjustLevel" value for profiling on mode switch
-    var zoomTracingMaxLevel = 1; // "maxLevel" value for tracing on mode switch
-    var zoomProfilingMaxLevel = 1; // "maxLevel" value for profiling on mode switch
 
-    function init() {
-      // get "main" function data
-      pdh.getMain().then(function(call) {
-        mainDuration = call.duration;
-        mainCallId = call.id;
-        mainCallGroupId = call.callGroupID;
-        loadView();
+    // hold data for tracing and profiling separately
+    var _t = po.getObject(true);
+    var _p = po.getObject(false);
+
+    // start view in trace mode. this var basically just switches between
+    // pointing to the _trace object and the _profile object depending on the 
+    // current view mode
+    var _svg = _t;
+
+    // set main call properties
+    po.setMainData(_t, _p)
+    .then(function() {
+      // set svg id
+      svg.attr('id', _svg.profileId);
+
+      // initialize view data for calls and callgroups
+      return po.initViewData(_t, _p);
+    })
+    .then(function(data) {
+      // load children for calls that meet the duration criteria
+      return po.loadChildren(_t, _t.mainCallId, 1);
+    })
+    .then(function() {
+      // load children for callgroups that meet the duration criteria
+      return po.loadChildren(_p, _p.mainCallGroupId, 1);
+    })
+    .then(function() {
+      return initDisplay();
+    })
+    .then(function() {
+      setEventHandlers();
+      console.log('init', _svg);
+    });
+
+    function initDisplay() {
+      return new Promise(function(resolve, reject) {
+        // partition the viewData so it can be used by D3 partition layout
+        // and set the scale function for x and width
+        pv.setNodes(_svg, svg.selectAll('*'))
+        .then(function() {
+          // draw the call boxes on the svg
+          return ps.drawRect(_svg, svg.selectAll('rect.rect'));
+        })
+        .then(function() {
+          // draw the call text (title) on the svg
+          return ps.drawRectText(_svg, svg.selectAll('text.rect'));
+        })
+        .then(function() {
+          // draw the call loop lines on the svg
+          return ps.drawLoop(_svg, svg.selectAll('line.loop'));
+        })
+        .then(function() {
+          // draw the call loop line rounded ends
+          return ps.drawLoopEnd(_svg, svg.selectAll('circle.loop'));
+        })
+        .then(function() {
+          // draw the call loop text (loop execution count)
+          return ps.drawLoopText(_svg, svg.selectAll('text.line'));
+        })
+        .then(function() {
+          // draw a small circle for loop executions that are too small
+          // compared to runtime, that showing a line for them would
+          // not be appropriate. We signify them with a small dot.
+          return ps.drawLoopTooSmall(_svg, svg.selectAll('circle.small'));
+        })
+        .then(function() {
+          // set event handlers for svg elements
+          return new Promise(function(resolve, reject) {
+            var elementType = _svg.isTracing ? 'Call' : 'CallGroup';
+
+            // call elements
+            svg.selectAll('rect.rect, text.rect')
+              .on('click', function(d) { 
+                 pv.clickType(_svg).then(function(data) {
+                  // handle single click
+                  if (data === 'single') {
+                    // broadcast mark
+                    var isSelected = pv.isSelected(d, svg);
+                    stateManager.mark([{type: elementType, id: d.id, isMarked: isSelected, data:_svg}]);
+                  }
+
+                  // handle double click
+                  if (data === 'double') {
+                    // broadcast focus
+                    stateManager.focus([{type: elementType, id: d.id, data:_svg}]);
+                  }
+                 });
+              })
+              .on('mouseenter', function(d) {
+                // broadcast hover
+                stateManager.hover([{type: elementType, id: d.id, data:_svg}]);
+              })
+              .on('mouseleave', function(d) {
+                // broadcast hover
+                stateManager.hover([{type: elementType, id: d.id, data:_svg}]);
+              });
+
+            // loop elements
+            svg.selectAll('line.loop, circle.loop, circle.small, text.line')
+              .on('mouseenter', function(d) {
+                // broadcast hover
+                stateManager.hover([{type: 'Loop', id: d.id, data:_svg}]); 
+              })
+              .on('mouseleave', function(d) {
+                // broadcast hover
+                stateManager.hover([{type: 'Loop', id: d.id, data:_svg}]); 
+              });
+
+            resolve(true);
+          });
+        })
+        .then(function() {
+          pv.updateDurationSlider(_svg);
+          pv.setSelectedNodes(_svg, svg);
+          resolve(true);
+        });
       });
     }
 
-    function setRuntimeThreshold(runtime) {
-      runtimeThreshold = Math.ceil(runtime * (thresholdFactor / 100));
-    }
-
-    function isTracing() {
-      return viewMode === 'T';
-    }
-
-    function toggleViewMode() {
-      // store some variables for use when returning back to the
-      // view we are toggling out of
-      if (isTracing()) {
-        zoomTracingId = zoomId;
-        zoomTracingHistory = zoomHistory;
-        zoomTracingAdjustment = adjustLevel;
-        zoomTracingMaxLevel = maxLevel;
-      } else {
-        zoomProfilingId = zoomId;
-        zoomProfilingHistory = zoomHistory;
-        zoomProfilingAdjustment = adjustLevel;
-        zoomProfilingMaxLevel = maxLevel;
-      }
-
-      // change view mode
-      viewMode = viewMode === 'T' ? 'P' : 'T';
-
-      // set values for variables used in view we are toggling into
-      // if the variables had a previously saved value, retrieve them.
-      if (isTracing()) {
-        zoomId = zoomTracingId === null ? mainCallId : zoomTracingId;
-        zoomHistory = zoomTracingHistory.length === 0 ? [] : zoomTracingHistory;
-        adjustLevel = zoomTracingAdjustment > 0 ? zoomTracingAdjustment : 0;
-        maxLevel = zoomTracingMaxLevel > 1 ? zoomTracingMaxLevel : 1;
-
-        if (initTracingMode) {
-          displayView();
-        } else {
-          zoomId = null;
-          loadView();
-          initTracingMode = true;
-        }
-      } else {
-        zoomId = zoomProfilingId === null ? mainCallGroupId : zoomProfilingId;
-        zoomHistory = zoomProfilingHistory.length === 0 ? [] : zoomProfilingHistory;
-        adjustLevel = zoomProfilingAdjustment > 0 ? zoomProfilingAdjustment : 0;
-        maxLevel = zoomProfilingMaxLevel > 1 ? zoomProfilingMaxLevel : 1;
-
-        if (initProfilingMode) {
-          displayView();
-        } else {
-          zoomId = null;
-          loadView();
-          initProfilingMode = true;
-        }
-      }
-
-      // update toggle button
-      var state = !isTracing() ? 'Tracing' : 'Profiling';
-      $('#profiler-view-toggle').text('Switch to ' + state);
-    }
-
-    // load view depending on current view mode
-    function loadView() {
-      var ids = isTracing() ? [mainCallId] : [mainCallGroupId];
-      var ancestor = 'null';
-      var level = 1;
-      setRuntimeThreshold(mainDuration);
-      getViewData(ids, ancestor, level);
-    }
-
-    function getViewData(ids, ancestor, level) {
-      // get remote data
-      pdh.getViewData(ids, ancestor, level, viewMode)
-        .then(function(data) {
-          for (var i = 0, len = data.length; i < len; i++) {
-            var obj = data[i];
-
-            // skip calls with runtime lesser than runtimeThreshold
-            if (obj.duration < runtimeThreshold) {
-              continue;
-            }
-
-            // add call ids' to history
-            if (isTracing()) {
-              callHistory.push(obj.id);
-            } else {
-              callGroupHistory.push(obj.id);
-            }
-
-            // append object to tracing or profiling parent object
-            buildViewData(obj);
-
-            // call getViewData on children of obj
-            loadChildren(obj.id, obj.calls, level);
-
-            // update the display
-            displayView();
-          }
-        });
-    }
-
-    function loadChildren(id, calls, level) {
-      var children = [];
-      var history = isTracing() ? callHistory : callGroupHistory;
-      _.map(calls, function(x) {
-        if (history.indexOf(x) === -1) {
-          children.push(x);
-        }
-      });
-
-      if (children.length > 0) {
-        getViewData(children, id, level + 1);
-      }
-    }
-
-    // add an object to the children element of tracing or profiling data
-    // obj parameter can either be call or callGroup data
-    function buildViewData(obj) {
-      if (obj.ancestor === 'null') {
-        if (isTracing()) {
-          tracingData = obj;
-        } else {
-          obj.start = 0;
-          obj.end = obj.duration;
-          profilingData = obj;
-        }
-      } else {
-        if (isTracing()) {
-          pvh.appendDeep(tracingData, obj, isTracing());
-        } else {
-          pvh.appendDeep(profilingData, obj, isTracing());
-        }
-      }
-    }
-
-    // build the profiling or tracing svg, and display it
-    function displayView() {
-      // initialize some view variables if uninitialized
-      if (initView === false) {
-        initView = true;
-        profileId = Date.now();
-        svg.attr('id', profileId);
-        svgElem = document.getElementById(profileId);
-        svgParentElem = document.getElementById(profileId).parentNode;
-        gradient = grad.gradient(0, mainDuration);
-        partition = d3.layout.partition().value(function(d) {
-          return d.duration;
-        });
-      }
-
-      if (zoomId !== null) {
-        // if we're zooming, retrieve zoomed sub section of view data
-        viewData = isTracing() ?
-        pvh.findDeep(tracingData, zoomId) : pvh.findDeep(profilingData, zoomId);
-      } else {
-        viewData = isTracing() ? tracingData : profilingData;
-      }
-
-      // partition view data using d3's parition layout function
-      var nodes = partition.nodes(viewData);
-
-      // define scale for width values
-      widthScale = d3.scale.linear()
-        .domain([0, nodes[0].duration])
-        .range([0, svgWidth]);
-
-      // define scale for x coordinate values
-      xScale = d3.scale.linear()
-        .domain([nodes[0].start, nodes[0].end])
-        .range([0, svgWidth]);
-
-      // remove any child elements of svg
-      svg.selectAll('*').remove();
-
-      // draw rect svg elements using data
-      drawRectSvg(svg.selectAll('rect'), nodes);
-
-      // draw text svg elements using data
-      drawTextSvg(svg.selectAll('text'), nodes);
-
-      // set click/dblClick handlers for rect and text
-      svgClickHander(svg.selectAll('rect, text'));
-
-      // adjust svg height, so scrollbars appear if any
-      var newSvgHeight = rectHeight * (maxLevel - adjustLevel);
-      svg.style('height', newSvgHeight + 'px');
-
-      // if we are zooming a node to top
-      if (zoomId !== null) {
-        drawRectSvgZoom(svg.selectAll('rect'));
-        drawTextSvgZoom(svg.selectAll('text'));
-      }
-
-      // highlight selected nodes if any are present
-      if (isTracing()) {
-        if (selectedTracingNodes.length > 0) {
-          displaySelectedNodes(svg.selectAll('rect'));
-        }
-      } else {
-        if (selectedProfilingNodes.length > 0) {
-          displaySelectedNodes(svg.selectAll('rect'));
-        }
-      }
-    }
-
-    function svgClickHander(selection) {
-      selection
-        .on('click', selectNode)
-        .on('mouseenter', highlightNode)
-        .on('mouseleave', removeNodeHighlight);
-    }
-
-    function highlightNode(d) {
-      // reduce opacity of selected call
-      d3.select(this).attr('fill-opacity', 0.5);
-
-      var x = d3.event.pageX;
-      var y = d3.event.pageY;
-      var duration = d.duration / mainDuration * 100;
-      var svgWidthPixels = size.svgSizeById(profileId).width;
-      var tooltipPadding = 20;
-      var tooltipWidth = _.max([
-        minTooltipWidth,
-        size.textSize(d.name, 14).width
-      ]);
-
-      // show tooltip to the left of the mouse if there is not
-      // enough space for it to appear on the right
-      if (tooltipWidth + tooltipPadding > svgWidthPixels - x) {
-        x = x - (tooltipWidth + tooltipPadding);
-      }
-
-      // update the tooltip position and value
-      var tooltip = d3.select('#tooltip')
-        .style('left', x  + 'px')
-        .style('top', y + 'px')
-        .style('width', tooltipWidth + 'px');
-      tooltip
-        .select('#title')
-        .text(d.name);
-      tooltip
-        .select('#value')
-        .text(duration.toFixed(2) + ' %');
-
-      // show the tooltip
-      tooltip.classed('hidden', false);
-
-      // broadcast hover action through state manager
-      var hoverType = isTracing() ? 'Call' : 'CallGroup';
-      stateManager.hover([{type: hoverType, id: d.id}]);
-    }
-
-    function removeNodeHighlight() {
-      // set selected call's opacity back to 100%
-      d3.select(this).attr('fill-opacity', 1);
-
-      // hide the tooltip
-      d3.select('#tooltip').classed('hidden', true);
-    }
-
-    function selectNode(d) {
-      clickThis = this;
-      clickData = d;
-      clickCount++;
-
-      // evaluate click count after defined time
+    // set input elements (buttons, sliders) to carry out specific
+    // view related functions. since the DOM is not ready immediately,
+    // set a 1 second delay before attaching the event handlers
+    function setEventHandlers() {
       window.setTimeout(function() {
-        // for two clicks, zoom to node
-        if (clickCount === 2) {
-          zoom(clickData);
-        }
+        // add click handler to zoom view to top
+        document.getElementById('profiler-reset')
+        .addEventListener('click', function() {
+          resetZoom();
+        });
 
-        // for one click, select node
-        if (clickCount === 1) {
-          setSelectedNodes(clickData, clickThis);
-        }
+        // add click handler to toggle view modes
+        document.getElementById('profiler-view-toggle')
+        .addEventListener('click', function() {
+          toggleViewMode();
+        });
 
-        // reset click counter
-        clickCount = 0;
-      }, 300);
+        // add on-change handler to update duration slider
+        document.getElementById('profiler-thresh')
+        .addEventListener('change', function() {
+          updateDuration();
+        });
+
+        // add click handler to show/hide loops
+        document.getElementById('profiler-loop')
+        .addEventListener('click', function() {
+          showHideLoops();
+        });
+
+        // add click handler to re-render view on window resize
+        window.addEventListener('resize', function() {
+          initDisplay();
+        });
+      }, 1000);
     }
 
-    function setSelectedNodes(d, obj) {
-      var node;
-      var rectSelect = d3.select(obj);
-      var selectedNodes = isTracing() ?
-      selectedTracingNodes : selectedProfilingNodes;
+    // toggle view mode
+    function toggleViewMode() {
+      _svg = _svg.isTracing ? _p : _t;
+      pv.toggleViewMode(_svg);
+      initDisplay();
+    }
 
-      if (!rectSelect.empty()) {
-        if (rectSelect.attr('prev-color') === null) {
-          var currentColor = rectSelect.attr('fill');
-          rectSelect
-            .attr('prev-color', currentColor)
-            .attr('fill', 'grey')
-            .attr('fill-opacity', 0.8);
+    // show/hide loops
+    function showHideLoops() {
+      pv.toggleLoop(_svg);
+      initDisplay();
+    }
 
-          // add node to selection
-          node = _.findWhere(selectedNodes, {id: d.id});
-          if (node === undefined) {
-            if (isTracing()) {
-              selectedTracingNodes.push({
-                type: 'Call',
-                id: d.id,
-                isMarked: true
+    // update duration with slider value
+    function updateDuration() {
+      pv.updateDurationSlider(_svg);
+      po.setRuntimeThreshold(_svg);
+      initDisplay();
+    }
+
+    // reset zoom to main
+    function resetZoom() {
+      var elementType = _svg.isTracing ? 'Call' : 'CallGroup';
+      var id = _svg.isTracing ? _svg.mainCallId : _svg.mainCallGroupId;
+      stateManager.focus([{type: elementType, id: id}]);
+    }
+
+    // spot selected calls/callgroups
+    function spotData(d) {
+       var elementType = _svg.isTracing ? 'Call' : 'CallGroup';
+       stateManager.spot([{type: elementType, id: d.id, data:_svg.selectedNodes}]);
+    }
+
+    // save data objects to stateManager so external functions like hoverCb, 
+    // markCb can access the same object (its data and functions). 
+    stateManager.getData().unsaved.svg = svg;
+    stateManager.getData().unsaved.pv = pv;
+    stateManager.getData().unsaved.po = po;
+    stateManager.getData().unsaved.initDisplay = initDisplay;
+
+    // setup the context menu
+    $(function() {
+      $.contextMenu({
+        selector: 'rect.rect, text.rect, line.loop, circle.loop, circle.small, text.line',
+        build: function(menu, e) {
+          var elementType = _svg.isTracing ? 'Call' : 'CallGroup';
+          var d = menu[0].__data__;
+          var isSelected = pv.isSelected(d, svg);
+          var menuWidth = 200;
+          var svgWidthPixels = pv.getSvgWidth(_svg);
+
+          var contextMenu = {
+            position: function(opt) {
+              var x = e.clientX;
+              var y = e.clientY;
+
+              // show tooltip to the left of the mouse if there is not
+              // enough space for it to appear on the right
+              if (menuWidth > svgWidthPixels - x) {
+                x = x - menuWidth;
+              }
+
+              opt.$menu.css({
+                top: y + 'px' ,
+                left: x + 'px'
               });
-            } else {
-              selectedProfilingNodes.push({
-                type: 'CallGroup',
-                id: d.id,
-                isMarked: true
-              });
-            }
-          }
-        } else {
-          var prevColor = rectSelect.attr('prev-color');
-          rectSelect.attr('prev-color', null);
-          rectSelect.attr('fill', prevColor);
+            },
 
-          // remove node from selection
-          node = _.findWhere(selectedNodes, {id: d.id});
-          if (node !== undefined) {
-            if (isTracing()) {
-              selectedTracingNodes.splice(selectedNodes.indexOf(node), 1);
-            } else {
-              selectedProfilingNodes.splice(selectedNodes.indexOf(node), 1);
+            items: {
+              // mark or unmark element
+              'mark_unmark': {
+                name: isSelected ? 'UnMark' : 'Mark',
+                callback: function() {
+                  stateManager.mark([{type: elementType, id: d.id, isMarked: isSelected, data:_svg}]);
+                }
+              },
+
+              // switch to profiling or tracing mode
+              'switch_view_mode': {
+                name: _svg.isTracing ? 'Show Profiling' : 'Show Tracing',
+                callback: function() {
+                  toggleViewMode();
+                }
+              }
             }
+          };
+
+          var zoomInOut = {
+            // zoom in or out of element
+            name: _svg.currentTop.id === d.id ? 'Zoom out' : 'Zoom in',
+            callback: function() {
+              stateManager.focus([{type: elementType, id: d.id, data:_svg}]);
+            }
+          };
+
+          var zoomToTop = {
+            // reset zoom to 'main' call
+            name: 'Reset Zoom',
+            callback: function() {
+              resetZoom();
+            }
+          };
+
+          var showLoops = {
+            // show or hide loops on svg
+            name: _svg.showLoop ? 'Hide Loops' : 'Show Loops',
+            callback: function() {
+              showHideLoops();
+            }
+          };
+
+          var spotting = {
+            // spot selected calls/callgroups
+            name: (_svg.isTracing) ? 'Spot Calls' : 'Spot Callgroups',
+            callback: function() {
+              spotData(d);
+            }
+          };
+
+          // add reset zoom if 'main' is not currently the
+          // top level element
+          if (_svg.currentTop.id !== _svg.mainCallId
+            && _svg.currentTop.id !== _svg.mainCallGroupId) {
+            contextMenu.items.reset_zoom = zoomToTop;
           }
+
+          // add zoom in or out if the current element is not
+          // top level (ie. main)
+          if (d.id !== _svg.mainCallId && d.id !== _svg.mainCallGroupId) {
+            contextMenu.items.zoom_in_out = zoomInOut;
+          }
+
+          // add show/hide loops to context menu if in tracing mode
+          if (_svg.isTracing) {
+            contextMenu.items.show_hide_loops = showLoops;
+          }
+
+          // enable call/callgroup spotting if there is more than 
+          // 1 selected item
+          if (_svg.selectedNodes.length > 1) {
+            contextMenu.items.spot_data = spotting;
+          }
+
+          return contextMenu;
         }
-      }
-    }
+      })
+    });
 
-    function displaySelectedNodes(selection) {
-      var selectedNodes = isTracing() ?
-      selectedTracingNodes : selectedProfilingNodes;
-
-      selection
-        .each(function(d) {
-          var selected = d3.select(this);
-          for (var i = 0, len = selectedNodes.length; i < len; i++) {
-            var node = selectedNodes[i];
-            if (node.id === d.id) {
-              var currentColor = selected.attr('fill');
-              selected
-                .attr('prev-color', currentColor)
-                .attr('fill', 'grey')
-                .attr('fill-opacity', 0.8);
-            }
-          }
-        });
-    }
-
-    function drawRectSvg(selection, nodes) {
-      selection
-        .data(nodes)
-        .enter()
-        .append('rect')
-        .attr('stroke', 'white')
-        .attr('stroke-opacity', 1)
-        .attr('stroke-width', 2)
-        .attr('id', function(d) {
-          return d.id;
-        })
-        .attr('fill', function(d) {
-          return gradient(d.duration);
-        })
-        .attr('x', function(d) {
-          return xScale(d.start);
-        })
-        .attr('width', function(d) {
-          return widthScale(d.duration);
-        })
-        .attr('y', function(d) {
-          var y = rectHeight * (d.level - adjustLevel) - rectHeight;
-          if (d.level > maxLevel) { maxLevel = d.level; }
-          if (zoomId !== null) { y -= rectHeight; }
-          return y;
-        })
-        .attr('height', function() {
-          var h = rectHeight;
-          if (zoomId !== null) { h = rectHeight / 2; }
-          return h;
-        })
-        .attr('fill-opacity', function() {
-          var f = 1;
-          if (zoomId !== null) { f = 0; }
-          return f;
-        });
-    }
-
-    function drawRectSvgZoom(selection) {
-      selection
-        .transition()
-        .duration(transTime)
-        .ease(transType)
-        .attr('fill-opacity', 1)
-        .attr('height', function() {
-          return rectHeight;
-        })
-        .attr('y', function(d) {
-          return rectHeight * (d.level - adjustLevel) - rectHeight;
-        });
-    }
-
-    function drawTextSvg(selection, nodes) {
-      selection
-        .data(nodes.filter(function(d) {
-          // only show text for calls with widths' big enough
-          // to contain the full name of the call
-          var rectWidth = size.svgSizeById(d.id).width;
-          var textWidth = size.svgTextSize(d.name, 14).width;
-          return rectWidth > textWidth + textPadX;
-        }))
-        .enter()
-        .append('text')
-        .attr('id', function(d) { return 'text_' + d.id; })
-        .attr('font-family', 'Arial')
-        .attr('font-size', '14px')
-        .attr('fill', 'white')
-        .attr('x', function(d) {
-          var old = xScale(d.start);
-          var sliced = Number(old.slice(0, -1));
-          var x = Number(sliced + textPadX) + '%';
-          return x;
-        })
-        .attr('y', function(d) {
-          var y = rectHeight * (d.level - adjustLevel) - rectHeight;
-          y += textPadY;
-          if (zoomId !== null) { y -= 50; }
-          return y;
-        })
-        .attr('fill-opacity', function() {
-          var f = 1;
-          if (zoomId !== null) { f = 0; }
-          return f;
-        })
-        .text(function(d) { return d.name; });
-    }
-
-    function drawTextSvgZoom(selection) {
-      selection
-        .transition()
-        .duration(transTime)
-        .ease(transType)
-        .attr('fill-opacity', 1)
-        .attr('y', function(d) {
-          var y = rectHeight * (d.level - adjustLevel) - rectHeight;
-          return y + textPadY;
-        });
-    }
-
-    function zoom(d) {
-      // clicking on current top level node
-      // zoom to previous parent level
-      if (zoomId === d.id) {
-        zoomHistory.pop();
-
-        if (zoomHistory.length > 0) {
-          zoomToLevel(zoomHistory[zoomHistory.length - 1], false);
-        } else {
-          zoomToTop();
-        }
-        return;
-      }
-
-      // zoom to new child level
-      zoomToLevel(d, true);
-
-      // save parent level (previous location) to zoom history
-      zoomHistory.push({
-        level: d.level,
-        id: d.id,
-        duration: d.duration,
-        name: d.name
-      });
-    }
-
-    function zoomToLevel(d, loadNodeChildren) {
-      adjustLevel = d.level - 1;
-      zoomId = d.id;
-      setRuntimeThreshold(d.duration);
-      displayView();
-
-      if (loadNodeChildren) {
-        loadChildren(d.id, d.calls, d.level);
-      }
-    }
-
-    function zoomToTop() {
-      adjustLevel = 0;
-      zoomId = isTracing() ? mainCallId : mainCallGroupId;
-      zoomHistory = [];
-      maxLevel = 1;
-      setRuntimeThreshold(mainDuration);
-      displayView();
-    }
-
-    window.setTimeout(function() {
-      // add click handler to zoom view to top
-      document.getElementById('profiler-reset')
-      .addEventListener('click', function() {
-        zoomToTop();
-      });
-
-      // add click handler to toggle view modes
-      document.getElementById('profiler-view-toggle')
-      .addEventListener('click', function() {
-        toggleViewMode();
-      });
-
-      // add click handler to re-render view on window resize
-      window.addEventListener('resize', function() {
-        displayView();
-      });
-    }, 1000);
-
-    // start the view
-    init();
   };
 }
