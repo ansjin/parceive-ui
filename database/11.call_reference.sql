@@ -2,8 +2,8 @@ INSERT INTO CallReference SELECT
   NULL,
   s.Call AS Call,
   a.Reference AS Reference,
-  SUM(CASE WHEN a.Type = 'R' THEN 1 ELSE 0 END) AS Read,
-  SUM(CASE WHEN a.Type = 'W' THEN 1 ELSE 0 END) AS Write
+  SUM(CASE WHEN a.Type = 1 THEN 1 ELSE 0 END) AS Read,
+  SUM(CASE WHEN a.Type = 2 THEN 1 ELSE 0 END) AS Write
 FROM Segment s, Instruction i, Access a WHERE
   i.Segment = s.Id AND
   a.Instruction = i.Id AND
