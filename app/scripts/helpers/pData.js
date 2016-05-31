@@ -15,10 +15,16 @@ function pData(LoaderService) {
     getCallGroup: getCallGroup,
     getCallObj: getCallObj,
     getCallGroupObj: getCallGroupObj,
-    getThreadData: getThreadData
+    getThreads: getThreads
   };
 
   return factory;
+
+  // get all threads in active db
+  function getThreads() {
+    var promise = LoaderService.getThreads();
+    return promise;
+  }
 
   // get call data for "main"
   function getMain() {
@@ -41,9 +47,7 @@ function pData(LoaderService) {
       ? obj.getRecursiveCalls(runtimeThreshold)
       : obj.getRecursiveCallGroups(runtimeThreshold);
 
-    var promise = func.then(function(data) {
-      console.log(data);
-      
+    var promise = func.then(function(data) {      
       var promises = data.map(function(d) {
         var _id = d[type].id;
         var _ancestor = d[type][ancestor];
@@ -102,6 +106,7 @@ function pData(LoaderService) {
         temp.loopStart = undefined;
         temp.loopEnd = undefined;
         temp.loopIterationCalls = [];
+        temp.threadID = call.threadID;
 
         return call.getFunction();
       })
@@ -159,19 +164,5 @@ function pData(LoaderService) {
         return new RSVP.resolve(temp);
       });
     return promise;
-  }
-
-  // get thread data (sample)
-  function getThreadData() {
-    return new Promise(function(resolve, reject) {
-      resolve([
-        {id: 1, name: 'Thread 1', ancestor: null},
-        {id: 2, name: 'Thread 2', ancestor: 1},
-        {id: 3, name: 'Thread 3', ancestor: 1},
-        {id: 4, name: 'Thread 4', ancestor: 3},
-        {id: 5, name: 'Thread 5', ancestor: 3},
-        {id: 6, name: 'Thread 6', ancestor: 2}
-      ]);
-    });
   }
 }

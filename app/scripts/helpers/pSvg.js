@@ -17,12 +17,18 @@ function pSvg(d3, size) {
 
   return factory;
 
-  function getYValue(_svg, d) {
+  function getYValue(_svg, d, isLoop) {
     var multiplier = d.level - _svg.currentTop.level;
     if (_svg.showLoop && _svg.isTracing) {
       multiplier += (d.loopAdjust - _svg.currentTop.loopAdjust);
     }
-    return _svg.rectHeight * multiplier;
+    var value = _svg.rectHeight * multiplier;
+    if (isLoop) {
+      value = value + 44;
+      // console.log(d, _svg.viewLevels);
+      // value = value + (_svg.viewLevels[d.level + 1] * _svg.rectHeight);
+    }
+    return value;
   }
 
   function drawRect(_svg, selection) {
@@ -32,7 +38,7 @@ function pSvg(d3, size) {
           // only show calls with duration >= runtimethreshold and
           // duration <= duration of current top level object
           return d.duration >= _svg.runtimeThreshold
-          && d.duration <= _svg.currentTop.duration;
+          && d.duration <= _svg.currentTop.duration; // && d.threadID == 0;
         }))
         .enter()
         .append('rect')
@@ -153,10 +159,10 @@ function pSvg(d3, size) {
           return _svg.xScale(d.loopEnd);
         })
         .attr('y1', function(d) {
-          return getYValue(_svg, d) - _svg.rectHeight;
+          return getYValue(_svg, d, true) - _svg.rectHeight;
         })
         .attr('y2', function(d) {
-          return getYValue(_svg, d) - _svg.rectHeight;
+          return getYValue(_svg, d, true) - _svg.rectHeight;
         })
         .attr('fill-opacity', 0)
 
@@ -166,10 +172,10 @@ function pSvg(d3, size) {
         .ease(_svg.transType)
         .attr('fill-opacity', 1)
         .attr('y1', function(d) {
-          return getYValue(_svg, d) - Math.floor(_svg.rectHeight / 2);
+          return (getYValue(_svg, d, true) - Math.floor(_svg.rectHeight / 2));
         })
         .attr('y2', function(d) {
-          return getYValue(_svg, d) - Math.floor(_svg.rectHeight / 2);
+          return getYValue(_svg, d, true) - Math.floor(_svg.rectHeight / 2);
         });
 
       resolve(true);
@@ -212,7 +218,7 @@ function pSvg(d3, size) {
           return Number(sliced + _svg.textPadX) + '%';
         })
         .attr('y', function(d) {
-          return getYValue(_svg, d) - _svg.rectHeight;
+          return getYValue(_svg, d, true) - _svg.rectHeight;
         })
 
         // add animation effect
@@ -221,7 +227,7 @@ function pSvg(d3, size) {
         .ease(_svg.transType)
         .attr('fill-opacity', 1)
         .attr('y', function(d) {
-          return getYValue(_svg, d) - _svg.rectHeight + _svg.textPadY;
+          return getYValue(_svg, d, true) - _svg.rectHeight + _svg.textPadY;
         });
 
       resolve(true);
@@ -252,7 +258,7 @@ function pSvg(d3, size) {
         .attr('fill-opacity', 0)
         .attr('cx', function(d) { return _svg.xScale(d.loopStart); })
         .attr('cy', function(d) { 
-          return getYValue(_svg, d) - _svg.rectHeight;
+          return getYValue(_svg, d, true) - _svg.rectHeight;
         })
         .attr('r', 4)
 
@@ -262,7 +268,7 @@ function pSvg(d3, size) {
         .ease(_svg.transType)
         .attr('fill-opacity', 1)
         .attr('cy', function(d) {
-          return getYValue(_svg, d) - Math.floor(_svg.rectHeight / 2);
+          return getYValue(_svg, d, true) - Math.floor(_svg.rectHeight / 2);
         });
 
       // add circle to right end of the loop
@@ -283,7 +289,7 @@ function pSvg(d3, size) {
         .attr('fill-opacity', 0)
         .attr('cx', function(d) { return _svg.xScale(d.loopEnd); })
         .attr('cy', function(d) { 
-          return getYValue(_svg, d) - _svg.rectHeight;
+          return getYValue(_svg, d, true) - _svg.rectHeight;
         })
         .attr('r', 4)
 
@@ -293,7 +299,7 @@ function pSvg(d3, size) {
         .ease(_svg.transType)
         .attr('fill-opacity', 1)
         .attr('cy', function(d) {
-          return getYValue(_svg, d) - Math.floor(_svg.rectHeight / 2);
+          return getYValue(_svg, d, true) - Math.floor(_svg.rectHeight / 2);
         });
 
       resolve(true);
@@ -327,7 +333,7 @@ function pSvg(d3, size) {
           return _svg.xScale(Math.floor((d.loopStart + d.loopEnd) / 2)); 
         })
         .attr('cy', function(d) { 
-          return getYValue(_svg, d) + _svg.rectHeight;
+          return getYValue(_svg, d, true) + _svg.rectHeight;
         })
         .attr('r', 4)
 
@@ -337,7 +343,7 @@ function pSvg(d3, size) {
         .ease(_svg.transType)
         .attr('fill-opacity', 1)
         .attr('cy', function(d) {
-          return getYValue(_svg, d) + (_svg.rectHeight + Math.floor(_svg.rectHeight / 2));
+          return getYValue(_svg, d, true) + (_svg.rectHeight + Math.floor(_svg.rectHeight / 2));
         });
 
       resolve(true);

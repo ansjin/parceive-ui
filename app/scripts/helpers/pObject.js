@@ -29,6 +29,7 @@ function pObject(d3, pd, grad) {
       runtimeThreshold: null, // minimum runtime required for children to load
       thresholdFactor: 1, // % of top level duration children must have to be shown
       viewData: {}, // store the current data used to display profiler
+      viewLevels: {}, // the loop adjustment values for each level
       nodes: null, // nodes to use in the d3 partition view layout
       history: [], // stores id's that have been retrieved
       rectHeight: 22, // height of the bars in the profiler
@@ -51,7 +52,8 @@ function pObject(d3, pd, grad) {
       widthScale: null, // holds function to calculate width of call
       xScale: null, // holds function to calculate x position of call
       clickCount: 0, // click counter for determining double or single click
-      showLoop: false // show loops in visualization
+      showLoop: false, // show loops in visualization
+      threads: [0] // id's of threads to be shown in visualization
     };
   }
 
@@ -130,7 +132,7 @@ function pObject(d3, pd, grad) {
 
         // if this is tracing data object, add values for the loop adjustments
         if (obj.isTracing) {
-          addLoopAdjustment(obj.viewData);
+          obj.viewLevels = addLoopAdjustment(obj.viewData); 
         }
 
         resolve(true);
@@ -208,5 +210,7 @@ function pObject(d3, pd, grad) {
         loops.push(item.level + 1);
       }
     }
+
+    return levels;
   }
 }

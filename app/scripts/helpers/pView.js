@@ -27,7 +27,8 @@ function pView(d3, size) {
     toggleLoop: toggleLoop,
     toggleViewMode: toggleViewMode,
     updateDurationSlider: updateDurationSlider,
-    getSvgWidth: getSvgWidth
+    getSvgWidth: getSvgWidth,
+    findDeepThread: findDeepThread
   };
 
   return factory;
@@ -76,16 +77,115 @@ function pView(d3, size) {
     return val;
   }
 
-  function addTooltip(name, duration, _svg) {
+  function findDeepThread(obj, id) {
+    var val = {};
+
+    function recurse(children, id, parent) {
+      for (var i = children.length - 1; i >= 0; i--) {
+        if (children[i].threadID === id) {
+          val = parent;
+        }
+        if (children[i].hasOwnProperty('children') === true) {
+          recurse(children[i].children, id, children[i]);
+        }
+      }
+    }
+
+    if (obj.threadID === id) {
+      val = obj;
+    } else {
+      recurse(obj.children, id, obj);
+    }
+
+    return removeChildren(val, id);
+  }
+
+  function removeChildren(obj, id) {
+    var parent = _.cloneDeep(obj);
+    if (parent.hasOwnProperty('children')) { delete parent.children; }
+
+    var queue = [];
+    var threads = [];
+    var found = false;
+
+    if (obj.hasOwnProperty('children')) {
+      addChildren(obj);
+    }
+
+    function addChildren(d) {
+      for (var i = 0, len = d.children.length; i < len; i++) {
+        var child = _.cloneDeep(d.children[i]);
+        if (child.hasOwnProperty('children')) { delete child.children; }
+        queue.push(child);
+      }
+    }
+
+    while(queue.length > 0) {
+      var item = queue.shift();
+
+      if (item.threadID === id) {
+        threads.push(item);
+      }
+
+      if (item.hasOwnProperty('children')) {
+        addChildren(item);
+      }   
+    }
+
+    threads.unshift(parent);
+    while(threads.length > 1) {
+      var item = threads.pop();
+
+      for (var i = threads.length - 1; i >= 0; i--) {
+        var temp = threads[i];
+        if (temp.id == item.ancestor) {
+          if (temp.hasOwnProperty('children')) {
+            temp.children.push(item);
+          } else {
+            temp.children = [item];
+          }
+          break;
+        }
+      }
+    }
+
+    return threads[0];
+  }
+
+  function removeChildren2(obj, id) {
+    var queue = [obj];
+    var first = true;
+
+    while(queue.length > 0) {
+      var item = queue.shift();
+
+      if (item.threadID !== id) {
+        item = undefined;
+        continue;
+      }
+      
+      if (!item.hasOwnProperty('children')) {
+        continue;
+      }
+
+      for (var i = 0, len = item.children.length; i < len; i++) {
+        queue.push(item.children[i]);
+      }
+    }
+
+    return obj;
+  }
+
+  function addTooltip(name, duration, _svg, svg) {
     // exit quickly if mouse is not over svg
     // because tooltip can be triggered from other views
-    // via stateManeger
+    // via stateManager
     if (!$('#' + _svg.profileId).is(':hover')) {
       return;
     }
 
-    var x = d3.event.pageX;
-    var y = d3.event.pageY;
+    var x = event.clientX;
+    var y = event.clientY;
     var svgWidthPixels = getSvgWidth(_svg);
     var tooltipPadding = 20;
     var tooltipWidth = _.max([
@@ -132,9 +232,9 @@ function pView(d3, size) {
     });
   }
 
-  function callTooltip(d, _svg) {
+  function callTooltip(d, _svg, svg) {
     var duration = (d.duration / _svg.mainDuration * 100).toFixed(2) + ' %';
-    addTooltip(d.name, duration, _svg);
+    addTooltip(d.name, duration, _svg, svg);
   }
 
   function loopHighlight(d, svg) {
@@ -165,12 +265,12 @@ function pView(d3, size) {
     });
   }
 
-  function loopTooltip(d, _svg) {
+  function loopTooltip(d, _svg, svg) {
     var duration = (d.loopDuration / _svg.mainDuration * 100).toFixed(2) + ' %';
-    addTooltip('Loop iterations: ' + d.loopIterationCount, duration, _svg);
+    addTooltip('Loop iterations: ' + d.loopIterationCount, duration, _svg, svg);
   }
 
-  function removeTooltip(d) {
+  function removeTooltip() {
     d3.select('#tooltip').classed('hidden', true);
   }
 
