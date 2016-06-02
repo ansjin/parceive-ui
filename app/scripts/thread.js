@@ -54,6 +54,7 @@ function render(d3, pd) {
     // get thread data for current database
     pd.getThreads()
     .then(function(data) {
+      console.log(data);
       // set svg id
       svg.attr('id', _thread.profileId);
 
