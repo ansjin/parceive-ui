@@ -48,22 +48,39 @@ function render(d3, pd) {
       svgWidth: '100%',
       rectHeight: 22,
       textPadY: 15,
-      selected: []
+      selected: [],
+      rawThreads: [],
+      threadCalls: [],
+      thresholdFactor: 1,
+      runtimeThreshold: 0
     };
 
     // get thread data for current database
     pd.getThreads()
     .then(function(data) {
       console.log(data);
+      _thread.rawThreads = data;
+      return pd.getThreadsFirstCalls();
+    })
+    .then(function(data) {
+      console.log(data);
+      _thread.threadCalls = data;
+
+      for (var i = 0, len = _thread.rawThreads.length; i < len; i++) {
+        _thread.rawThreads[i]['callDuration'] = _thread.threadCalls[i].duration;
+      }
+
       // set svg id
       svg.attr('id', _thread.profileId);
 
       // format data and display threads
-      nestData(data);
+      setRuntimeThreshold();
+      nestData(_thread.rawThreads);
+      updateDurationSlider();
       display();
 
       window.setTimeout(function() {
-        // add click handler to show/hide loops
+        // add click handler to trigger adding thread to performance view
         document.getElementById('compare-thread')
         .addEventListener('click', function() {
           compareThread();
@@ -73,8 +90,28 @@ function render(d3, pd) {
         window.addEventListener('resize', function() {
           display();
         });
+
+        // add on-change handler to update duration slider
+        document.getElementById('thread-thresh')
+        .addEventListener('change', function() {
+          updateDurationSlider();
+          setRuntimeThreshold();
+          display();
+        });
       }, 1000);
     }); 
+
+    function updateDurationSlider() {
+      var value = $('#thread-thresh').val();
+      _thread.thresholdFactor = value;
+      _thread.selected = [];
+      $('#thread-thresh-lbl').attr('title', 'Showing calls with >= ' + value + '% duration of Main'); 
+      $('#thread-thresh-lbl').text(value + '%');   
+    }
+
+    function setRuntimeThreshold() {
+      _thread.runtimeThreshold = Math.ceil(_thread.threadCalls[0].duration * (_thread.thresholdFactor / 100));
+    }
 
     // nest thread data
     function nestData(data) {
@@ -87,6 +124,7 @@ function render(d3, pd) {
         var temp = {
           id: d.id,
           name: 'Thread ' + d.id,
+          callDuration: d.callDuration,
           parent: parentId,
           x: 0,
           width: 100,
@@ -133,6 +171,12 @@ function render(d3, pd) {
         .domain([0, 100])
         .range([0, _thread.svgWidth]);
 
+      // define scale for width values to show percentage of runtime
+      // domain = input, range = output
+      var widthScalePercent = d3.scale.linear()
+        .domain([0, _thread.threadCalls[0].duration])
+        .range([0, _thread.svgWidth]);
+
       // define scale for x coordinate values
       var xScale = d3.scale.linear()
         .domain([0, 100])
@@ -140,6 +184,31 @@ function render(d3, pd) {
 
       // draw svg rect and text
       svg.selectAll('*').remove();
+
+      svg.selectAll('rect.innerrect')
+        .data(nodes)
+        .enter()
+        .append('rect')
+        .attr('class', 'innerrect')
+        .attr('stroke', 'white')
+        .attr('stroke-opacity', 1)
+        .attr('stroke-width', 2)
+        .attr('id', function(d) {
+          return 'innerrect_' + d.id;
+        })
+        .attr('fill', '#bbb')
+        .attr('x', function(d) {
+          return xScale(d.x);
+        })
+        .attr('width', function(d) {
+          return widthScalePercent(d.callDuration);
+        })
+        .attr('height', function() {
+          return _thread.rectHeight;
+        })
+        .attr('y', function(d) {
+          return d.level * _thread.rectHeight;
+        });
 
       svg.selectAll('rect.rect')
         .data(nodes)
@@ -152,7 +221,13 @@ function render(d3, pd) {
         .attr('id', function(d) {
           return 'rect_' + d.id;
         })
-        .attr('fill', 'grey')
+        .attr('fill', function(d) {
+          if (d.callDuration >= _thread.runtimeThreshold) {
+            return '#bbb';
+          } else {
+            return '#fcc';
+          }
+        })
         .attr('x', function(d) {
           return xScale(d.x);
         })
@@ -165,19 +240,23 @@ function render(d3, pd) {
         .attr('y', function(d) {
           return d.level * _thread.rectHeight;
         })
+        .attr('fill-opacity', 0.6)
         .on('mouseenter', function(d) {
-          d3.select(this).attr('fill-opacity', 0.5);
+          if (d.callDuration < _thread.runtimeThreshold) { return; }
+          d3.select(this).attr('fill-opacity', 0.2);
         })
         .on('mouseleave', function(d) {
-          d3.select(this).attr('fill-opacity', 1);
+          if (d.callDuration < _thread.runtimeThreshold) { return; }
+          d3.select(this).attr('fill-opacity', 0.6);
         })
         .on('click', function(d) {
+          if (d.callDuration < _thread.runtimeThreshold) { return; }
           if (_thread.selected.indexOf(d.id) < 0) {
             _thread.selected.push(d.id);
-            d3.select(this).attr('fill', 'red');
+            d3.select(this).attr('fill', '#4BB6D6');
           } else {
             _thread.selected.splice(_thread.selected.indexOf(d.id), 1);
-            d3.select(this).attr('fill', 'grey');
+            d3.select(this).attr('fill', '#bbb');
           }
         });
 
@@ -188,7 +267,13 @@ function render(d3, pd) {
         .attr('class', 'text')
         .attr('font-family', 'Arial')
         .attr('font-size', '14px')
-        .attr('fill', 'white')
+        .attr('fill', function(d) {
+          if (d.callDuration >= _thread.runtimeThreshold) {
+            return 'black';
+          } else {
+            return 'red';
+          }
+        })
         .text(function(d) { return d.name; })
         .attr('id', function(d) {
           return 'text_' + d.id;
@@ -222,9 +307,7 @@ function render(d3, pd) {
 
       // clear selected items
       _thread.selected = [];
-      svg.selectAll('rect.rect').each(function(i, v) {
-        d3.select(this).attr('fill', 'grey');
-      });
+      display();
     }
   }
 }

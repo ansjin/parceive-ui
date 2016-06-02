@@ -15,7 +15,8 @@ function pData(LoaderService) {
     getCallGroup: getCallGroup,
     getCallObj: getCallObj,
     getCallGroupObj: getCallGroupObj,
-    getThreads: getThreads
+    getThreads: getThreads,
+    getThreadsFirstCalls: getThreadsFirstCalls
   };
 
   return factory;
@@ -23,6 +24,32 @@ function pData(LoaderService) {
   // get all threads in active db
   function getThreads() {
     var promise = LoaderService.getThreads();
+    return promise;
+  }
+
+  // get all first calls made by all threads
+  function getThreadsFirstCalls() {
+    var main;
+
+    var promise = getMain()
+    .then(function(data) {
+      main = data;
+      return getThreads();
+    })
+    .then(function(data) {
+      var promises = data.map(function(d) {
+        if (d.id === 0) {
+          return new RSVP.resolve(main);
+        } else {
+          return d.getCall();
+        }
+      });
+      return RSVP.all(promises);
+    })
+    .then(function(data) {
+      return new RSVP.resolve(data);
+    }, function(err) {console.log(err)});
+
     return promise;
   }
 

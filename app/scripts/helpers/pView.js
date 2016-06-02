@@ -152,30 +152,6 @@ function pView(d3, size) {
     return threads[0];
   }
 
-  function removeChildren2(obj, id) {
-    var queue = [obj];
-    var first = true;
-
-    while(queue.length > 0) {
-      var item = queue.shift();
-
-      if (item.threadID !== id) {
-        item = undefined;
-        continue;
-      }
-      
-      if (!item.hasOwnProperty('children')) {
-        continue;
-      }
-
-      for (var i = 0, len = item.children.length; i < len; i++) {
-        queue.push(item.children[i]);
-      }
-    }
-
-    return obj;
-  }
-
   function addTooltip(name, duration, _svg, svg) {
     // exit quickly if mouse is not over svg
     // because tooltip can be triggered from other views

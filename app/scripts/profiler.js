@@ -215,12 +215,13 @@ function render(d3, po, pd, pv, ps) {
 
     function initDisplay() {
       return new Promise(function(resolve, reject) {
+        
+        // if (_svg.isTracing) {
+        //   _svg.viewData = pv.findDeepThread(_svg.viewData, 0);
+        // }
+        
         // partition the viewData so it can be used by D3 partition layout
         // and set the scale function for x and width
-        if (_svg.isTracing) {
-          _svg.viewData = pv.findDeepThread(_svg.viewData, 0);
-        }
-        
         pv.setNodes(_svg, svg.selectAll('*'))
         .then(function() {
           // draw the call boxes on the svg
