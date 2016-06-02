@@ -10,7 +10,8 @@ var mapping = {
   'StartTime': 'startTime',
   'EndTime': 'endTime',
   'EndTSC': 'endTSC',
-  'Process': 'process'
+  'Process': 'process',
+  'Call': 'call'
 };
 
 module.exports = {

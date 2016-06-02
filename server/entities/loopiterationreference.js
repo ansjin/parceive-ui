@@ -1,8 +1,8 @@
 var mapping = {
   'LoopIteration': 'loopiteration',
   'Reference': 'reference',
-  'Read': 'read',
-  'Write': 'write'
+  'Read': 'reads',
+  'Write': 'writes'
 };
 
 module.exports = {

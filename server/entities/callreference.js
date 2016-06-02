@@ -2,8 +2,8 @@ var mapping = {
   'Id': 'id',
   'Call': 'call',
   'Reference': 'reference',
-  'Read': 'read',
-  'Write': 'write'
+  'Read': 'reads',
+  'Write': 'writes'
 };
 
 module.exports = {

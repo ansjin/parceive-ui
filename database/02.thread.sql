@@ -1,5 +1,5 @@
 INSERT INTO Thread (Id, CreateInstruction, JoinInstruction, Process, StartTime,
-   EndTSC, EndTime, TSCPerMillisecond) SELECT
+   EndTSC, EndTime, TSCPerMillisecond, Call) SELECT
   t.Id,
   t.CreateInstruction,
   t.JoinInstruction,
@@ -11,6 +11,7 @@ INSERT INTO Thread (Id, CreateInstruction, JoinInstruction, Process, StartTime,
     (
       JulianDay(t.EndTime) - JulianDay(t.StartTime)
     ) * 24 * 60 * 60 * 1000
-  )
+  ),
+  t.Call
 FROM ThreadOld t;
 DROP TABLE ThreadOld;

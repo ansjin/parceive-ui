@@ -959,7 +959,7 @@ var FunctionType = {
   singular: 'function',
   plural: 'functions',
   properties: ['signature', 'type', 'file', 'startLine', 'duration',
-               'durationMs'],
+               'durationMs', 'name'],
   relationships: {
     'file': {
       type: 'File'
@@ -1718,7 +1718,7 @@ var Thread = {
   singular: 'thread',
   plural: 'threads',
   properties: ['instruction', 'process', 'createInstruction', 'joinInstruction',
-               'startTime', 'endTime', 'endTSC', 'process'],
+               'startTime', 'endTime', 'endTSC', 'process', 'call'],
   relationships: {
     'instruction': {
       type: 'Instruction'
@@ -1728,6 +1728,9 @@ var Thread = {
     },
     'joinInstruction': {
       type: 'Instruction'
+    },
+    'call': {
+      type: 'Call'
     },
     'calls': {
       type: 'Call',
@@ -1759,6 +1762,12 @@ var Thread = {
     * @instance */
   getJoinInstruction: function() {
     return this._mapper.getRelationship(this, 'joinInstruction');
+  },
+
+  /** @return {external:Promise.<Call>} First call made by thread
+    * @instance */
+  getCall: function() {
+    return this._mapper.getRelationship(this, 'call');
   },
 
   /** @return {external:Promise.<Thread>} Thread that created this one

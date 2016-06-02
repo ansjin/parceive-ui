@@ -159,7 +159,11 @@ angular.module('app')
       _.forEach(this.references, function(reference) {
         var i;
         for (i = 0; i < reference.nodes.length; i++) {
-          edges.push([reference.nodes[i], reference]);
+          var edge = [reference.nodes[i], reference];
+
+          edge.details = reference.edgeDetails[i];
+
+          edges.push(edge);
         }
       });
 
@@ -375,21 +379,6 @@ angular.module('app')
       return this.data.start;
     };
 
-    Node.prototype.loadReferences = function() {
-      var self = this;
-      return self.data.getReferences().then(function(references) {
-        self.references = _.map(references, function(reference) {
-          return self.callgraph.addReference(reference);
-        });
-
-        _.forEach(self.references, function(reference) {
-          reference.addNode(self);
-        });
-
-        return self.calls;
-      });
-    };
-
     Node.prototype.loadRecursiveReferences = function() {
       var self = this;
       return self.data.getRecursiveReferences().then(function(references) {
@@ -524,7 +513,7 @@ angular.module('app')
     };
 
     Call.prototype.getLabel = function() {
-      return this.function.signature;
+      return this.function.name;
     };
 
     Call.prototype.loadChildren = function() {
@@ -596,6 +585,48 @@ angular.module('app')
       delete this.loopExecutions;
     };
 
+    Call.prototype.loadReferences = function() {
+      var self = this;
+      return self.data.getCallReferences().then(function(callreferences) {
+        self.callreferences = callreferences;
+
+        return RSVP.all(_.map(callreferences, function(callreference) {
+          return callreference.getReference();
+        })).then(function(references) {
+          self.references = _.map(references, function(reference) {
+            return self.callgraph.addReference(reference);
+          });
+
+          _.forEach(self.references, function(reference, index) {
+            reference.addNode(self, self.callreferences[index]);
+          });
+
+          return self.references;
+        });
+      });
+    };
+
+    Call.prototype.loadRecursiveReferences = function() {
+      var self = this;
+      return self.data.getRecursiveCallReferences().then(function(callreferences) {
+        self.callreferences = callreferences;
+
+        return RSVP.all(_.map(callreferences, function(callreference) {
+          return callreference.getReference();
+        })).then(function(references) {
+          self.references = _.map(references, function(reference) {
+            return self.callgraph.addReference(reference);
+          });
+
+          _.forEach(self.references, function(reference, index) {
+            reference.addNode(self, self.callreferences[index]);
+          });
+
+          return self.references;
+        });
+      });
+    };
+
     Call.prototype.toggleChildren = toggleFunction
       ('calls',
        Call.prototype.loadChildren,
@@ -606,7 +637,7 @@ angular.module('app')
        Call.prototype.unloadReferences);
     Call.prototype.toggleRecursiveReferences = toggleFunction
      ('references',
-      Node.prototype.loadRecursiveReferences,
+      Call.prototype.loadRecursiveReferences,
       Node.prototype.unloadReferences);
     Call.prototype.toggleLoopExecutions = toggleFunction
      ('loopExecutions',
@@ -765,12 +796,13 @@ angular.module('app')
       this.uuid = _.uuid();
 
       this.nodes = [];
+      this.edgeDetails = [];
 
       callgraph.references.push(this);
     }
 
     Reference.prototype.getLabel = function() {
-      return this.data.signature;
+      return this.data.name;
     };
 
     Reference.prototype.checkUnload = function() {
@@ -794,8 +826,9 @@ angular.module('app')
       self.callgraph.references.remove(self);
     };
 
-    Reference.prototype.addNode = function(call) {
+    Reference.prototype.addNode = function(call, details) {
       this.nodes.push(call);
+      this.edgeDetails.push(details);
     };
 
     Reference.prototype.loadLinks = function() {
@@ -842,7 +875,7 @@ angular.module('app')
     };
 
     CallGroup.prototype.getLabel = function() {
-      return this.function.signature;
+      return this.function.name;
     };
 
     CallGroup.prototype.getDuration = function() {
@@ -921,6 +954,48 @@ angular.module('app')
       });
     };
 
+    CallGroup.prototype.loadReferences = function() {
+      var self = this;
+      return self.data.getCallGroupReferences().then(function(callreferences) {
+        self.callreferences = callreferences;
+
+        return RSVP.all(_.map(callreferences, function(callreference) {
+          return callreference.getReference();
+        })).then(function(references) {
+          self.references = _.map(references, function(reference) {
+            return self.callgraph.addReference(reference);
+          });
+
+          _.forEach(self.references, function(reference, index) {
+            reference.addNode(self, self.callreferences[index]);
+          });
+
+          return self.references;
+        });
+      });
+    };
+
+    CallGroup.prototype.loadRecursiveReferences = function() {
+      var self = this;
+      return self.data.getRecursiveCallGroupReferences().then(function(callreferences) {
+        self.callreferences = callreferences;
+
+        return RSVP.all(_.map(callreferences, function(callreference) {
+          return callreference.getReference();
+        })).then(function(references) {
+          self.references = _.map(references, function(reference) {
+            return self.callgraph.addReference(reference);
+          });
+
+          _.forEach(self.references, function(reference, index) {
+            reference.addNode(self, self.callreferences[index]);
+          });
+
+          return self.references;
+        });
+      });
+    };
+
     CallGroup.prototype.toggleChildren = toggleFunction
       ('calls',
        CallGroup.prototype.loadChildren,
@@ -931,7 +1006,7 @@ angular.module('app')
        CallGroup.prototype.unloadReferences);
     CallGroup.prototype.toggleRecursiveReferences = toggleFunction
     ('references',
-      Node.prototype.loadRecursiveReferences,
+      CallGroup.prototype.loadRecursiveReferences,
       Node.prototype.unloadReferences);
     CallGroup.prototype.toggleParent = toggleFunction
       ('parent',
