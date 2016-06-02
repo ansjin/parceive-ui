@@ -715,7 +715,7 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $,
 
     var edgeNode = edgeGroup.selectAll('g.edge')
       .data(edges, function(d) {
-        return d[0].uuid + d[1].uuid;
+        return d[0].uuid + '-' + d[1].uuid;
       });
 
     edgeNode
@@ -744,7 +744,20 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $,
       });
 
     edgeNodesEnter
-      .append('path');
+      .append('path')
+      .attr('stroke', function(d) {
+        if (d[1].type === 'Reference') {
+          if (d.details.reads === 0 && d.details.writes > 0) {
+            return 'red';
+          } else if (d.details.writes === 0 && d.details.reads > 0) {
+            return 'green';
+          } else {
+            return 'black';
+          }
+        } else {
+          return 'black';
+        }
+      });
 
     var edgeLines = edgeGroup.selectAll('g.edge:not(.to-reference) > path');
 
