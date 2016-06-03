@@ -747,7 +747,9 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $,
       .append('path')
       .attr('stroke', function(d) {
         if (d[1].type === 'Reference') {
-          if (d.details.reads === 0 && d.details.writes > 0) {
+          if (_.isUndefined(d.details)) {
+            return 'black';
+          } else if (d.details.reads === 0 && d.details.writes > 0) {
             return 'red';
           } else if (d.details.writes === 0 && d.details.reads > 0) {
             return 'green';
