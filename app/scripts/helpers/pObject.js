@@ -20,7 +20,7 @@ function pObject(d3, pd, grad) {
   return factory;
 
   function getObject(isTracing) {
-    return {
+    var obj = {
       isTracing: isTracing, // set whether tracing or profiling
       mainDuration: null, // runtime of main function
       mainCallId: null, // ID of main function
@@ -28,15 +28,11 @@ function pObject(d3, pd, grad) {
       currentTop: null, // call that is at the top level of the view
       runtimeThreshold: null, // minimum runtime required for children to load
       thresholdFactor: 1, // % of top level duration children must have to be shown
-      viewData: {}, // store the current data used to display profiler
-      viewLevels: {}, // the loop adjustment values for each level
-      nodes: null, // nodes to use in the d3 partition view layout
+      viewData: {}, // store the current data used to display profiler   
       history: [], // stores id's that have been retrieved
       rectHeight: 22, // height of the bars in the profiler
       textPadY: 15, // top padding for the text svg
       textPadX: 0.5, // left padding for the text svg
-      adjustLevel: 0, // stores level -1 of bar at the top position of the profiler
-      adjustLoopLevel: 0, // stores amount of loop adjustments above current level
       transTime: 600, // transition time for appending a bar to profiler
       transType: 'elastic', // type of append transition
       maxLevel: 1, // current highest level of bars on the profiler
@@ -47,14 +43,20 @@ function pObject(d3, pd, grad) {
       zoomId: null, // id of call or callGroup that is currently zoomed to top
       zoomHistory: [], // stores previously zoomed nodes
       selectedNodes: [], // stores selected nodes
-      minTooltipWidth: 150, // minimun width of the tooltip
       gradient: null, // holds gradient function
       widthScale: null, // holds function to calculate width of call
       xScale: null, // holds function to calculate x position of call
       clickCount: 0, // click counter for determining double or single click
-      showLoop: false, // show loops in visualization
-      threads: [0] // id's of threads to be shown in visualization
     };
+
+    if (isTracing) {
+      obj.viewLevels = {}; // the loop adjustment values for each level
+      obj.adjustLevel = 0; // stores level -1 of bar at the top position of the profiler
+      obj.adjustLoopLevel = 0; // stores amount of loop adjustments above current level
+      obj.showLoop = false; // show loops in visualization
+    }
+
+    return obj;
   }
 
   // set main properties on tracing and profiling view objects. "main"
@@ -63,7 +65,6 @@ function pObject(d3, pd, grad) {
     return new Promise(function(resolve, reject) {
       pd.getMain()
       .then(function(call) {
-        console.log(call);
         _t.mainDuration = _p.mainDuration = call.duration;
         _t.mainCallId = _p.mainCallId = call.id;
         _t.mainCallGroupId = _p.mainCallGroupId = call.callGroupID;

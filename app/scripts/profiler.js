@@ -184,8 +184,7 @@ function render(d3, po, pd, pv, ps) {
     var _p = po.getObject(false);
 
     // start view in trace mode. this var basically just switches between
-    // pointing to the _trace object and the _profile object depending on the 
-    // current view mode
+    // pointing to _t and _p depending on the current view mode
     var _svg = _t;
 
     // set main call properties

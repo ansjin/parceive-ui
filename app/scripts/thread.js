@@ -210,7 +210,7 @@ function render(d3, pd) {
           return d.level * _thread.rectHeight;
         });
 
-      svg.selectAll('rect.rect')
+      var rects = svg.selectAll('rect.rect')
         .data(nodes)
         .enter()
         .append('rect')
@@ -258,6 +258,14 @@ function render(d3, pd) {
             _thread.selected.splice(_thread.selected.indexOf(d.id), 1);
             d3.select(this).attr('fill', '#bbb');
           }
+        });
+
+      rects
+        .append('title')
+        .text(function(d) { 
+          var p = widthScalePercent(d.callDuration);
+          p = p.substring(0, p.length - 1);
+          return d.name + ' (' + Math.floor(p) + '%)'; 
         });
 
       svg.selectAll('text.text')
