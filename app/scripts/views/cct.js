@@ -30,16 +30,6 @@ function applyMarked(state, nodes, changes) {
         return 'black';
       }
     });
-
-  state.unsaved.refGroup.selectAll('g.reference')
-    .style('filter', function(d) {
-      if (d.isMarked || markedNodes.length > 0 &&
-        _.every(markedNodes, function(node) {
-        return _.includes(node.references, d);
-      })) {
-        return 'url(#marked)';
-      }
-    });
 }
 
 angular.module('cct-view', ['app'])
@@ -148,7 +138,15 @@ angular.module('cct-view', ['app'])
 function(CallGraphDataService, loader, d3, keyService, GradientService, $,
           SizeService) {
   var bgColors = d3.scale.category20();
-  var refColors = d3.scale.category10();
+  function refColors(type) {
+    switch (type) {
+      case 1: return d3.rgb("cornflowerblue");
+      case 2: return d3.rgb("darkorange");
+      case 3: return d3.rgb("tomato");
+      case 4: return d3.rgb("gold");
+      case 5: return d3.rgb("lightgreen");
+    }
+  };
 
   function addZoom(svg) {
     var zoom = d3.behavior.zoom();
@@ -358,11 +356,20 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $,
       }
     }
 
+    function markAction(d) {
+      if (d.type === 'Call') {
+        stateManager.mark(d.type, d.data.id,
+          !stateManager.isMarked(d.type, d.data.id));
+      }
+    }
+
     function nodeClick(d) {
       if (d3.event.shiftKey) {
         expandAction(d);
       } else if (d3.event.altKey) {
         referencesAction(d);
+      } else if (d3.event.ctrlKey) {
+        markAction(d);
       } else if (keyService('Z')) {
         parentAction(d);
       } else {
@@ -420,7 +427,6 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $,
       });
 
     // Add nodes
-
     var callNodes = callGroup.selectAll('g.node')
       .data(calls, function(d) { return d.uuid; });
 
@@ -505,26 +511,26 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $,
       .append('rect')
       .classed('count-bg', true)
       .attr('x', function(d) {
-        return d.width + 10;
+        return d.width + 4;
       })
-      .attr('y', 0)
-      .attr('rx', 2)
-      .attr('ry', 2)
+      .attr('y', -9)
+      .attr('rx', 5)
+      .attr('ry', 5)
       .attr('width', function(d) {
         return SizeService.svgTextSize(d.data.count).width + 4;
       })
       .attr('height', function(d) {
-        return d.height + 6;
+        return d.height - 2;
       });
 
     callGroupNodesEnter
       .append('text')
       .classed('count', true)
       .attr('x', function(d) {
-        return d.width + 10 + 2;
+        return d.width + 4 + 2;
       })
       .attr('y', function(d) {
-        return d.height - 1;
+        return d.height - 13;
       })
       .attr('rx', 2)
       .attr('ry', 2)
@@ -606,31 +612,6 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $,
     callNodes.selectAll('g.loopexecution > rect.call-bg')
       .attr('fill', function(d) {
         return gradient(d.data.duration);
-      });
-
-    /* Add loop indicators */
-
-    var callsInLoops = callNodesEnter
-      .filter(function(d) {
-        return (d.type === 'Call' || d.type === 'CallGroup') &&
-                d.data.isInLoop();
-      });
-
-    callsInLoops
-      .append('use')
-      .attr('xlink:href', '#execution')
-      .attr('transform', 'scale(' + 5 / 800 + ')');
-
-    var callWithLoops = callNodesEnter
-      .filter(function(d) {
-        return d.type === 'Call' && d.data.loopCount > 0;
-      });
-
-    callWithLoops
-      .append('use')
-      .attr('xlink:href', '#execution')
-      .attr('transform', function(d) {
-        return 'translate(' + (d.width - 10) + ', 0) scale(' + 5 / 800 + ')';
       });
 
     /* Set initial position so the first transition makes sense */
@@ -745,19 +726,19 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $,
 
     edgeNodesEnter
       .append('path')
-      .attr('stroke', function(d) {
+      .attr('style', function(d) {
         if (d[1].type === 'Reference') {
           if (_.isUndefined(d.details)) {
-            return 'black';
+            return 'stroke : black';
           } else if (d.details.reads === 0 && d.details.writes > 0) {
-            return 'red';
+            return 'stroke : red';
           } else if (d.details.writes === 0 && d.details.reads > 0) {
-            return 'green';
+            return 'stroke : green';
           } else {
-            return 'black';
+            return 'stroke : black';
           }
         } else {
-          return 'black';
+          return 'stroke : chocolate';
         }
       });
 

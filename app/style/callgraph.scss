@@ -2,8 +2,9 @@
 
 g.callgraph {
   g.node {
+    cursor: default;
     rect.call-bg {
-      stroke-width: 2;
+      stroke-width: 1;
     }
 
     rect.count-bg {
@@ -17,7 +18,7 @@ g.callgraph {
 
   g.edge {
     path {
-      stroke-width: 1;
+      stroke-width: 0.5;
       fill-opacity: 0;
     }
   }
