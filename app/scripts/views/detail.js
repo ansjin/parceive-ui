@@ -50,10 +50,21 @@ angular.module('detail-view', ['app'])
         break;
       case 'Reference':
         promise = loader.getReference(element.id).then(function(ref) {
-          return {
-            'Name': ref.name,
-            'Reference Type': ref.type
-          };
+          return ref.getAllocator().then(function(allocator) {
+            return allocator.getCall().then(function(call) {
+              return call.getFunction();
+            }).then(function(fct) {
+              return fct.getFile().then(function(file) {
+                return {
+                  'Name': ref.name,
+                  'Reference Type': ref.type,
+                  'Allocated in': file.path + ':' + allocator.lineNumber,
+                  'Allocated by': fct.signature
+                };
+              });
+            });
+          });
+
         });
         break;
       case 'CallGroup':
