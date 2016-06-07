@@ -12,9 +12,9 @@ function pObject(d3, pd, grad) {
   var factory = {
     getObject: getObject,
     setMainData: setMainData,
-    initViewData: initViewData,
     loadChildren: loadChildren,
-    setRuntimeThreshold: setRuntimeThreshold
+    setRuntimeThreshold: setRuntimeThreshold,
+    getThreadData: getThreadData
   };
 
   return factory;
@@ -25,38 +25,57 @@ function pObject(d3, pd, grad) {
       mainDuration: null, // runtime of main function
       mainCallId: null, // ID of main function
       mainCallGroupId: null, // callGroup ID of main
-      currentTop: null, // call that is at the top level of the view
       runtimeThreshold: null, // minimum runtime required for children to load
       thresholdFactor: 1, // % of top level duration children must have to be shown
-      viewData: {}, // store the current data used to display profiler   
-      history: [], // stores id's that have been retrieved
       rectHeight: 22, // height of the bars in the profiler
       textPadY: 15, // top padding for the text svg
       textPadX: 0.5, // left padding for the text svg
       transTime: 600, // transition time for appending a bar to profiler
       transType: 'elastic', // type of append transition
-      maxLevel: 1, // current highest level of bars on the profiler
       svgWidth: '100%', // width of the svg
+      partition: null, // holds modified d3 partition value function
       profileId: null, // random ID to differentiate profiling views on DOM
       initView: false, // flag to check if view has been initialized before
-      partition: null, // holds modified d3 partition value function
-      zoomId: null, // id of call or callGroup that is currently zoomed to top
-      zoomHistory: [], // stores previously zoomed nodes
       selectedNodes: [], // stores selected nodes
       gradient: null, // holds gradient function
+      clickCount: 0, // click counter for determining double or single click
+      viewHeight: 0,
+      showLoop: false // show loops in visualization
+    };
+
+    return obj;
+  }
+
+  function getThreadObject(isTracing) {
+    var tracing = {
+      viewLevels: {}, // the loop adjustment values for each level
+      adjustLevel: 0, // stores level -1 of bar at the top position of the profiler
+      traceData: {}, // store the current data used to display event trace
+      adjustLoopLevel: 0, // stores amount of loop adjustments above current level
+      threadName: '' // name of thread
+    };
+
+    var profiling = {
+      profileData: {} // store the current data used to display profile
+    };
+
+    var threadObject = {
+      zoomId: null, // id of call or callGroup that is currently zoomed to top
+      zoomHistory: [], // stores previously zoomed nodes
+      history: [], // stores id's that have been retrieved
+      maxLevel: 1, // current highest level of bars on the profiler
       widthScale: null, // holds function to calculate width of call
       xScale: null, // holds function to calculate x position of call
-      clickCount: 0, // click counter for determining double or single click
+      currentTop: null // call that is at the top level of the view
     };
 
     if (isTracing) {
-      obj.viewLevels = {}; // the loop adjustment values for each level
-      obj.adjustLevel = 0; // stores level -1 of bar at the top position of the profiler
-      obj.adjustLoopLevel = 0; // stores amount of loop adjustments above current level
-      obj.showLoop = false; // show loops in visualization
+      threadObject = _.merge(tracing, threadObject);
+    } else {
+      threadObject = _.merge(profiling, threadObject);
     }
 
-    return obj;
+    return threadObject;
   }
 
   // set main properties on tracing and profiling view objects. "main"
@@ -71,6 +90,11 @@ function pObject(d3, pd, grad) {
 
         var profileId = Date.now();
         _t.profileId = _p.profileId = profileId;
+
+        _t.gradient = _p.gradient = grad.gradient(0, _t.mainDuration);
+        _t.partition = _p.partition = d3.layout.partition().value(function(d) {
+          return d.duration;
+        });
         
         resolve(true);
       });
@@ -80,65 +104,63 @@ function pObject(d3, pd, grad) {
   // set the value for the least duration allowed to be loaded from db.
   // this is useful for knowing when to stop loading children of a call. if the
   // current item doesn't have a duration >= runtimeThreshold, don't load its children
-  function setRuntimeThreshold(obj) {
-    obj.runtimeThreshold = Math.ceil(obj.currentTop.duration * (obj.thresholdFactor / 100));
+  function setRuntimeThreshold(obj, thread) {
+    var top = thread;
+    
+    if (obj.threads && obj.threads.length > 0) {
+      top = obj.threads[0];
+    }
+
+    obj.runtimeThreshold = Math.ceil(top.currentTop.duration * (obj.thresholdFactor / 100));
   }
 
-  function initViewData(_t, _p) {
+  function getThreadData(id, isTracing) {
     return new Promise(function(resolve, reject) {
-      var ancestor = 'null';
-      var level = 1;
+      var first = isTracing ? pd.getThreadFirstCall(id) : pd.getThreadFirstCallGroup(id);
+      var ret = getThreadObject(isTracing);
 
-      pd.getCallObj(_t.mainCallId, ancestor, level)
+      first
       .then(function(data) {
-        _t.viewData = data;
-        _t.currentTop = data;
+        if (isTracing) {
+          ret.threadName = 'Thread ' + id;
+          ret.traceData = data;
+        } else {
+          ret.profileData = data;
+        }
 
-        return pd.getCallGroupObj(_p.mainCallGroupId, ancestor, level);
-      })
-      .then(function(data) {
-        _p.viewData = data;
-        _p.currentTop = data;
-
-        setRuntimeThreshold(_t);
-        setRuntimeThreshold(_p);
-
-        _t.gradient = _p.gradient = grad.gradient(0, _t.mainDuration);
-        _t.partition = _p.partition = d3.layout.partition().value(function(d) {
-          return d.duration;
-        });
-
-        resolve(true);
+        ret.currentTop = data;
+        resolve(ret);
       });
     });
   }
 
   // load children of the call or callgroup with the specified id, and 
-  // append the them to the viewData
-  function loadChildren(obj, id, level) {
+  // append the them to the traceData
+  function loadChildren(obj, id, level, isTracing, runtimeThreshold, threadID) {
     return new Promise(function(resolve, reject) {
-      var func = obj.isTracing
+      var func = isTracing
         ? pd.getCall(id)
         : pd.getCallGroup(id);
 
       func.then(function(call) {
-        return pd.getRecursive(call, obj.isTracing, obj.runtimeThreshold, level);
+        return pd.getRecursive(call, isTracing, runtimeThreshold, level, threadID);
       })
       .then(function(data) {
         _.forEach(data, function(d) {
           if (obj.history.indexOf(d.id) === -1) {
-            appendDeep(obj.viewData, d, obj.isTracing);
+            var viewData = isTracing ? obj.traceData : obj.profileData
+            appendDeep(viewData, d, isTracing);
             obj.history.push(d.id);
           }
         });
 
         // if this is tracing data object, add values for the loop adjustments
-        if (obj.isTracing) {
-          obj.viewLevels = addLoopAdjustment(obj.viewData); 
+        if (isTracing) {
+          obj.viewLevels = addLoopAdjustment(obj.traceData); 
         }
 
         resolve(true);
-      });
+      }, function(err) { console.log(err) });
     });
   }
 

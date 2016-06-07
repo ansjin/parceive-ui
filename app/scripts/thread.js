@@ -304,6 +304,11 @@ function render(d3, pd) {
       console.log('comparing ' + _thread.selected);
       var marker = [];
       for (var i = 0, len = _thread.selected.length; i < len; i++) {
+        if (_thread.selected[i] === 0) {
+          console.log('cannot compare with thread 0');
+          continue;
+        }
+
         var obj = {
           type: 'Thread',
           id: _thread.selected[i],

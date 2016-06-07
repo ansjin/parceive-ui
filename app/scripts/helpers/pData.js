@@ -16,7 +16,9 @@ function pData(LoaderService) {
     getCallObj: getCallObj,
     getCallGroupObj: getCallGroupObj,
     getThreads: getThreads,
-    getThreadsFirstCalls: getThreadsFirstCalls
+    getThreadsFirstCalls: getThreadsFirstCalls,
+    getThreadFirstCall: getThreadFirstCall,
+    getThreadFirstCallGroup: getThreadFirstCallGroup
   };
 
   return factory;
@@ -24,6 +26,33 @@ function pData(LoaderService) {
   // get all threads in active db
   function getThreads() {
     var promise = LoaderService.getThreads();
+    return promise;
+  }
+
+  // get first call made by specific thread
+  function getThreadFirstCall(id) {
+    if (id === 0) {
+      return getMain();
+    }
+
+    var promise = LoaderService.getThread(id)
+    .then(function(data) {
+      return data.getCall();
+    })
+    .then(function(data) {
+      return new RSVP.resolve(data);
+    }, function(err){console.log(err)});
+
+    return promise;
+  }
+
+  // get first callgroup in thread
+  function getThreadFirstCallGroup(id) {
+    var promise = getThreadFirstCall(id)
+    .then(function(data) {
+      return getCallGroup(data.callGroupID);
+    });
+
     return promise;
   }
 
@@ -67,22 +96,47 @@ function pData(LoaderService) {
 
   // recursively get all children of an object that have duration
   // >= a certain threshold
-  function getRecursive(obj, isTracing, runtimeThreshold, level) {
+  function getRecursive(obj, isTracing, runtimeThreshold, level, threadID) {
     var type = isTracing ? 'call' : 'callgroup';
     var ancestor = isTracing ? 'callerID' : 'parentID';
+    var functions = [];
     var func = isTracing
       ? obj.getRecursiveCalls(runtimeThreshold)
       : obj.getRecursiveCallGroups(runtimeThreshold);
 
-    var promise = func.then(function(data) {      
-      var promises = data.map(function(d) {
+    var promise = LoaderService.getFunctions()
+    .then(function(data) {
+      // sometimes calls reference function ids' that don't exist in
+      // the db. store a list of all function ids' that exist in db
+      // and then check against this array to know whether to call
+      // getFunction(). This is not the most efficient way to do this
+      // but the framework doesn't provide any better option, AFAIK.
+      _.forEach(data, function(d) {
+        functions.push(d.id);
+      });
+      return func;
+    })
+    .then(function(data) {   
+      var threadData = [];
+      
+      if (isTracing) {
+        _.forEach(data, function(d) {
+          if (d[type].threadID === threadID) {
+            threadData.push(d);
+          }
+        });
+      } else {
+        threadData = data;
+      }
+      
+      var promises = threadData.map(function(d) {
         var _id = d[type].id;
         var _ancestor = d[type][ancestor];
         var _level = d.depth + level;
 
         var dataFunc = isTracing
-          ? getCallObj(_id, _ancestor, _level)
-          : getCallGroupObj(_id, _ancestor, _level);
+          ? getCallObj(_id, _ancestor, _level, functions)
+          : getCallGroupObj(_id, _ancestor, _level, functions);
 
         return dataFunc;
       });
@@ -113,7 +167,7 @@ function pData(LoaderService) {
 
   // get a call id custom call object. the object that is returned has 
   // selected properties of the related call, function, and loop data (if any)
-  function getCallObj(id, ancestor, level) {
+  function getCallObj(id, ancestor, level, functions) {
     var self;
     var temp = {};
 
@@ -135,7 +189,13 @@ function pData(LoaderService) {
         temp.loopIterationCalls = [];
         temp.threadID = call.threadID;
 
-        return call.getFunction();
+        if (functions.indexOf(call.functionID) < 0) {
+          return new RSVP.resolve({
+            signature: 'Untracked Function'
+          });
+        } else {
+          return call.getFunction();
+        }
       })
       .then(function(func) {
         temp.name = func.signature;
@@ -167,12 +227,12 @@ function pData(LoaderService) {
         });
 
         return new RSVP.resolve(temp);
-      });
+      }, function(err) { console.log(err) });
     return promise;
   }
 
   // get a callgroup id custom callgroup object
-  function getCallGroupObj(id, ancestor, level) {
+  function getCallGroupObj(id, ancestor, level, functions) {
     var temp = {};
     var promise = LoaderService.getCallGroup(id)
       .then(function(callGroup) {
@@ -183,13 +243,19 @@ function pData(LoaderService) {
         temp.level = level;
         temp.id = callGroup.id;
 
-        return callGroup.getFunction();
+        if (functions.indexOf(callGroup.functionID) < 0) {
+          return new RSVP.resolve({
+            signature: 'Untracked Function'
+          });
+        } else {
+          return callGroup.getFunction();
+        }
       })
       .then(function(func) {
         temp.name = func.signature;
 
         return new RSVP.resolve(temp);
-      });
+      }, function(err) { console.log(err) });
     return promise;
   }
 }

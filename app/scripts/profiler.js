@@ -188,126 +188,92 @@ function render(d3, po, pd, pv, ps) {
     var _svg = _t;
 
     // set main call properties
-    po.setMainData(_t, _p)
-    .then(function() {
+    po.setMainData(_t, _p).then(function() {
       // set svg id
       svg.attr('id', _svg.profileId);
 
-      // initialize view data for calls and callgroups
-      return po.initViewData(_t, _p);
+      // initialize view data for thread 0 calls
+      return getCallThread(0);
     })
     .then(function(data) {
-      // load children for calls that meet the duration criteria
-      return po.loadChildren(_t, _t.mainCallId, 1);
+      // initialize view data for callgroups
+      return getCallThread(1);
     })
-    .then(function() {
-      // load children for callgroups that meet the duration criteria
-      return po.loadChildren(_p, _p.mainCallGroupId, 1);
+    .then(function(data) {
+      // initialize view data for callgroups
+      return getCallGroup(0);
     })
-    .then(function() {
+    .then(function(data) {
       return initDisplay();
     })
     .then(function() {
       setEventHandlers();
-      console.log('init', _svg);
-    }, function(err) { console.log(err); });
+    });
+
+    function getCallThread(id) {
+      var promise = po.getThreadData(id, true)
+      .then(function(data) {
+        if (!_t.hasOwnProperty('threads')) {
+          _t.threads = [];
+        }
+
+        var i;
+        var len = _t.threads.length;
+        for (i = 0; i < len; i++) {
+          if (_t.threads[i].threadName === 'Thread ' + id) {
+            _t.threads.splice(i, 1);
+            break;
+          }
+        }
+        _t.threads.push(data);
+        po.setRuntimeThreshold(_t, data);
+        return po.loadChildren(data, data.traceData.id, 1, true, _t.runtimeThreshold, id);
+      });
+
+      return promise;
+    }
+
+    function getCallGroup(id) {
+      var promise = po.getThreadData(id, false)
+      .then(function(data) {
+        _p = _.merge(data, _p);
+        po.setRuntimeThreshold(_p, data);
+        return po.loadChildren(data, data.profileData.id, 1, false, _p.runtimeThreshold, id);
+      });
+
+      return promise;
+    }
 
     function initDisplay() {
-      return new Promise(function(resolve, reject) {
+      return new Promise(function(resolve, reject){
+        svg.selectAll('*').remove();
         
-        // if (_svg.isTracing) {
-        //   _svg.viewData = pv.findDeepThread(_svg.viewData, 0);
-        // }
-        
-        // partition the viewData so it can be used by D3 partition layout
-        // and set the scale function for x and width
-        pv.setNodes(_svg, svg.selectAll('*'))
-        .then(function() {
-          // draw the call boxes on the svg
-          return ps.drawRect(_svg, svg.selectAll('rect.rect'));
-        })
-        .then(function() {
-          // draw the call text (title) on the svg
-          return ps.drawRectText(_svg, svg.selectAll('text.rect'));
-        })
-        .then(function() {
-          // draw the call loop lines on the svg
-          return ps.drawLoop(_svg, svg.selectAll('line.loop'));
-        })
-        .then(function() {
-          // draw the call loop line rounded ends
-          return ps.drawLoopEnd(_svg, svg.selectAll('circle.loop'));
-        })
-        .then(function() {
-          // draw the call loop text (loop execution count)
-          return ps.drawLoopText(_svg, svg.selectAll('text.line'));
-        })
-        .then(function() {
-          // draw a small circle for loop executions that are too small
-          // compared to runtime, that showing a line for them would
-          // not be appropriate. We signify them with a small dot.
-          return ps.drawLoopTooSmall(_svg, svg.selectAll('circle.small'));
-        })
-        .then(function() {
+        var promises = _svg.threads.map(function(d) {
+          return ps.doTrace(svg, _svg, d);
+        });
+
+        var func = _svg.isTracing 
+          ? RSVP.all(promises)
+          : ps.doProfile(svg, _svg);
+
+        func.then(function(data) {
           // set event handlers for svg elements
-          return new Promise(function(resolve, reject) {
-            var elementType = _svg.isTracing ? 'Call' : 'CallGroup';
 
-            // call elements
-            svg.selectAll('rect.rect, text.rect')
-              .on('click', function(d) { 
-                 pv.clickType(_svg).then(function(data) {
-                  // handle single click
-                  if (data === 'single') {
-                    // broadcast mark
-                    var isSelected = pv.isSelected(d, svg);
-                    stateManager.mark([{type: elementType, id: d.id, isMarked: isSelected, data:_svg}]);
-                  }
 
-                  // handle double click
-                  if (data === 'double') {
-                    // broadcast focus
-                    stateManager.focus([{type: elementType, id: d.id, data:_svg}]);
-                  }
-                 });
-              })
-              .on('mouseenter', function(d) {
-                // broadcast hover
-                stateManager.hover([{type: elementType, id: d.id, data:_svg}]);
-              })
-              .on('mouseleave', function(d) {
-                // broadcast hover
-                stateManager.hover([{type: elementType, id: d.id, data:_svg}]);
-              });
+          // update duration slider and set selected nodes
 
-            // loop elements
-            svg.selectAll('line.loop, circle.loop, circle.small, text.line')
-              .on('mouseenter', function(d) {
-                // broadcast hover
-                stateManager.hover([{type: 'Loop', id: d.id, data:_svg}]); 
-              })
-              .on('mouseleave', function(d) {
-                // broadcast hover
-                stateManager.hover([{type: 'Loop', id: d.id, data:_svg}]); 
-              });
 
-            resolve(true);
-          });
-        })
-        .then(function() {
-          pv.updateDurationSlider(_svg);
-          pv.setSelectedNodes(_svg, svg);
-
-          // save data objects to stateManager so external functions like hoverCb, 
-          // markCb can access the same object (its data and functions). 
+          // save data objects to stateManager
           stateManager.getData().unsaved.svg = svg;
+          stateManager.getData().unsaved._svg = _svg;
+          stateManager.getData().unsaved._t = _t;
+          stateManager.getData().unsaved._p = _p;
           stateManager.getData().unsaved.pv = pv;
           stateManager.getData().unsaved.po = po;
           stateManager.getData().unsaved.initDisplay = initDisplay;
-          stateManager.getData().unsaved.viewData = _svg.viewData;
-
-          resolve(true);
         });
+
+        resolve(true);
       });
     }
 
@@ -346,147 +312,6 @@ function render(d3, po, pd, pv, ps) {
         });
       }, 1000);
     }
-
-    // toggle view mode
-    function toggleViewMode() {
-      _svg = _svg.isTracing ? _p : _t;
-      pv.toggleViewMode(_svg);
-      initDisplay();
-    }
-
-    // show/hide loops
-    function showHideLoops() {
-      pv.toggleLoop(_svg);
-      initDisplay();
-    }
-
-    // update duration with slider value
-    function updateDuration() {
-      pv.updateDurationSlider(_svg);
-      po.setRuntimeThreshold(_svg);
-      initDisplay();
-    }
-
-    // reset zoom to main
-    function resetZoom() {
-      var elementType = _svg.isTracing ? 'Call' : 'CallGroup';
-      var id = _svg.isTracing ? _svg.mainCallId : _svg.mainCallGroupId;
-      stateManager.focus([{type: elementType, id: id}]);
-    }
-
-    // spot selected calls/callgroups
-    function spotData(d) {
-       var elementType = _svg.isTracing ? 'Call' : 'CallGroup';
-       stateManager.spot([{type: elementType, id: d.id, data:_svg.selectedNodes}]);
-    }
-
-    // setup the context menu
-    $(function() {
-      $.contextMenu({
-        selector: 'rect.rect, text.rect, line.loop, circle.loop, circle.small, text.line',
-        build: function(menu, e) {
-          var elementType = _svg.isTracing ? 'Call' : 'CallGroup';
-          var d = menu[0].__data__;
-          var isSelected = pv.isSelected(d, svg);
-          var menuWidth = 200;
-          var svgWidthPixels = pv.getSvgWidth(_svg);
-
-          var contextMenu = {
-            position: function(opt) {
-              var x = e.clientX;
-              var y = e.clientY;
-
-              // show tooltip to the left of the mouse if there is not
-              // enough space for it to appear on the right
-              if (menuWidth > svgWidthPixels - x) {
-                x = x - menuWidth;
-              }
-
-              opt.$menu.css({
-                top: y + 'px' ,
-                left: x + 'px'
-              });
-            },
-
-            items: {
-              // mark or unmark element
-              'mark_unmark': {
-                name: isSelected ? 'UnMark' : 'Mark',
-                callback: function() {
-                  stateManager.mark([{type: elementType, id: d.id, isMarked: isSelected, data:_svg}]);
-                }
-              },
-
-              // switch to profiling or tracing mode
-              'switch_view_mode': {
-                name: _svg.isTracing ? 'Show Profiling' : 'Show Tracing',
-                callback: function() {
-                  toggleViewMode();
-                }
-              }
-            }
-          };
-
-          var zoomInOut = {
-            // zoom in or out of element
-            name: _svg.currentTop.id === d.id ? 'Zoom out' : 'Zoom in',
-            callback: function() {
-              stateManager.focus([{type: elementType, id: d.id, data:_svg}]);
-            }
-          };
-
-          var zoomToTop = {
-            // reset zoom to 'main' call
-            name: 'Reset Zoom',
-            callback: function() {
-              resetZoom();
-            }
-          };
-
-          var showLoops = {
-            // show or hide loops on svg
-            name: _svg.showLoop ? 'Hide Loops' : 'Show Loops',
-            callback: function() {
-              showHideLoops();
-            }
-          };
-
-          var spotting = {
-            // spot selected calls/callgroups
-            name: (_svg.isTracing) ? 'Spot Calls' : 'Spot Callgroups',
-            callback: function() {
-              spotData(d);
-            }
-          };
-
-          // add reset zoom if 'main' is not currently the
-          // top level element
-          if (_svg.currentTop.id !== _svg.mainCallId
-            && _svg.currentTop.id !== _svg.mainCallGroupId) {
-            contextMenu.items.reset_zoom = zoomToTop;
-          }
-
-          // add zoom in or out if the current element is not
-          // top level (ie. main)
-          if (d.id !== _svg.mainCallId && d.id !== _svg.mainCallGroupId) {
-            contextMenu.items.zoom_in_out = zoomInOut;
-          }
-
-          // add show/hide loops to context menu if in tracing mode
-          if (_svg.isTracing) {
-            contextMenu.items.show_hide_loops = showLoops;
-          }
-
-          // enable call/callgroup spotting if there is more than 
-          // 1 selected item
-          if (_svg.selectedNodes.length > 1) {
-            contextMenu.items.spot_data = spotting;
-          }
-
-          return contextMenu;
-        }
-      })
-    });
 
   };
 }

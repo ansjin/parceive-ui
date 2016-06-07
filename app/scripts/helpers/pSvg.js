@@ -12,10 +12,67 @@ function pSvg(d3, size) {
     drawLoop: drawLoop,
     drawLoopText: drawLoopText,
     drawLoopEnd: drawLoopEnd,
-    drawLoopTooSmall: drawLoopTooSmall
+    drawLoopTooSmall: drawLoopTooSmall,
+    doTrace: doTrace,
+    doProfile: doProfile
   };
 
   return factory;
+
+  function doTrace(svg, _svg, d) {
+    drawHeader(svg, _svg, d);
+    updateViewHeight(svg, _svg, d);
+  }
+
+  function newY(_svg) {
+    return _svg.viewHeight * _svg.rectHeight;
+  }
+
+  function updateViewHeight(svg, _svg, d) {
+    var parent = document.getElementById(_svg.profileId).parentNode;
+    var parentx3 = parent.parentNode.parentNode;
+    var y = newY(_svg);
+    
+    svg.style('height', y + 'px');
+    parentx3.style.height = 'inherit';
+    parent.style.height = y + 'px'; 
+  }
+
+  function drawHeader(svg, _svg, d) {
+    var selection = svg.selectAll('rect.header_' + d.id);
+    var y = newY(_svg);
+
+    selection
+      .data([{}])
+      .enter()
+      .append('rect')
+      .attr('class', 'rect.header_' + d.id)
+      .attr('stroke', 'white')
+      .attr('stroke-width', 2)
+      .attr('fill', 'grey')
+      .attr('x', 0)
+      .attr('width', '100%')
+      .attr('height', _svg.rectHeight)
+      .attr('y', y);
+
+    selection
+      .data([{}])
+      .enter()
+      .append('text')
+      .attr('class', 'header')
+      .attr('font-family', 'Arial')
+      .attr('font-size', '14px')
+      .attr('fill', 'white')
+      .attr('x', 5)
+      .attr('y', y + _svg.textPadY)
+      .text(d.threadName);
+
+    _svg.viewHeight++;
+  }
+
+  function doProfile(svg, _svg) {
+    
+  }
 
   function getYValue(_svg, d, isLoop) {
     var multiplier = d.level - _svg.currentTop.level;
