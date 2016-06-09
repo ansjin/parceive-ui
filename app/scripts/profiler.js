@@ -200,6 +200,8 @@ function render(d3, po, pd, pv, ps) {
       return initDisplay();
     })
     .then(function() {
+      $('#thresh-lbl').attr('title', 'Showing calls with >= ' + _svg.thresholdFactor + '% duration of ' + _svg.currentTop.name); 
+      $('#thresh-lbl').text(_svg.thresholdFactor + '%');
       setEventHandlers();
     });
 
@@ -210,12 +212,7 @@ function render(d3, po, pd, pv, ps) {
           _t.currentTop = data.traceData;
         }
 
-        if (!_t.hasOwnProperty('threads')) {
-          _t.threads = [];
-        }
-
-        var i;
-        var len = _t.threads.length;
+        var i, len = _t.threads.length;
         for (i = 0; i < len; i++) {
           if (_t.threads[i].threadName === 'Thread ' + id) {
             _t.threads.splice(i, 1);
@@ -223,7 +220,7 @@ function render(d3, po, pd, pv, ps) {
           }
         }
         _t.threads.push(data);
-        po.setRuntimeThreshold(_t, data);
+        po.setRuntimeThreshold(_t);
         return po.loadChildren(data, data.traceData.id, 1, true, _t.runtimeThreshold, id);
       });
 
@@ -236,61 +233,53 @@ function render(d3, po, pd, pv, ps) {
         if (_p.currentTop === null) {
           _p.currentTop = data.profileData;
         }
-        _p = _.merge(data, _p);
-        po.setRuntimeThreshold(_p, data);
+
+        var i, len = _p.threads.length;
+        for (i = 0; i < len; i++) {
+          if (_p.threads[i].threadName === 'Thread ' + id) {
+            _p.threads.splice(i, 1);
+            break;
+          }
+        }
+        _p.threads.push(data);
+        po.setRuntimeThreshold(_p);
         return po.loadChildren(data, data.profileData.id, 1, false, _p.runtimeThreshold, id);
       });
 
       return promise;
     }
 
-    function focusItem() {
-      // set runtimethreshold
-      // set current top
-      loadData().then(function() {
-        initDisplay();
-      });
-    }
-
-    function selectItem() {
-
-    }
-
-    function hoverItem() {
-
-    }
-
     function loadData() {
       var promises =[];
 
       _.forEach(_t.activeThreads, function(d) {
-        promises.push(getCallThread(d));
+        if (isTracing) {
+          promises.push(getCallThread(d));
+        } else {
+          promises.push(getCallGroup(d));
+        }
       });
 
-      var func = isTracing 
-        ? RSVP.all(promises)
-        : getCallGroup(0);
-
-      return func;
+      return RSVP.all(promises);
     }
 
     function initDisplay() {
       return new Promise(function(resolve, reject){
         svg.selectAll('*').remove();
+        _svg.viewHeight = 0;
 
         var promises =[];
-
-        _svg.threads = _.sortByOrder(_svg.threads, ['traceData.threadID'], [true]);
-
+        var sort = isTracing ? 'traceData.threadID' : 'profileData.threadID';
+        _svg.threads = _.sortByOrder(_svg.threads, [sort], [true]);
         _.forEach(_svg.threads, function(d, i) {
-          promises.push(ps.doTrace(svg, _svg, d, i));
+          if (isTracing) {
+            promises.push(ps.doTrace(svg, _svg, d, i));
+          } else {
+            promises.push(ps.doProfile(svg, _svg, d, i));
+          }
         });
 
-        var func = _svg.isTracing 
-          ? RSVP.all(promises)
-          : ps.doProfile(svg, _svg);
-
-        func.then(function(data) {
+        RSVP.all(promises).then(function(data) {
           // set event handlers for svg elements
 
 
@@ -309,6 +298,28 @@ function render(d3, po, pd, pv, ps) {
 
         resolve(true);
       });
+    }
+
+    function focusItem() {
+      // set runtimethreshold
+      // set current top
+      loadData().then(function() {
+        initDisplay();
+      });
+    }
+
+    function selectItem() {
+
+    }
+
+    function hoverItem() {
+
+    }
+
+    function updateDuration() {
+      pv.updateDurationSlider(_svg);
+      po.setRuntimeThreshold(_svg);
+      initDisplay();
     }
 
     // set input elements (buttons, sliders) to carry out specific

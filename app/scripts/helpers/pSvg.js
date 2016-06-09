@@ -17,9 +17,7 @@ function pSvg(d3, size, pv) {
     return new Promise(function(resolve, reject) {
       drawHeader(svg, _svg, d);
       drawCalls(svg, _svg, d, index);
-      if (_svg.isTracing) {
-        drawLoops(svg, _svg, d, index);
-      }
+      drawLoops(svg, _svg, d, index);
       updateViewHeight(svg, _svg);
       drawLine();
 
@@ -27,9 +25,10 @@ function pSvg(d3, size, pv) {
     });
   }
 
-  function doProfile(svg, _svg) {
+  function doProfile(svg, _svg, d, index) {
     return new Promise(function(resolve, reject) {
-      drawCalls(svg, _svg);
+      drawHeader(svg, _svg, d);
+      drawCalls(svg, _svg, d, index);
       updateViewHeight(svg, _svg);
 
       resolve(true);
@@ -106,22 +105,18 @@ function pSvg(d3, size, pv) {
 
   function drawCalls(svg, _svg, d, index) {
     // set selection class
-    var rectClass = _svg.isTracing
-      ? 'rect.call_thread_' + d.traceData.threadID : 'rect.call';
-    var textClass = _svg.isTracing
-      ? 'text.call_thread_' + d.traceData.threadID : 'text.call'; 
+    var threadID = _svg.isTracing ? d.traceData.threadID : d.profileData.threadID;
+    var rectClass = 'rect.call_thread_' + threadID;
+    var textClass = 'text.call_thread_' + threadID; 
 
     // set current top item and generate node partitions
-    var nodes, threadTop, currentTop = _svg.currentTop;
-    if (_svg.isTracing) {
-      threadTop = d.threadTop;
-      var nodeData = threadTop.threadID === currentTop.threadID
-        ? pv.findDeep(d.traceData, currentTop.id)
-        : d.traceData;
-      nodes = _svg.partition.nodes(nodeData);
-    } else {
-      nodes = _svg.partition.nodes(pv.findDeep(_svg.profileData, currentTop.id));
-    }
+    var threadTop = d.threadTop
+    var currentTop = _svg.currentTop;
+    var viewData = _svg.isTracing ? d.traceData : d.profileData;
+    var nodeData = threadTop.threadID === currentTop.threadID
+        ? pv.findDeep(viewData, currentTop.id)
+        : viewData;
+    var nodes = _svg.partition.nodes(nodeData);
 
     // define scale for width values
     var widthScale = d3.scale.linear()

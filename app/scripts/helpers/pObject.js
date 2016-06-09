@@ -40,7 +40,8 @@ function pObject(d3, pd, grad, ld) {
       gradient: null, // holds gradient function
       clickCount: 0, // click counter for determining double or single click
       viewHeight: 0,
-      activeThreads: [0, 1, 2, 3],
+      activeThreads: [0, 1, 3],
+      threads: [],
       currentTop: null, // call that is at the top level of the view
       showLoop: false // show loops in visualization
     };
@@ -54,8 +55,6 @@ function pObject(d3, pd, grad, ld) {
       adjustLevel: 0, // stores level -1 of bar at the top position of the profiler
       traceData: {}, // store the current data used to display event trace
       adjustLoopLevel: 0, // stores amount of loop adjustments above current level
-      threadTop: null, // call that is at the top level of the thread
-      threadName: '' // name of thread
     };
 
     var profiling = {
@@ -68,7 +67,9 @@ function pObject(d3, pd, grad, ld) {
       history: [], // stores id's that have been retrieved
       maxLevel: 1, // current highest level of bars on the profiler
       widthScale: null, // holds function to calculate width of call
-      xScale: null // holds function to calculate x position of call
+      xScale: null, // holds function to calculate x position of call
+      threadTop: null, // call that is at the top level of the thread
+      threadName: '' // name of thread
     };
 
     if (isTracing) {
@@ -106,7 +107,7 @@ function pObject(d3, pd, grad, ld) {
   // set the value for the least duration allowed to be loaded from db.
   // this is useful for knowing when to stop loading children of a call. if the
   // current item doesn't have a duration >= runtimeThreshold, don't load its children
-  function setRuntimeThreshold(obj, thread) {
+  function setRuntimeThreshold(obj) {
     obj.runtimeThreshold = Math.ceil(obj.currentTop.duration * (obj.thresholdFactor / 100));
   }
 
@@ -136,12 +137,14 @@ function pObject(d3, pd, grad, ld) {
       })
       .then(function(data) {
         if (isTracing) {
-          ret.threadName = 'Thread ' + id;
           ret.traceData = data;
-          ret.threadTop = data;
         } else {
           ret.profileData = data;
         }
+
+        ret.threadTop = data;
+        ret.threadName = 'Thread ' + id;
+
         resolve(ret);
       });
     });

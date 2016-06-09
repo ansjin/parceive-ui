@@ -116,18 +116,32 @@ function pData(LoaderService) {
       });
       return func;
     })
-    .then(function(data) {   
+    .then(function(data) { 
+
       var threadData = [];
+      // _.forEach(data, function(d) {
+      //   if (d[type].threadID === threadID) {
+      //     threadData.push(d);
+      //   }
+      // });
       
       if (isTracing) {
         _.forEach(data, function(d) {
           if (d[type].threadID === threadID) {
             threadData.push(d);
+          } else {
+            console.log('should be thread ' + threadID + ' but was thread ' + d[type].threadID)
           }
         });
       } else {
         threadData = data;
+        // _.forEach(data, function(d) {
+        //   d[type].threadID = threadID;
+        //   threadData.push(d);
+        // });
       }
+
+      // console.log(threadData)
       
       var promises = threadData.map(function(d) {
         var _id = d[type].id;
