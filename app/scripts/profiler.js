@@ -280,6 +280,8 @@ function render(d3, po, pd, pv, ps) {
 
         var promises =[];
 
+        _svg.threads = _.sortByOrder(_svg.threads, ['traceData.threadID'], [true]);
+
         _.forEach(_svg.threads, function(d, i) {
           promises.push(ps.doTrace(svg, _svg, d, i));
         });

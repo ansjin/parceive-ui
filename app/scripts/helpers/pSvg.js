@@ -21,6 +21,7 @@ function pSvg(d3, size, pv) {
         drawLoops(svg, _svg, d, index);
       }
       updateViewHeight(svg, _svg);
+      drawLine();
 
       resolve(true);
     });
@@ -92,7 +93,7 @@ function pSvg(d3, size, pv) {
       // console.log(d, _svg.viewLevels);
       // value = value + (_svg.viewLevels[d.level + 1] * _svg.rectHeight);
     }
-    return value + newY(_svg);
+    return value;
   }
 
   function getXValue(_svg, d, scale) {
@@ -106,11 +107,9 @@ function pSvg(d3, size, pv) {
   function drawCalls(svg, _svg, d, index) {
     // set selection class
     var rectClass = _svg.isTracing
-      ? 'rect.call_thread_' + d.traceData.id : 'rect.call';
+      ? 'rect.call_thread_' + d.traceData.threadID : 'rect.call';
     var textClass = _svg.isTracing
-      ? 'text.call_thread_' + d.traceData.id : 'text.call';   
-    var selectionRect = svg.selectAll(rectClass);
-    var selectionText = svg.selectAll(textClass);
+      ? 'text.call_thread_' + d.traceData.threadID : 'text.call'; 
 
     // set current top item and generate node partitions
     var nodes, threadTop, currentTop = _svg.currentTop;
@@ -124,8 +123,6 @@ function pSvg(d3, size, pv) {
       nodes = _svg.partition.nodes(pv.findDeep(_svg.profileData, currentTop.id));
     }
 
-    console.log(nodes)
-
     // define scale for width values
     var widthScale = d3.scale.linear()
       .domain([0, currentTop.duration])
@@ -136,17 +133,13 @@ function pSvg(d3, size, pv) {
       .domain([currentTop.start, currentTop.end])
       .range([0, _svg.svgWidth]);
 
-    // width and x scale, and also partitioned nodes
-    // take note of starting y cooordinate
-    // take note of x value and width value (should be 0 and 100% respectively in target cases)
-
     var count = 0, levels = 0;
-    selectionRect
+    var rects = svg.selectAll(rectClass)
       .data(nodes.filter(function(d) {
         // only show calls with duration >= runtimethreshold and
         // duration <= duration of current top level object
         return d.duration >= _svg.runtimeThreshold
-        && d.duration <= currentTop.duration; // && d.threadID == 0;
+        && d.duration <= currentTop.duration;
       }))
       .enter()
       .append('rect')
@@ -155,6 +148,9 @@ function pSvg(d3, size, pv) {
       .attr('stroke-opacity', 1)
       .attr('stroke-width', 2)
       .attr('height', _svg.rectHeight)
+      .attr('id', function(d) {
+        return 'rect_' + d.id;
+      })
       .attr('fill', function(d) {
         return _svg.gradient(d.duration);
       })
@@ -170,23 +166,58 @@ function pSvg(d3, size, pv) {
           levels = d.level; count++;
         } 
 
-        return getYValue(_svg, d, index) - _svg.rectHeight;
-      })
-      .attr('fill-opacity', 0)
+        return getYValue(_svg, d, index) + newY(_svg);
+      });
 
-      // add animation effect
-      .transition()
-      .duration(_svg.transTime)
-      .ease(_svg.transType)
-      .attr('y', function(d) {
-        return getYValue(_svg, d, index);
+    
+    
+    rects
+      .append('title')
+      .text(function(d) { 
+        var p = widthScale(d.duration);
+        p = p.substring(0, p.length - 1);
+        return d.name + ' (' + Math.floor(p) + '%)'; 
+      });
+
+    var texts = svg.selectAll(textClass)
+      .data(nodes.filter(function(d) {
+        // only show text for calls with duration >= runtimethreshold
+        // and duration <= duration of current top level object
+        // and widths big enough to contain the full name of the call
+        if (document.getElementById('rect_' + d.id) == null) {
+          return false;
+        }
+
+        var rectWidth = size.svgSizeById('rect_' + d.id).width;
+        var textPad = 20; // left and right padding
+        var textWidth = size.svgTextSize(d.name, 14).width + textPad;
+        return d.duration >= _svg.runtimeThreshold 
+        && rectWidth > textWidth
+        && d.duration <= currentTop.duration;
+      }))
+      .enter()
+      .append('text')
+      .attr('class', textClass)
+      .attr('font-family', 'Arial')
+      .attr('font-size', '14px')
+      .attr('fill', 'white')
+      .text(function(d) { return d.name; })
+      .attr('x', function(d) {
+        var sliced = Number(getXValue(_svg, d, xScale).slice(0, -1));
+        return Number(sliced + _svg.textPadX) + '%';
       })
-      .attr('fill-opacity', 1);
+      .attr('y', function(d) {
+        return getYValue(_svg, d, index) + _svg.textPadY + newY(_svg);
+      });
 
     _svg.viewHeight += count;
   }
 
   function drawLoops() {
+
+  }
+
+  function drawLine() {
 
   }
 }

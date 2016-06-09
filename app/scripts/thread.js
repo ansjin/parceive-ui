@@ -35,11 +35,12 @@ function spotCb(stateManager, data) {
 // inject view dependencies
 render.$inject = [
   'd3',
-  'pData'
+  'pData',
+  'LoaderService'
 ];
 
 // render the view
-function render(d3, pd) {
+function render(d3, pd, ld) {
   return function(svg, stateManager) {
     // data holder for this view
     var _thread = {
@@ -52,7 +53,8 @@ function render(d3, pd) {
       rawThreads: [],
       threadCalls: [],
       thresholdFactor: 1,
-      runtimeThreshold: 0
+      runtimeThreshold: 0,
+      threadCaller: []
     };
 
     // get thread data for current database
@@ -60,6 +62,19 @@ function render(d3, pd) {
     .then(function(data) {
       console.log(data);
       _thread.rawThreads = data;
+
+      var promises = [];
+      _.forEach(data, function(d, i) {
+        if (d.id !== 0) {
+          promises.push(ld.getInstruction(d.createInstructionID).then(function(f) {return f.getThread()}));
+        }
+      });
+      return RSVP.all(promises);
+    })
+    .then(function(data) {
+      data.unshift({id: null});
+      _thread.threadCaller = data;
+      console.log(data);
       return pd.getThreadsFirstCalls();
     })
     .then(function(data) {
@@ -68,6 +83,7 @@ function render(d3, pd) {
 
       for (var i = 0, len = _thread.rawThreads.length; i < len; i++) {
         _thread.rawThreads[i]['callDuration'] = _thread.threadCalls[i].duration;
+        _thread.rawThreads[i]['calledBy'] = _thread.threadCaller[i].id;
       }
 
       // set svg id
@@ -125,6 +141,7 @@ function render(d3, pd) {
           id: d.id,
           name: 'Thread ' + d.id,
           callDuration: d.callDuration,
+          calledBy: d.calledBy === null ? 'Null' : 'Thread ' + d.calledBy, 
           parent: parentId,
           x: 0,
           width: 100,
@@ -282,7 +299,7 @@ function render(d3, pd) {
             return 'red';
           }
         })
-        .text(function(d) { return d.name; })
+        .text(function(d) { return d.name + ' (<= ' + d.calledBy + ')'; })
         .attr('id', function(d) {
           return 'text_' + d.id;
         })
