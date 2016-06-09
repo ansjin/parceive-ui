@@ -17,7 +17,8 @@ var mapping = {
   'CallerExecution': 'callerexecution',
   'StartTime': 'startTime',
   'EndTime': 'endTime',
-  'DurationMs': 'durationMs'
+  'DurationMs': 'durationMs',
+  'Thread': 'thread'
 };
 
 module.exports = {
