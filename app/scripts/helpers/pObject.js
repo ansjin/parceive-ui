@@ -6,9 +6,9 @@ angular
   .factory('pObject', pObject);
 
 // inject dependencies
-pObject.$inject = ['d3', 'pData', 'GradientService'];
+pObject.$inject = ['d3', 'pData', 'GradientService', 'LoaderService'];
 
-function pObject(d3, pd, grad) {
+function pObject(d3, pd, grad, ld) {
   var factory = {
     getObject: getObject,
     setMainData: setMainData,
@@ -40,6 +40,8 @@ function pObject(d3, pd, grad) {
       gradient: null, // holds gradient function
       clickCount: 0, // click counter for determining double or single click
       viewHeight: 0,
+      activeThreads: [0, 1, 2, 3],
+      currentTop: null, // call that is at the top level of the view
       showLoop: false // show loops in visualization
     };
 
@@ -52,6 +54,7 @@ function pObject(d3, pd, grad) {
       adjustLevel: 0, // stores level -1 of bar at the top position of the profiler
       traceData: {}, // store the current data used to display event trace
       adjustLoopLevel: 0, // stores amount of loop adjustments above current level
+      threadTop: null, // call that is at the top level of the thread
       threadName: '' // name of thread
     };
 
@@ -65,8 +68,7 @@ function pObject(d3, pd, grad) {
       history: [], // stores id's that have been retrieved
       maxLevel: 1, // current highest level of bars on the profiler
       widthScale: null, // holds function to calculate width of call
-      xScale: null, // holds function to calculate x position of call
-      currentTop: null // call that is at the top level of the view
+      xScale: null // holds function to calculate x position of call
     };
 
     if (isTracing) {
@@ -105,30 +107,41 @@ function pObject(d3, pd, grad) {
   // this is useful for knowing when to stop loading children of a call. if the
   // current item doesn't have a duration >= runtimeThreshold, don't load its children
   function setRuntimeThreshold(obj, thread) {
-    var top = thread;
-    
-    if (obj.threads && obj.threads.length > 0) {
-      top = obj.threads[0];
-    }
-
-    obj.runtimeThreshold = Math.ceil(top.currentTop.duration * (obj.thresholdFactor / 100));
+    obj.runtimeThreshold = Math.ceil(obj.currentTop.duration * (obj.thresholdFactor / 100));
   }
 
   function getThreadData(id, isTracing) {
     return new Promise(function(resolve, reject) {
-      var first = isTracing ? pd.getThreadFirstCall(id) : pd.getThreadFirstCallGroup(id);
+      var first = isTracing 
+        ? pd.getThreadFirstCall(id) 
+        : pd.getThreadFirstCallGroup(id);
       var ret = getThreadObject(isTracing);
+      var functions = [];
+      var callData;
 
       first
+      .then(function(data) {
+        callData = data;
+        return ld.getFunctions();
+      })
+      .then(function(data) {
+        _.forEach(data, function(d) {
+          functions.push(d.id);
+        });
+
+        var func = isTracing 
+          ? pd.getCallObj(callData.id, null, 1, functions) 
+          : pd.getCallGroupObj(callData.id, null, 1, functions) 
+        return func;
+      })
       .then(function(data) {
         if (isTracing) {
           ret.threadName = 'Thread ' + id;
           ret.traceData = data;
+          ret.threadTop = data;
         } else {
           ret.profileData = data;
         }
-
-        ret.currentTop = data;
         resolve(ret);
       });
     });

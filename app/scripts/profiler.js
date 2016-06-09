@@ -182,28 +182,21 @@ function render(d3, po, pd, pv, ps) {
     // hold data for tracing and profiling separately
     var _t = po.getObject(true);
     var _p = po.getObject(false);
+    var isTracing = true;
 
     // start view in trace mode. this var basically just switches between
     // pointing to _t and _p depending on the current view mode
-    var _svg = _t;
+    var _svg;
 
     // set main call properties
     po.setMainData(_t, _p).then(function() {
-      // set svg id
+      // initialize view data
+      return loadData();
+    })
+    .then(function(data) {
+      _svg = isTracing ? _t : _p;
       svg.attr('id', _svg.profileId);
 
-      // initialize view data for thread 0 calls
-      return getCallThread(0);
-    })
-    .then(function(data) {
-      // initialize view data for callgroups
-      return getCallThread(1);
-    })
-    .then(function(data) {
-      // initialize view data for callgroups
-      return getCallGroup(0);
-    })
-    .then(function(data) {
       return initDisplay();
     })
     .then(function() {
@@ -213,6 +206,10 @@ function render(d3, po, pd, pv, ps) {
     function getCallThread(id) {
       var promise = po.getThreadData(id, true)
       .then(function(data) {
+        if (_t.currentTop === null) {
+          _t.currentTop = data.traceData;
+        }
+
         if (!_t.hasOwnProperty('threads')) {
           _t.threads = [];
         }
@@ -236,6 +233,9 @@ function render(d3, po, pd, pv, ps) {
     function getCallGroup(id) {
       var promise = po.getThreadData(id, false)
       .then(function(data) {
+        if (_p.currentTop === null) {
+          _p.currentTop = data.profileData;
+        }
         _p = _.merge(data, _p);
         po.setRuntimeThreshold(_p, data);
         return po.loadChildren(data, data.profileData.id, 1, false, _p.runtimeThreshold, id);
@@ -244,12 +244,44 @@ function render(d3, po, pd, pv, ps) {
       return promise;
     }
 
+    function focusItem() {
+      // set runtimethreshold
+      // set current top
+      loadData().then(function() {
+        initDisplay();
+      });
+    }
+
+    function selectItem() {
+
+    }
+
+    function hoverItem() {
+
+    }
+
+    function loadData() {
+      var promises =[];
+
+      _.forEach(_t.activeThreads, function(d) {
+        promises.push(getCallThread(d));
+      });
+
+      var func = isTracing 
+        ? RSVP.all(promises)
+        : getCallGroup(0);
+
+      return func;
+    }
+
     function initDisplay() {
       return new Promise(function(resolve, reject){
         svg.selectAll('*').remove();
-        
-        var promises = _svg.threads.map(function(d) {
-          return ps.doTrace(svg, _svg, d);
+
+        var promises =[];
+
+        _.forEach(_svg.threads, function(d, i) {
+          promises.push(ps.doTrace(svg, _svg, d, i));
         });
 
         var func = _svg.isTracing 
