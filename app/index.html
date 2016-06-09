@@ -5,52 +5,14 @@
 		<link rel="stylesheet" href="style.css">
 	</head>
 	<body ng-controller="viewsController">
-		<select ng-model="selectedRun" ng-options="run for run in allruns"></select>
-
-		<div ng-show="hasRun">
-		  <div class="add-view">
-				<select ng-model="selectedView" ng-options="view.name group by view.group for view in allviews"></select>
-			  <button ng-click="addView()">
-	        Add view
-	      </button>
+		<script>
+		window.localStorage.setItem('emsim_seq/state', '{"4145bb69-cb7b-8021-73cf-e7cb8d7cc3e5":{"id":"4145bb69-cb7b-8021-73cf-e7cb8d7cc3e5","group":"Default","_cb":{"unsaved":{}},"type":{"name":"Profile view","group":"Profile views","id":"profile-view","unsaved":{}},"_bound":{"unsaved":{}},"_views":{"unsaved":{}},"unsaved":{}},"3fb70bd6-2f32-b4db-c27e-1ec7fbac726e":{"id":"3fb70bd6-2f32-b4db-c27e-1ec7fbac726e","group":"Default","_cb":{"unsaved":{}},"type":{"name":"CCT","group":"Callgraph","id":"cct-view","unsaved":{}},"_bound":{"unsaved":{}},"_views":{"unsaved":{}},"unsaved":{}}}');
+		window.localStorage.setItem('emsim_seq/marked', '{"Default":[]}');
+		</script>
+		<div ng-repeat="view in views track by view.id" class="views" ng-class="{'view-container': true, 'view-container-half': view.halfSize}">
+	    <div class="flex">
+	      <d3-visualization class="view" view="{{view.id}}"></d3-visualization>
 			</div>
-
-			<div class="add-group">
-				<input type="text" name="group" ng-model="addGroupInput" required>
-				<button ng-click="addGroup()">
-	        Add group
-	      </button>
-			</div>
-
-			<div class="remove-group">
-				<select ng-model="removeGroupInput" ng-options="group for group in allgroups"></select>
-			  <button ng-click="removeGroup()">
-	        Remove group
-	      </button>
-			</div>
-
-			<div ng-repeat="view in views track by view.id" class="views" ng-class="{'view-container': true, 'view-container-half': view.halfSize}">
-		    <div class="flex">
-					<div class="view-header">
-			      <span>{{view.type.name}}</span>
-						<div class="html-title" ng-include="view._views.unsaved.htmlTitle"></div>
-			      <select ng-model="view.group" ng-options="group for group in allgroups"></select>
-			      <button ng-click="removeView(view.id)">
-			        Remove view
-			      </button>
-			      <input type="checkbox" ng-model="view.halfSize">
-						<div class="html-menu" ng-include="view._views.unsaved.htmlMenu"></div>
-			    </div>
-		      <div class="html-header" ng-include="view._views.unsaved.htmlHeader"></div>
-		      <d3-visualization class="view" view="{{view.id}}"></d3-visualization>
-		      <div class="html-footer" ng-include="view._views.unsaved.htmlFooter"></div>
-				</div>
-			</div>
-
-			<div id="tooltip" class="hidden">
-        <p><strong><span id="title">Important Label Heading</span></strong></p>
-				<p><span id="value">Value</span></p>
-      </div>
 		</div>
 
 		<script src="deps.js"></script>

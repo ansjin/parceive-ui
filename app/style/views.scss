@@ -7,6 +7,7 @@
 
 .view-header {
   width: 100%;
+  height: 98vh;
   background-color: $base02;
 };
 
@@ -17,9 +18,12 @@
 
 .view-container {
   width: 100%;
-  height: 100vh;
+  height: 49vh;
   vertical-align: top;
   background-color: white;
+  border: 1px;
+  border-style: solid;
+  border-color: $base02;
 }
 
 .view-container-half {
