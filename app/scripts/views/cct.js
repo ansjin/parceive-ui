@@ -747,7 +747,9 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $,
       .append('path')
       .attr('stroke', function(d) {
         if (d[1].type === 'Reference') {
-          if (d.details.reads === 0 && d.details.writes > 0) {
+          if (_.isUndefined(d.details)) {
+            return 'black';
+          } else if (d.details.reads === 0 && d.details.writes > 0) {
             return 'red';
           } else if (d.details.writes === 0 && d.details.reads > 0) {
             return 'green';
@@ -814,7 +816,7 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $,
 
     $(function() {
       $.contextMenu({
-        selector: '.node.call',
+        selector: 'd3-visualization[view=' + stateManager.getId() + '] g.node.call',
         build: function(menu) {
           var element = menu[0].__data__;
           var data = {
@@ -908,7 +910,7 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $,
           }
 
           if (!stateManager.isMarked(element.type, element.data.id) ||
-               stateManager.getMarked().length <= 2) {
+               stateManager.getMarked().length < 2) {
             delete data.items.sharedreferences;
             delete data.items.recursivesharedreferences;
           }
@@ -924,7 +926,7 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $,
 
     $(function() {
       $.contextMenu({
-        selector: '.node.callgroup',
+        selector: 'd3-visualization[view=' + stateManager.getId() + '] g.node.callgroup',
         build: function(menu) {
           var element = menu[0].__data__;
           return {
@@ -992,7 +994,7 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $,
 
     $(function() {
       $.contextMenu({
-        selector: '.node.loopexecution',
+        selector: 'd3-visualization[view=' + stateManager.getId() + '] g.node.loopexecution',
         build: function(menu) {
           var element = menu[0].__data__;
           return {
@@ -1040,7 +1042,7 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $,
 
     $(function() {
       $.contextMenu({
-        selector: '.node.loopiteration',
+        selector: 'd3-visualization[view=' + stateManager.getId() + '] g.node.loopiteration',
         build: function(menu) {
           var element = menu[0].__data__;
           return {
@@ -1088,7 +1090,7 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $,
 
     $(function() {
       $.contextMenu({
-        selector: '.reference',
+        selector: 'd3-visualization[view=' + stateManager.getId() + '] g.reference',
         build: function(menu) {
           var element = menu[0].__data__;
           return {

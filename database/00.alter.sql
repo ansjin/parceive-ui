@@ -58,10 +58,12 @@ CREATE TABLE CallGroup(
   Duration INTEGER,
   DurationMs INTEGER,
   CallerExecution INTEGER,
+  Thread INTEGER,
   FOREIGN KEY(Function) REFERENCES Function(Id),
   FOREIGN KEY(Caller) REFERENCES Caller(Id),
   FOREIGN KEY(Parent) REFERENCES CallGroup(Id),
-  FOREIGN KEY(CallerExecution) REFERENCES LoopExecution(Id)
+  FOREIGN KEY(CallerExecution) REFERENCES LoopExecution(Id),
+  FOREIGN KEY(Thread) REFERENCES Thread(Id)
 );
 
 CREATE TABLE CallTree
