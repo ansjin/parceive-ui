@@ -54,7 +54,8 @@ function render(d3, pd, ld) {
       threadCalls: [],
       thresholdFactor: 1,
       runtimeThreshold: 0,
-      threadCaller: []
+      threadCaller: [],
+      viewHeight: 0
     };
 
     // get thread data for current database
@@ -227,6 +228,7 @@ function render(d3, pd, ld) {
           return d.level * _thread.rectHeight;
         });
 
+      var count = 0, levels = 0;
       var rects = svg.selectAll('rect.rect')
         .data(nodes)
         .enter()
@@ -255,6 +257,11 @@ function render(d3, pd, ld) {
           return _thread.rectHeight;
         })
         .attr('y', function(d) {
+          // count no. of levels added
+          if (levels === 0 || d.level > levels) {
+            levels = d.level; count++;
+          } 
+
           return d.level * _thread.rectHeight;
         })
         .attr('fill-opacity', 0.6)
@@ -310,6 +317,22 @@ function render(d3, pd, ld) {
           return (d.level * _thread.rectHeight) + _thread.textPadY;
         });
 
+      _thread.viewHeight += count;
+      updateViewHeight();
+    }
+
+    function newY() {
+      return _thread.viewHeight * _thread.rectHeight;
+    }
+
+    function updateViewHeight() {
+      var parent = document.getElementById(_thread.profileId).parentNode;
+      var parentx3 = parent.parentNode.parentNode;
+      var y = newY();
+      
+      svg.style('height', y + 'px');
+      parentx3.style.height = 'inherit';
+      parent.style.height = y + 'px'; 
     }
 
     function compareThread() {
