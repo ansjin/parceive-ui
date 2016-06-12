@@ -69,17 +69,13 @@ function focusCb(stateManager, data) {
 function markedCb(stateManager, data) {
   if (data.length < 1) { return; }
   
-  var svg = stateManager.getData().unsaved.svg;
-  var pv = stateManager.getData().unsaved.pv;
-  var viewData = stateManager.getData().unsaved.viewData;
+  var addThread = stateManager.getData().unsaved.addThread;
   
   for (var i = 0, len = data.length; i < len; i++) {
     var obj = data[i];
     var id = obj.id;
     var type = obj.type;
-    var isMarked = obj.isMarked;
-    var isNeighbour = obj.neighbour;
-    var _svg = obj.data || viewData;
+    var isNeighbour = obj.neighbour || false;
 
     if (isNeighbour) {
       continue;
@@ -87,27 +83,8 @@ function markedCb(stateManager, data) {
 
     // check if marked type is Thread
     if (type === 'Thread') {
-      console.log(pv.findDeepThread(_svg, id));
+      addThread(obj.id);
       continue;
-    }
-
-    var d = pv.findDeep(_svg.viewData, id);
-
-    // item not loaded in the profiler viewData
-    // probably a child node with duration too small
-    // or is in viewData but not on svg
-    if (!d.hasOwnProperty('id') && pv.isVisible(d, type, _svg, svg)) { 
-      continue; 
-    }
-
-    if (_svg.selectedNodes.indexOf(id) < 0) {
-      // select node
-      _svg.selectedNodes.push(id);
-      pv.setSelectedNodes(_svg, svg);
-    } else {
-      // deselect node
-      _svg.selectedNodes.splice(_svg.selectedNodes.indexOf(id), 1);
-      pv.resetSelectedNode(id, _svg, svg);
     }
   }
 }
@@ -311,6 +288,7 @@ function render(d3, po, pd, pv, ps, ld) {
           stateManager.getData().unsaved.pv = pv;
           stateManager.getData().unsaved.po = po;
           stateManager.getData().unsaved.initDisplay = initDisplay;
+          stateManager.getData().unsaved.addThread = addThread;
         });
 
         resolve(true);
@@ -337,6 +315,14 @@ function render(d3, po, pd, pv, ps, ld) {
       pv.updateDurationSlider(_svg);
       po.setRuntimeThreshold(_svg);
       initDisplay();
+    }
+
+    function addThread(id) {
+      if (_svg.activeThreads.indexOf(id) < 0) {
+        _t.activeThreads.push(id);
+        _p.activeThreads.push(id);
+        loadData().then(function() { initDisplay(); });
+      }
     }
 
     // set input elements (buttons, sliders) to carry out specific

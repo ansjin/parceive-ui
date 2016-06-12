@@ -18,8 +18,6 @@ function focusCb(stateManager, data) {
 // handle mark event
 function markedCb(stateManager, data) {
   if (data.length < 1) { return; }
-
-  console.log(data);
 }
 
 // handle hover event
@@ -338,11 +336,11 @@ function render(d3, pd, ld) {
       }
 
       // gather threads to compare
-      console.log('comparing ' + _thread.selected);
+      console.log('add thread ' + _thread.selected);
       var marker = [];
       for (var i = 0, len = _thread.selected.length; i < len; i++) {
         if (_thread.selected[i] === 0) {
-          console.log('cannot compare with thread 0');
+          console.log('cannot add thread 0');
           continue;
         }
 
