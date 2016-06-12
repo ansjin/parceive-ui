@@ -154,7 +154,6 @@ function pObject(d3, pd, grad, ld) {
   // append the them to the traceData
   function loadChildren(obj, id, level, isTracing, runtimeThreshold, threadID) {
     return new Promise(function(resolve, reject) {
-      console.log(threadID)
       var func = isTracing
         ? pd.getCall(id)
         : pd.getCallGroup(id);

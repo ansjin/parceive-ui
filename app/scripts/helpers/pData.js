@@ -117,8 +117,6 @@ function pData(LoaderService) {
       return func;
     })
     .then(function(data) { 
-      console.log(data)
-
       var threadData = [];
       _.forEach(data, function(d) {
         if (d[type].threadID === threadID) {

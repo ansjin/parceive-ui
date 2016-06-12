@@ -191,6 +191,16 @@ function render(d3, po, pd, pv, ps) {
     // set main call properties
     po.setMainData(_t, _p).then(function() {
       // initialize view data
+      var func = isTracing ? po.getThreadData(0, true) : po.getThreadData(0, false);
+      return func;
+    })
+    .then(function(data) {
+      if (isTracing) {
+        _t.currentTop = data.traceData;
+      } else {
+        _p.currentTop = data.profileData;
+      }
+
       return loadData();
     })
     .then(function(data) {
@@ -267,11 +277,17 @@ function render(d3, po, pd, pv, ps) {
       return new Promise(function(resolve, reject){
         svg.selectAll('*').remove();
         _svg.viewHeight = 0;
-
         var promises =[];
-        var sort = isTracing ? 'traceData.threadID' : 'profileData.threadID';
-        _svg.threads = _.sortByOrder(_svg.threads, [sort], [true]);
-        _.forEach(_svg.threads, function(d, i) {
+
+        // some stuff to be removed later...
+        var svgThreads = [];
+        var threads = _svg.activeThreads.sort();
+        for (var i = 0, len = threads.length; i < len; i++) {
+          var obj = _.find(_svg.threads, {'threadName': 'Thread ' + threads[i]});
+          svgThreads.push(obj);
+        }
+
+        _.forEach(svgThreads, function(d, i) {
           if (isTracing) {
             promises.push(ps.doTrace(svg, _svg, d, i));
           } else {
