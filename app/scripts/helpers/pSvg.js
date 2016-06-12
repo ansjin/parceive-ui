@@ -55,7 +55,7 @@ function pSvg(d3, size, pv) {
       .data([{}])
       .enter()
       .append('rect')
-      .attr('class', 'rect.header_' + d.id)
+      .attr('class', 'rect_header_' + d.id)
       .attr('stroke', 'white')
       .attr('stroke-width', 2)
       .attr('fill', 'grey')
@@ -68,7 +68,7 @@ function pSvg(d3, size, pv) {
       .data([{}])
       .enter()
       .append('text')
-      .attr('class', 'header')
+      .attr('class', 'rect_header')
       .attr('font-family', 'Arial')
       .attr('font-size', '14px')
       .attr('fill', 'white')
@@ -83,6 +83,24 @@ function pSvg(d3, size, pv) {
         }
         return d.threadName + created; 
       });
+
+    if (thread > 0) {
+      selection
+        .data([{id: thread}])
+        .enter()
+        .append('text')
+        .attr('class', 'rect_header_btn')
+        .attr('font-family', 'Arial')
+        .attr('font-size', '14px')
+        .attr('fill', 'white')
+        .attr('cursor', 'pointer')
+        .attr('x', function(i) {
+          _svg.threadRemoveX = _svg.threadRemoveX || pv.getSvgWidth(_svg) - 100;
+          return _svg.threadRemoveX;
+        })
+        .attr('y', y + _svg.textPadY)
+        .text('[Remove]');
+    }
 
     _svg.viewHeight++;
   }
@@ -152,6 +170,7 @@ function pSvg(d3, size, pv) {
       .attr('stroke', 'white')
       .attr('stroke-opacity', 1)
       .attr('stroke-width', 2)
+      .attr('cursor', 'pointer')
       .attr('height', _svg.rectHeight)
       .attr('id', function(d) {
         return 'rect_' + d.id;

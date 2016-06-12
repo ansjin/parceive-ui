@@ -275,6 +275,12 @@ function render(d3, po, pd, pv, ps, ld) {
 
         RSVP.all(promises).then(function(data) {
           // set event handlers for svg elements
+          var elementType = _svg.isTracing ? 'Call' : 'CallGroup';
+
+          svg.selectAll('text.rect_header_btn')
+            .on('click', function(d) {
+              removeThread(d.id);
+            });
 
 
           // update duration slider and set selected nodes
@@ -321,6 +327,14 @@ function render(d3, po, pd, pv, ps, ld) {
       if (_svg.activeThreads.indexOf(id) < 0) {
         _t.activeThreads.push(id);
         _p.activeThreads.push(id);
+        loadData().then(function() { initDisplay(); });
+      }
+    }
+
+    function removeThread(id) {
+      if (_svg.activeThreads.indexOf(id) > -1) {
+        _t.activeThreads.splice(_t.activeThreads.indexOf(id), 1);
+        _p.activeThreads.splice(_p.activeThreads.indexOf(id), 1);
         loadData().then(function() { initDisplay(); });
       }
     }
