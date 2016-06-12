@@ -172,11 +172,12 @@ render.$inject = [
   'pObject',
   'pData',
   'pView',
-  'pSvg'
+  'pSvg',
+  'LoaderService'
 ];
 
 // render the view
-function render(d3, po, pd, pv, ps) {
+function render(d3, po, pd, pv, ps, ld) {
   return function(svg, stateManager) {
 
     // hold data for tracing and profiling separately

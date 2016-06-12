@@ -61,7 +61,6 @@ function render(d3, pd, ld) {
     // get thread data for current database
     pd.getThreads()
     .then(function(data) {
-      console.log(data);
       _thread.rawThreads = data;
 
       var promises = [];
@@ -75,11 +74,9 @@ function render(d3, pd, ld) {
     .then(function(data) {
       data.unshift({id: null});
       _thread.threadCaller = data;
-      console.log(data);
       return pd.getThreadsFirstCalls();
     })
     .then(function(data) {
-      console.log(data);
       _thread.threadCalls = data;
 
       for (var i = 0, len = _thread.rawThreads.length; i < len; i++) {
@@ -100,7 +97,7 @@ function render(d3, pd, ld) {
         // add click handler to trigger adding thread to performance view
         document.getElementById('compare-thread')
         .addEventListener('click', function() {
-          compareThread();
+          viewThread();
         });
 
         // add click handler to re-render view on window resize
@@ -335,7 +332,7 @@ function render(d3, pd, ld) {
       parent.style.height = y + 'px'; 
     }
 
-    function compareThread() {
+    function viewThread() {
       if (_thread.selected.length < 1) {
         return;
       }

@@ -99,10 +99,43 @@ function pObject(d3, pd, grad, ld) {
           return d.duration;
         });
         
+        return getThreadCaller(_t, _p);
+      })
+      .then(function(data) {
         resolve(true);
       });
     });
   }
+
+  function getThreadCaller(_t, _p) {
+      var threads;
+      var promise = pd.getThreads()
+      .then(function(data) {
+        threads = data;
+        var promises = [];
+        _.forEach(data, function(d, i) {
+          if (d.id !== 0) {
+            promises.push(ld.getInstruction(d.createInstructionID).then(function(f) {return f.getThread()}));
+          }
+        });
+        return RSVP.all(promises);
+      })
+      .then(function(data) {
+        data.unshift({id: null});
+        var caller = [];
+        _.forEach(data, function(d, i) {
+          var obj = {
+            id: threads[i].id,
+            createdBy: data[i].id
+          };
+          caller.push(obj);
+        });
+        _t.threadCaller = caller;
+        _p.threadCaller = caller;
+      });
+
+      return promise;
+    }
 
   // set the value for the least duration allowed to be loaded from db.
   // this is useful for knowing when to stop loading children of a call. if the

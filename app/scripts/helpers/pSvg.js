@@ -48,6 +48,8 @@ function pSvg(d3, size, pv) {
   function drawHeader(svg, _svg, d) {
     var selection = svg.selectAll('rect.header_' + d.id);
     var y = newY(_svg);
+    var thread = Number(d.threadName.substr(d.threadName.length - 1));
+    var createdBy = _.result(_.find(_svg.threadCaller, 'id', thread), 'createdBy');
 
     selection
       .data([{}])
@@ -72,7 +74,15 @@ function pSvg(d3, size, pv) {
       .attr('fill', 'white')
       .attr('x', 5)
       .attr('y', y + _svg.textPadY)
-      .text(d.threadName);
+      .text(function(i) { 
+        var created;
+        if (createdBy === null) {
+          created = ' (<= Null)';
+        } else {
+          created = ' (<= Thread ' + createdBy + ')'
+        }
+        return d.threadName + created; 
+      });
 
     _svg.viewHeight++;
   }
