@@ -284,10 +284,20 @@ function render(d3, po, pd, pv, ps, ld) {
             })
             .on('mouseleave', function(d) {
               pv.callHighlightRemove(d, svg);
+            })
+            .on('click', function(d) {
+              pv.clickType(_svg).then(function(data) {
+                if (data === 'single') {
+                  handleSelection(d.id);
+                } else if (data === 'double') {
+                  handleZooming();
+                }
+              });
             });
 
 
           // update duration slider and set selected nodes
+          pv.setSelectedNodes(_svg, svg);
 
 
           // save data objects to stateManager
@@ -305,19 +315,19 @@ function render(d3, po, pd, pv, ps, ld) {
       });
     }
 
-    function focusItem() {
-      // set runtimethreshold
-      // set current top
-      loadData().then(function() {
-        initDisplay();
-      });
+    function handleSelection(id) {
+      if (_svg.selectedNodes.indexOf(id) < 0) {
+        // select node
+        _svg.selectedNodes.push(id);
+        pv.setSelectedNodes(_svg, svg);
+      } else {
+        // deselect node
+        _svg.selectedNodes.splice(_svg.selectedNodes.indexOf(id), 1);
+        pv.resetSelectedNode(id, _svg, svg);
+      }
     }
 
-    function selectItem() {
-
-    }
-
-    function hoverItem() {
+    function handleZooming() {
 
     }
 

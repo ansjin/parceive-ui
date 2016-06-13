@@ -58,7 +58,7 @@ function pSvg(d3, size, pv) {
       .attr('class', 'rect_header_' + d.id)
       .attr('stroke', 'white')
       .attr('stroke-width', 2)
-      .attr('fill', 'grey')
+      .attr('fill', 'black')
       .attr('x', 0)
       .attr('width', '100%')
       .attr('height', _svg.rectHeight)
