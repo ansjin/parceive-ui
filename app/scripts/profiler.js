@@ -401,7 +401,14 @@ function render(d3, po, pd, pv, ps, ld) {
     }
 
     function resetZoom() {
-      loadData().then(function() { initDisplay(); });
+      var func = isTracing
+        ? pd.getCallObj(_svg.mainCallId, null, 1, _svg.functions)
+        : pd.getCallGroupObj(_svg.mainCallGroupId, null, 1, _svg.functions);
+      var promise = func
+      .then(function(data) {
+        _svg.currentTop = data;
+        return loadData().then(function() { initDisplay(); });
+      });
     }
 
     // set input elements (buttons, sliders) to carry out specific
