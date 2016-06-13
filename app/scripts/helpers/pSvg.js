@@ -140,11 +140,6 @@ function pSvg(d3, size, pv) {
     // set current top item and generate node partitions
     var threadTop = d.threadTop
     var currentTop = _svg.currentTop;
-    var viewData = _svg.isTracing ? d.traceData : d.profileData;
-    var nodeData = threadTop.threadID === currentTop.threadID
-        ? pv.findDeep(viewData, currentTop.id)
-        : viewData;
-    var nodes = _svg.partition.nodes(nodeData);
 
     // define scale for width values
     var widthScale = d3.scale.linear()
@@ -155,6 +150,15 @@ function pSvg(d3, size, pv) {
     var xScale = d3.scale.linear()
       .domain([currentTop.start, currentTop.end])
       .range([0, _svg.svgWidth]);
+
+    var nodeData, viewData = _svg.isTracing ? d.traceData : d.profileData;
+    if (threadTop.threadID === currentTop.threadID) {
+      nodeData = pv.findDeep(viewData, currentTop.id);
+    } else {
+      nodeData = viewData;
+      // adjust the xscale and widthscale
+    }
+    var nodes = _svg.partition.nodes(nodeData);
 
     var count = 0, levels = 0;
     var rects = svg.selectAll(rectClass)

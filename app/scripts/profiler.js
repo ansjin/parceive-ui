@@ -178,6 +178,13 @@ function render(d3, po, pd, pv, ps, ld) {
       _t.currentTop = data[0].traceData;
       _p.currentTop = data[1].profileData;
 
+      return ld.getFunctions();
+    })
+    .then(function(data) {
+       _.forEach(data, function(d) {
+        _t.functions.push(d.id);
+        _p.functions.push(d.id);
+      });
       return loadData();
     })
     .then(function(data) {
@@ -197,6 +204,13 @@ function render(d3, po, pd, pv, ps, ld) {
       .then(function(data) {
         if (_t.currentTop === null) {
           _t.currentTop = data.traceData;
+        }
+
+        if (_t['threadData_' + id] === undefined) {
+          _t['threadData_' + id] = {
+            threadTop: data.traceData,
+            zoomHistory: []
+          };
         }
 
         var i, len = _t.threads.length;
@@ -219,6 +233,13 @@ function render(d3, po, pd, pv, ps, ld) {
       .then(function(data) {
         if (_p.currentTop === null) {
           _p.currentTop = data.profileData;
+        }
+
+        if (_p['threadData_' + id] === undefined) {
+          _p['threadData_' + id] = {
+            threadTop: data.profileData,
+            zoomHistory: []
+          };
         }
 
         var i, len = _p.threads.length;
@@ -271,8 +292,6 @@ function render(d3, po, pd, pv, ps, ld) {
 
         RSVP.all(promises).then(function(data) {
           // set event handlers for svg elements
-          var elementType = _svg.isTracing ? 'Call' : 'CallGroup';
-
           svg.selectAll('text.rect_header_btn')
             .on('click', function(d) {
               removeThread(d.id);
@@ -290,7 +309,7 @@ function render(d3, po, pd, pv, ps, ld) {
                 if (data === 'single') {
                   handleSelection(d.id);
                 } else if (data === 'double') {
-                  handleZooming();
+                  handleZooming(d);
                 }
               });
             });
@@ -327,8 +346,29 @@ function render(d3, po, pd, pv, ps, ld) {
       }
     }
 
-    function handleZooming() {
+    function handleZooming(d) {
+      var history = _svg['threadData_' + d.threadID].zoomHistory;
+      var zoomOut = false;
+      if (d.id === _svg.currentTop.id && _svg.mainCallId === d.id && isTracing) return;
+      if (d.id === _svg.currentTop.id && _svg.mainCallGroupId === d.id && !isTracing) return;
+      if (d.id === _svg.currentTop.id && history.length > 0) {
+        // zoom out
+        d = history.pop();
+        zoomOut = true;
+      }
 
+      if (!zoomOut) {
+        _svg['threadData_' + d.threadID].zoomHistory.push(_svg.currentTop);
+      }
+
+      var func = isTracing
+        ? pd.getCallObj(d.id, d.ancestor, d.level, _svg.functions)
+        : pd.getCallGroupObj(d.id, d.ancestor, d.level, _svg.functions);
+      var promise = func
+      .then(function(data) {
+        _svg.currentTop = data;
+        return loadData().then(function() { initDisplay(); });
+      });
     }
 
     function updateDuration() {
@@ -356,8 +396,12 @@ function render(d3, po, pd, pv, ps, ld) {
       if (_svg.activeThreads.indexOf(id) > -1) {
         _t.activeThreads.splice(_t.activeThreads.indexOf(id), 1);
         _p.activeThreads.splice(_p.activeThreads.indexOf(id), 1);
-        loadData().then(function() { initDisplay(); });
+        resetZoom();
       }
+    }
+
+    function resetZoom() {
+      loadData().then(function() { initDisplay(); });
     }
 
     // set input elements (buttons, sliders) to carry out specific
