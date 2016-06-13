@@ -40,7 +40,7 @@ function pObject(d3, pd, grad, ld) {
       gradient: null, // holds gradient function
       clickCount: 0, // click counter for determining double or single click
       viewHeight: 0,
-      activeThreads: [0, 1, 3],
+      activeThreads: [0],
       functions: [],
       threads: [],
       currentTop: null, // call that is at the top level of the view
