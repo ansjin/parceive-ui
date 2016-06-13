@@ -299,7 +299,7 @@ function render(d3, po, pd, pv, ps, ld) {
               removeThread(d.id);
             });
 
-          svg.selectAll('*')
+          svg
             .on('mousemove', function() {
               ps.doThreadLine(svg, _svg, event.clientX);
             });
@@ -381,6 +381,11 @@ function render(d3, po, pd, pv, ps, ld) {
     function updateDuration() {
       pv.updateDurationSlider(_svg);
       po.setRuntimeThreshold(_svg);
+      initDisplay();
+    }
+
+    function showHideLoops() {
+      pv.toggleLoop(_svg);
       initDisplay();
     }
 
