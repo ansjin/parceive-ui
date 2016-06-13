@@ -8,7 +8,8 @@ pSvg.$inject = ['d3', 'SizeService', 'pView'];
 function pSvg(d3, size, pv) {
   var factory = {
     doTrace: doTrace,
-    doProfile: doProfile
+    doProfile: doProfile,
+    doThreadLine: doThreadLine
   };
 
   return factory;
@@ -30,6 +31,29 @@ function pSvg(d3, size, pv) {
       drawHeader(svg, _svg, d);
       drawCalls(svg, _svg, d, index);
       updateViewHeight(svg, _svg);
+
+      resolve(true);
+    });
+  }
+
+  function doThreadLine(svg, _svg, x) {
+    return new Promise(function(resolve, reject) {
+      svg.selectAll('line.threadLine').remove();
+      var selection = svg.selectAll('line.threadLine');
+      var y2 = newY(_svg);
+
+      selection
+        .data([{}])
+        .enter()
+        .append('line')
+        .attr('class', 'threadLine')
+        .attr('stroke', 'black')
+        .attr('stroke-width', 1)
+        .attr('fill-opacity', 0.4)
+        .attr('x1', x)
+        .attr('x2', x)
+        .attr('y1', 0)
+        .attr('y2', y2);
 
       resolve(true);
     });

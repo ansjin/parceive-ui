@@ -290,11 +290,18 @@ function render(d3, po, pd, pv, ps, ld) {
           }
         });
 
+        promises.push(ps.doThreadLine(svg, _svg, 20));
+
         RSVP.all(promises).then(function(data) {
           // set event handlers for svg elements
           svg.selectAll('text.rect_header_btn')
             .on('click', function(d) {
               removeThread(d.id);
+            });
+
+          svg.selectAll('*')
+            .on('mousemove', function() {
+              ps.doThreadLine(svg, _svg, event.clientX);
             });
 
           svg.selectAll("rect[class^='rect.call_thread_']")
