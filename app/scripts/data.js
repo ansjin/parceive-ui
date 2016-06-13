@@ -764,7 +764,7 @@ var CallGroup = {
   singular: 'callgroup',
   plural: 'callgroups',
   properties: ['function', 'caller', 'count', 'parent', 'end', 'start',
-                'duration', 'callerexecution'],
+                'duration', 'callerexecution', 'thread'],
 
   relationships: {
     'caller': {
@@ -793,6 +793,9 @@ var CallGroup = {
     },
     'callerexecution': {
       type: 'LoopExecution'
+    },
+    'thread': {
+      type: 'Thread'
     }
   },
 
