@@ -169,15 +169,14 @@ function render(d3, po, pd, pv, ps, ld) {
     // set main call properties
     po.setMainData(_t, _p).then(function() {
       // initialize view data
-      var func = isTracing ? po.getThreadData(0, true) : po.getThreadData(0, false);
-      return func;
+      var promises = []
+      promises.push(po.getThreadData(0, true));
+      promises.push(po.getThreadData(0, false));
+      return RSVP.all(promises);
     })
     .then(function(data) {
-      if (isTracing) {
-        _t.currentTop = data.traceData;
-      } else {
-        _p.currentTop = data.profileData;
-      }
+      _t.currentTop = data[0].traceData;
+      _p.currentTop = data[1].profileData;
 
       return loadData();
     })
@@ -241,11 +240,8 @@ function render(d3, po, pd, pv, ps, ld) {
       var promises =[];
 
       _.forEach(_t.activeThreads, function(d) {
-        if (isTracing) {
-          promises.push(getCallThread(d));
-        } else {
-          promises.push(getCallGroup(d));
-        }
+        promises.push(getCallThread(d));
+        promises.push(getCallGroup(d));
       });
 
       return RSVP.all(promises);
@@ -280,6 +276,14 @@ function render(d3, po, pd, pv, ps, ld) {
           svg.selectAll('text.rect_header_btn')
             .on('click', function(d) {
               removeThread(d.id);
+            });
+
+          svg.selectAll("rect[class^='rect.call_thread_']")
+            .on('mouseenter', function(d) {
+              pv.callHighlight(d, svg);
+            })
+            .on('mouseleave', function(d) {
+              pv.callHighlightRemove(d, svg);
             });
 
 
@@ -320,6 +324,13 @@ function render(d3, po, pd, pv, ps, ld) {
     function updateDuration() {
       pv.updateDurationSlider(_svg);
       po.setRuntimeThreshold(_svg);
+      initDisplay();
+    }
+
+    function toggleViewMode() {
+      _svg = _svg.isTracing ? _p : _t;
+      isTracing = _svg.isTracing;
+      pv.toggleViewMode(_svg);
       initDisplay();
     }
 

@@ -194,16 +194,11 @@ function pView(d3, size) {
   function callHighlight(d, svg) {
     callHighlightRemove(d, svg);
 
-    svg.select('#rect_' + d.id).attr('fill-opacity', 0.5);
-    svg.select('#text_' + d.id).attr('fill-opacity', 0.5);    
+    svg.select('#rect_' + d.id).attr('fill-opacity', 0.5);    
   }
 
   function callHighlightRemove(d, svg) {
-    svg.selectAll('rect.rect').each(function(d, i) {
-      d3.select(this).attr('fill-opacity', 1);
-    });
-
-    svg.selectAll('text.rect').each(function(d, i) {
+    svg.selectAll("rect[class^='rect.call_thread_']").each(function(d, i) {
       d3.select(this).attr('fill-opacity', 1);
     });
   }
