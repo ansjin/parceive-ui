@@ -70,7 +70,7 @@ function pSvg(d3, size, pv) {
   }
 
   function drawHeader(svg, _svg, d) {
-    var selection = svg.selectAll('rect.header_' + d.id);
+    var selection = svg.selectAll('rect_header');
     var y = newY(_svg);
     var thread = Number(d.threadName.substr(d.threadName.length - 1));
     var createdBy = _.result(_.find(_svg.threadCaller, 'id', thread), 'createdBy');
@@ -79,7 +79,7 @@ function pSvg(d3, size, pv) {
       .data([{}])
       .enter()
       .append('rect')
-      .attr('class', 'rect_header_' + d.id)
+      .attr('class', 'rect_header')
       .attr('stroke', 'white')
       .attr('stroke-width', 2)
       .attr('fill', 'black')
@@ -133,17 +133,22 @@ function pSvg(d3, size, pv) {
     return _svg.viewHeight * _svg.rectHeight;
   }
 
-  function getYValue(_svg, d, index, isLoop) {
-    var multiplier = d.level - _svg.currentTop.level;
-    if (_svg.showLoop && _svg.isTracing) {
-      multiplier += (d.loopAdjust - _svg.currentTop.loopAdjust);
+  function getYValue(_svg, d, isLoop) {
+    var minus = _svg.currentTop.level;
+    if (d.threadID !== _svg.currentTop.threadID) {
+      minus = 1;
     }
+    var multiplier = d.level - minus;
+    console.log(multiplier)
+    // if (_svg.showLoop && _svg.isTracing) {
+    //   multiplier += (d.loopAdjust - _svg.currentTop.loopAdjust);
+    // }
     var value = _svg.rectHeight * multiplier;
-    if (isLoop) {
-      value = value + 44;
-      // console.log(d, _svg.viewLevels);
-      // value = value + (_svg.viewLevels[d.level + 1] * _svg.rectHeight);
-    }
+    // if (isLoop) {
+    //   value = value + 44;
+    //   // console.log(d, _svg.viewLevels);
+    //   // value = value + (_svg.viewLevels[d.level + 1] * _svg.rectHeight);
+    // }
     return value;
   }
 
@@ -156,6 +161,7 @@ function pSvg(d3, size, pv) {
   }
 
   function drawCalls(svg, _svg, d, index) {
+    console.log(_svg)
     // set selection class
     var threadID = _svg.isTracing ? d.traceData.threadID : d.profileData.threadID;
     var rectClass = 'rect.call_thread_' + threadID;
@@ -189,8 +195,7 @@ function pSvg(d3, size, pv) {
       .data(nodes.filter(function(d) {
         // only show calls with duration >= runtimethreshold and
         // duration <= duration of current top level object
-        return d.duration >= _svg.runtimeThreshold
-        && d.duration <= currentTop.duration;
+        return d.duration >= _svg.runtimeThreshold; // && d.duration <= _svg.currentTop.duration
       }))
       .enter()
       .append('rect')
@@ -218,7 +223,7 @@ function pSvg(d3, size, pv) {
           levels = d.level; count++;
         } 
 
-        return getYValue(_svg, d, index) + newY(_svg);
+        return getYValue(_svg, d) + newY(_svg);
       });
 
     
@@ -244,8 +249,7 @@ function pSvg(d3, size, pv) {
         var textPad = 20; // left and right padding
         var textWidth = size.svgTextSize(d.name, 14).width + textPad;
         return d.duration >= _svg.runtimeThreshold 
-        && rectWidth > textWidth
-        && d.duration <= currentTop.duration;
+        && rectWidth > textWidth; //&& d.duration <= currentTop.duration;
       }))
       .enter()
       .append('text')
@@ -255,11 +259,14 @@ function pSvg(d3, size, pv) {
       .attr('fill', 'white')
       .text(function(d) { return d.name; })
       .attr('x', function(d) {
+        if (d.start < _svg.currentTop.start) {
+          d = _svg.currentTop;
+        }
         var sliced = Number(getXValue(_svg, d, xScale).slice(0, -1));
         return Number(sliced + _svg.textPadX) + '%';
       })
       .attr('y', function(d) {
-        return getYValue(_svg, d, index) + _svg.textPadY + newY(_svg);
+        return getYValue(_svg, d) + _svg.textPadY + newY(_svg);
       });
 
     _svg.viewHeight += count;

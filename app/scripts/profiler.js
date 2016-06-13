@@ -290,7 +290,7 @@ function render(d3, po, pd, pv, ps, ld) {
           }
         });
 
-        promises.push(ps.doThreadLine(svg, _svg, 20));
+        promises.push(ps.doThreadLine(svg, _svg, 1));
 
         RSVP.all(promises).then(function(data) {
           // set event handlers for svg elements
