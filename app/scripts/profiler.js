@@ -61,7 +61,7 @@ function hoverCb(stateManager, data) {
       continue;
     }
 
-    pv.callHighlight({'id': id}, svg);
+    pv.callHighlight({id: id}, svg);
   }
 }
 
@@ -391,6 +391,81 @@ function render(d3, po, pd, pv, ps, ld) {
         });
       }, 1000);
     }
+
+
+    // setup the context menu
+    $(function() {
+      $.contextMenu({
+        selector: "rect[class^='rect.call_thread_']",
+        build: function(menu, e) {
+          var elementType = isTracing ? 'Call' : 'CallGroup';
+          var d = menu[0].__data__;
+          var isSelected = _svg.selectedNodes.indexOf(d.id) > -1;
+          var menuWidth = 200;
+          var svgWidthPixels = pv.getSvgWidth(_svg);
+
+          var contextMenu = {
+            position: function(opt) {
+              var x = e.clientX;
+              var y = e.clientY;
+
+              // show tooltip to the left of the mouse if there is not
+              // enough space for it to appear on the right
+              if (menuWidth > svgWidthPixels - x) {
+                x = x - menuWidth;
+              }
+
+              opt.$menu.css({
+                top: y + 'px' ,
+                left: x + 'px'
+              });
+            },
+
+            items: {
+              // mark or unmark element
+              'mark_unmark': {
+                name: isSelected ? 'UnMark' : 'Mark',
+                callback: function() {
+                  handleSelection(d.id);
+                  stateManager.mark([{type: elementType, id: d.id, noShow:true}]);
+                }
+              }
+            }
+          };
+
+          var zoomInOut = {
+            // zoom in or out of element
+            name: _svg.currentTop.id === d.id ? 'Zoom out' : 'Zoom in',
+            callback: function() {
+              handleZooming(d);
+            }
+          };
+
+          var zoomToTop = {
+            // reset zoom to 'main' call
+            name: 'Reset Zoom',
+            callback: function() {
+              resetZoom();
+            }
+          };
+
+          // add reset zoom if 'main' is not currently the
+          // top level element
+          if (_svg.currentTop.id !== _svg.mainCallId
+            && _svg.currentTop.id !== _svg.mainCallGroupId) {
+            contextMenu.items.reset_zoom = zoomToTop;
+          }
+
+          // add zoom in or out if the current element is not
+          // top level (ie. main)
+          if (d.id !== _svg.mainCallId && d.id !== _svg.mainCallGroupId) {
+            contextMenu.items.zoom_in_out = zoomInOut;
+          }
+
+          return contextMenu;
+        }
+      })
+    });
 
   };
 }
