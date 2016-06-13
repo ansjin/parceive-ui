@@ -71,6 +71,7 @@ function markedCb(stateManager, data) {
   
   var svg = stateManager.getData().unsaved.svg;
   var pv = stateManager.getData().unsaved.pv;
+  var viewData = stateManager.getData().unsaved.viewData;
   
   for (var i = 0, len = data.length; i < len; i++) {
     var obj = data[i];
@@ -78,6 +79,7 @@ function markedCb(stateManager, data) {
     var type = obj.type;
     var isMarked = obj.isMarked;
     var isNeighbour = obj.neighbour;
+    var _svg = obj.data || viewData;
 
     if (isNeighbour) {
       continue;
@@ -85,10 +87,10 @@ function markedCb(stateManager, data) {
 
     // check if marked type is Thread
     if (type === 'Thread') {
+      console.log(pv.findDeepThread(_svg, id));
       continue;
     }
 
-    var _svg = obj.data || {};
     var d = pv.findDeep(_svg.viewData, id);
 
     // item not loaded in the profiler viewData
@@ -141,19 +143,19 @@ function hoverCb(stateManager, data) {
       // hover for loops
       if (pv.isHovered(d, 'Loop', _svg, svg)) {
         pv.loopHighlightRemove(d, svg);
-        pv.removeTooltip(d);
+        pv.removeTooltip();
       } else {
         pv.loopHighlight(d, svg);
-        pv.loopTooltip(d, _svg);
+        pv.loopTooltip(d, _svg, svg);
       }
     } else {
       // hover for calls and callgroups
       if (pv.isHovered(d, 'Call', _svg, svg)) {
         pv.callHighlightRemove(d, svg);
-        pv.removeTooltip(d);
+        pv.removeTooltip();
       } else {
         pv.callHighlight(d, svg);
-        pv.callTooltip(d, _svg);
+        pv.callTooltip(d, _svg, svg);
       }
     }
   }
@@ -209,10 +211,15 @@ function render(d3, po, pd, pv, ps) {
     .then(function() {
       setEventHandlers();
       console.log('init', _svg);
-    });
+    }, function(err) { console.log(err); });
 
     function initDisplay() {
       return new Promise(function(resolve, reject) {
+        
+        // if (_svg.isTracing) {
+        //   _svg.viewData = pv.findDeepThread(_svg.viewData, 0);
+        // }
+        
         // partition the viewData so it can be used by D3 partition layout
         // and set the scale function for x and width
         pv.setNodes(_svg, svg.selectAll('*'))
@@ -291,6 +298,15 @@ function render(d3, po, pd, pv, ps) {
         .then(function() {
           pv.updateDurationSlider(_svg);
           pv.setSelectedNodes(_svg, svg);
+
+          // save data objects to stateManager so external functions like hoverCb, 
+          // markCb can access the same object (its data and functions). 
+          stateManager.getData().unsaved.svg = svg;
+          stateManager.getData().unsaved.pv = pv;
+          stateManager.getData().unsaved.po = po;
+          stateManager.getData().unsaved.initDisplay = initDisplay;
+          stateManager.getData().unsaved.viewData = _svg.viewData;
+
           resolve(true);
         });
       });
@@ -364,13 +380,6 @@ function render(d3, po, pd, pv, ps) {
        var elementType = _svg.isTracing ? 'Call' : 'CallGroup';
        stateManager.spot([{type: elementType, id: d.id, data:_svg.selectedNodes}]);
     }
-
-    // save data objects to stateManager so external functions like hoverCb, 
-    // markCb can access the same object (its data and functions). 
-    stateManager.getData().unsaved.svg = svg;
-    stateManager.getData().unsaved.pv = pv;
-    stateManager.getData().unsaved.po = po;
-    stateManager.getData().unsaved.initDisplay = initDisplay;
 
     // setup the context menu
     $(function() {
