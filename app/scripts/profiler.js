@@ -210,7 +210,7 @@ function render(d3, po, pd, pv, ps) {
     })
     .then(function() {
       setEventHandlers();
-      console.log('init', _svg);
+      // console.log('init', _svg);
     }, function(err) { console.log(err); });
 
     function initDisplay() {
@@ -318,28 +318,28 @@ function render(d3, po, pd, pv, ps) {
     function setEventHandlers() {
       window.setTimeout(function() {
         // add click handler to zoom view to top
-        document.getElementById('profiler-reset')
-        .addEventListener('click', function() {
-          resetZoom();
-        });
+        // document.getElementById('profiler-reset')
+        // .addEventListener('click', function() {
+        //   resetZoom();
+        // });
 
-        // add click handler to toggle view modes
-        document.getElementById('profiler-view-toggle')
-        .addEventListener('click', function() {
-          toggleViewMode();
-        });
+        // // add click handler to toggle view modes
+        // document.getElementById('profiler-view-toggle')
+        // .addEventListener('click', function() {
+        //   toggleViewMode();
+        // });
 
-        // add on-change handler to update duration slider
-        document.getElementById('profiler-thresh')
-        .addEventListener('change', function() {
-          updateDuration();
-        });
+        // // add on-change handler to update duration slider
+        // document.getElementById('profiler-thresh')
+        // .addEventListener('change', function() {
+        //   updateDuration();
+        // });
 
-        // add click handler to show/hide loops
-        document.getElementById('profiler-loop')
-        .addEventListener('click', function() {
-          showHideLoops();
-        });
+        // // add click handler to show/hide loops
+        // document.getElementById('profiler-loop')
+        // .addEventListener('click', function() {
+        //   showHideLoops();
+        // });
 
         // add click handler to re-render view on window resize
         window.addEventListener('resize', function() {

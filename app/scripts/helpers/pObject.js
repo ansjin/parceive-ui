@@ -63,7 +63,7 @@ function pObject(d3, pd, grad) {
     return new Promise(function(resolve, reject) {
       pd.getMain()
       .then(function(call) {
-        console.log(call);
+        // console.log(call);
         _t.mainDuration = _p.mainDuration = call.duration;
         _t.mainCallId = _p.mainCallId = call.id;
         _t.mainCallGroupId = _p.mainCallGroupId = call.callGroupID;
