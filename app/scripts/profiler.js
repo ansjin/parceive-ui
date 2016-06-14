@@ -204,7 +204,6 @@ function render(d3, po, pd, pv, ps, ld) {
         // some stuff to be removed later...
         var svgThreads = [];
         var threads = _svg.activeThreads.sort(function(a, b){return a-b});
-        console.log(threads)
         for (var i = 0, len = threads.length; i < len; i++) {
           var obj = _.find(_svg.threads, {'threadName': 'Thread ' + threads[i]});
           svgThreads.push(obj);

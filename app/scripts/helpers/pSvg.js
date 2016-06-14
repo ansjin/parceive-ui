@@ -162,6 +162,7 @@ function pSvg(d3, size, pv) {
     var threadID = _svg.isTracing ? d.traceData.threadID : d.profileData.threadID;
     var rectClass = 'rect.call_thread_' + threadID;
     var textClass = 'text.call_thread_' + threadID; 
+    _svg.viewLevels = d.viewLevels;
 
     // set current top item and generate node partitions
     var threadTop = d.threadTop
@@ -225,28 +226,7 @@ function pSvg(d3, size, pv) {
         if (d.hasLoops && hasLoops.indexOf(d.level) < 0) {
           hasLoops.push(d.level);
         }
-
-        var val = getYValue(_svg, d) + newY(_svg);
-        
-        // count loops encountered so far
-        // if (_svg.showLoop && _svg.isTracing) {
-        //   // if (hasLoops === null) {
-        //   //   hasLoops = d.hasLoops;
-        //   // }
-
-        //   // if (d.level > loopLevel && hasLoops) {
-        //   //   loopLevel = d.level; loopCount++; hasLoops = false;
-        //   //   _svg.viewHeight += loopCount;
-        //   // }
-
-        //   // if (d.hasLoops) {
-        //   //   hasLoops = true;
-        //   // }
-        //   val = val + (d.loopAdjust * _svg.rectHeight);
-        // }
-
-        
-        return val;
+        return getYValue(_svg, d) + newY(_svg);
       });
 
     if (_svg.showLoop && _svg.isTracing) {
@@ -254,7 +234,7 @@ function pSvg(d3, size, pv) {
       if (hasLoops.indexOf(levels) > -1) {
         diff++;
       }
-      console.log(diff);
+      // console.log(diff, _svg.viewLevels, levels, loopLevel);
     }
     
     rects
@@ -455,5 +435,6 @@ function pSvg(d3, size, pv) {
     }
 
     _svg.viewHeight += count + diff;
+    // console.log(_svg.viewHeight)
   }
 }

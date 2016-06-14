@@ -208,7 +208,7 @@ function pObject(d3, pd, grad, ld) {
 
         // if this is tracing data object, add values for the loop adjustments
         if (isTracing) {
-          _svg.viewLevels = addLoopAdjustment(obj.traceData); 
+          obj.viewLevels = addLoopAdjustment(obj.traceData); 
         }
 
         resolve(true);
