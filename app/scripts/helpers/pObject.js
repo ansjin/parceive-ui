@@ -43,6 +43,7 @@ function pObject(d3, pd, grad, ld) {
       activeThreads: [0],
       functions: [],
       threads: [],
+      viewLevels: {},
       currentTop: null, // call that is at the top level of the view
       showLoop: false // show loops in visualization
     };
@@ -186,14 +187,14 @@ function pObject(d3, pd, grad, ld) {
 
   // load children of the call or callgroup with the specified id, and 
   // append the them to the traceData
-  function loadChildren(obj, id, level, isTracing, runtimeThreshold, threadID) {
+  function loadChildren(obj, id, level, isTracing, _svg, threadID) {
     return new Promise(function(resolve, reject) {
       var func = isTracing
         ? pd.getCall(id)
         : pd.getCallGroup(id);
 
       func.then(function(call) {
-        return pd.getRecursive(call, isTracing, runtimeThreshold, level, threadID);
+        return pd.getRecursive(call, isTracing, _svg.runtimeThreshold, level, threadID);
       })
       .then(function(data) {
         _.forEach(data, function(d) {
@@ -206,7 +207,7 @@ function pObject(d3, pd, grad, ld) {
 
         // if this is tracing data object, add values for the loop adjustments
         if (isTracing) {
-          obj.viewLevels = addLoopAdjustment(obj.traceData); 
+          _svg.viewLevels = addLoopAdjustment(obj.traceData); 
         }
 
         resolve(true);

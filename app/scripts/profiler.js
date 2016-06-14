@@ -149,7 +149,7 @@ function render(d3, po, pd, pv, ps, ld) {
         }
         _t.threads.push(data);
         po.setRuntimeThreshold(_t);
-        return po.loadChildren(data, data.traceData.id, 1, true, _t.runtimeThreshold, id);
+        return po.loadChildren(data, data.traceData.id, 1, true, _t, id);
       });
 
       return promise;
@@ -178,7 +178,7 @@ function render(d3, po, pd, pv, ps, ld) {
         }
         _p.threads.push(data);
         po.setRuntimeThreshold(_p);
-        return po.loadChildren(data, data.profileData.id, 1, false, _p.runtimeThreshold, id);
+        return po.loadChildren(data, data.profileData.id, 1, false, _p, id);
       });
 
       return promise;

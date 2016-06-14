@@ -147,6 +147,12 @@ function pSvg(d3, size, pv) {
     //   // console.log(d, _svg.viewLevels);
     //   // value = value + (_svg.viewLevels[d.level + 1] * _svg.rectHeight);
     // }
+    if (_svg.showLoop && _svg.isTracing) {
+      // multiplier += (d.loopAdjust - _svg.currentTop.loopAdjust);
+      var adjust = d.threadID !== _svg.currentTop.threadID 
+        ? d.loopAdjust : d.loopAdjust - _svg.viewLevels[_svg.currentTop.level];
+      value = value + (adjust * _svg.rectHeight);
+    }
     return value;
   }
 
@@ -178,16 +184,20 @@ function pSvg(d3, size, pv) {
       .domain([currentTop.start, currentTop.end])
       .range([0, _svg.svgWidth]);
 
+    var loopLevel, diff = 0;
     var nodeData, viewData = _svg.isTracing ? d.traceData : d.profileData;
     if (threadTop.threadID === currentTop.threadID) {
       nodeData = pv.findDeep(viewData, currentTop.id);
+      loopLevel = currentTop.level;
     } else {
       nodeData = viewData;
+      loopLevel = threadTop.level;
       // adjust the xscale and widthscale
     }
     var nodes = _svg.partition.nodes(nodeData);
+    nodes = _.sortBy(nodes, 'level');
 
-    var count = 0, levels = 0, loops = 0;
+    var count = 0, levels = 0;
     var rects = svg.selectAll(rectClass)
       .data(nodes.filter(function(d) {
         // only show calls with duration >= runtimethreshold and
@@ -219,14 +229,34 @@ function pSvg(d3, size, pv) {
         if (levels === 0 || d.level > levels) {
           levels = d.level; count++;
         }
-        if (_svg.showLoop && _svg.isTracing) {
-          if (d.hasLoops && (loops === 0 || d.level > loops)) {
-            loops = d.level; count++;
-          }
-        }
 
-        return getYValue(_svg, d) + newY(_svg);
+        var val = getYValue(_svg, d) + newY(_svg);
+        
+        // count loops encountered so far
+        // if (_svg.showLoop && _svg.isTracing) {
+        //   // if (hasLoops === null) {
+        //   //   hasLoops = d.hasLoops;
+        //   // }
+
+        //   // if (d.level > loopLevel && hasLoops) {
+        //   //   loopLevel = d.level; loopCount++; hasLoops = false;
+        //   //   _svg.viewHeight += loopCount;
+        //   // }
+
+        //   // if (d.hasLoops) {
+        //   //   hasLoops = true;
+        //   // }
+        //   val = val + (d.loopAdjust * _svg.rectHeight);
+        // }
+
+        
+        return val;
       });
+
+    if (_svg.showLoop && _svg.isTracing) {
+      diff = _svg.viewLevels[levels] - _svg.viewLevels[loopLevel];
+      console.log(diff);
+    }
     
     rects
       .append('title')
@@ -329,7 +359,7 @@ function pSvg(d3, size, pv) {
         .enter()
         .append('text')
         .attr('id', function(d) { return 'looptext_' + d.id; })
-        .attr('class', loopTextClass)
+        .attr('class', loopTextClass + ', line')
         .attr('font-family', 'Arial')
         .attr('font-size', '14px')
         .attr('fill', 'black')
@@ -425,6 +455,6 @@ function pSvg(d3, size, pv) {
         });
     }
 
-    _svg.viewHeight += count;
+    _svg.viewHeight += count + diff;
   }
 }
