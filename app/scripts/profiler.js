@@ -356,6 +356,17 @@ function render(d3, po, pd, pv, ps, ld) {
       });
     }
 
+    function spotData(d) {
+      var elementType = _svg.isTracing ? 'Call' : 'CallGroup';
+      var arr = [];
+
+      _.forEach(_svg.selectedNodes, function(d, i) {
+        arr.push({type: elementType, id: d, noShow:true});
+      });
+
+      stateManager.spot(arr);
+    }
+
     // set input elements (buttons, sliders) to carry out specific
     // view related functions. since the DOM is not ready immediately,
     // set a 1 second delay before attaching the event handlers
@@ -449,6 +460,14 @@ function render(d3, po, pd, pv, ps, ld) {
             }
           };
 
+          var spotting = {
+            // spot selected calls/callgroups
+            name: (_svg.isTracing) ? 'Spot Calls' : 'Spot Callgroups',
+            callback: function() {
+              spotData(d);
+            }
+          };
+
           // add reset zoom if 'main' is not currently the
           // top level element
           if (_svg.currentTop.id !== _svg.mainCallId
@@ -461,6 +480,9 @@ function render(d3, po, pd, pv, ps, ld) {
           if (d.id !== _svg.mainCallId && d.id !== _svg.mainCallGroupId) {
             contextMenu.items.zoom_in_out = zoomInOut;
           }
+
+          // enable call/callgroup spotting
+          contextMenu.items.spot_data = spotting;
 
           return contextMenu;
         }
