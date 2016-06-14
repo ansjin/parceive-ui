@@ -355,6 +355,7 @@ function render(d3, pd, ld) {
 
       // clear selected items
       _thread.selected = [];
+      _thread.viewHeight = 0;
       display();
     }
   }
