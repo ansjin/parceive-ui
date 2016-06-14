@@ -20,48 +20,25 @@ function focusCb(stateManager, data) {
   var initDisplay = stateManager.getData().unsaved.initDisplay;
   
   for (var i = 0, len = data.length; i < len; i++) {
-    var obj = data[i];
-    var id = obj.id;
-    var type = obj.type;
-    var _svg = obj.data || {};
-    var d = pv.findDeep(_svg.viewData, id);
-    var isNeighbour = obj.neighbour;
+    // var obj = data[i];
+    // var id = obj.id;
+    // var type = obj.type;
+    // var _svg = obj.data || {};
+    // var d = pv.findDeep(_svg.viewData, id);
+    // var isNeighbour = obj.neighbour;
 
-    if (isNeighbour) {
-      continue;
-    }
+    // if (isNeighbour) {
+    //   continue;
+    // }
 
-    // item not loaded in the profiler viewData
-    // probably a child node with duration too small
-    // or is in viewData but not on svg
-    if (!d.hasOwnProperty('id') && pv.isVisible(d, type, _svg, svg)) { 
-      continue; 
-    }
+    // // item not loaded in the profiler viewData
+    // // probably a child node with duration too small
+    // // or is in viewData but not on svg
+    // if (!d.hasOwnProperty('id') && pv.isVisible(d, type, _svg, svg)) { 
+    //   continue; 
+    // }
 
-    if (id === _svg.currentTop.id) {
-      // zoom out
-      if ((id === _svg.mainCallId && type === 'Call') ||
-         (id === _svg.mainCallGroupId && type === 'CallGroup') ||
-         _svg.zoomHistory.length < 1) {
-        // already zoomed out to the max
-        continue;
-      }
-
-      // get last item in history stack
-      var prev = _svg.zoomHistory.pop();
-      _svg.currentTop = prev;
-      d = prev;
-    } else {
-      // zoom in
-      _svg.zoomHistory.push(_svg.currentTop);
-      _svg.currentTop = d;
-    }
-
-    po.setRuntimeThreshold(_svg);
-    po.loadChildren(_svg, d.id, d.level)
-    .then(function() {
-      initDisplay();
-    });
+    
   }
 }
 
@@ -268,7 +245,8 @@ function render(d3, po, pd, pv, ps) {
                   // handle double click
                   if (data === 'double') {
                     // broadcast focus
-                    stateManager.focus([{type: elementType, id: d.id, data:_svg}]);
+                    // stateManager.focus([{type: elementType, id: d.id, data:_svg}]);
+                    focus(d.id);
                   }
                  });
               })
@@ -348,6 +326,34 @@ function render(d3, po, pd, pv, ps) {
       }, 1000);
     }
 
+    function focus(id) {
+      var d = pv.findDeep(_svg.viewData, id);
+      if (id === _svg.currentTop.id) {
+        // zoom out
+        if ((id === _svg.mainCallId && type === 'Call') ||
+           (id === _svg.mainCallGroupId && type === 'CallGroup') ||
+           _svg.zoomHistory.length < 1) {
+          // already zoomed out to the max
+          return;
+        }
+
+        // get last item in history stack
+        var prev = _svg.zoomHistory.pop();
+        _svg.currentTop = prev;
+        d = prev;
+      } else {
+        // zoom in
+        _svg.zoomHistory.push(_svg.currentTop);
+        _svg.currentTop = d;
+      }
+
+      po.setRuntimeThreshold(_svg);
+      po.loadChildren(_svg, d.id, d.level)
+      .then(function() {
+        initDisplay();
+      });
+    }
+
     // toggle view mode
     function toggleViewMode() {
       _svg = _svg.isTracing ? _p : _t;
@@ -372,7 +378,8 @@ function render(d3, po, pd, pv, ps) {
     function resetZoom() {
       var elementType = _svg.isTracing ? 'Call' : 'CallGroup';
       var id = _svg.isTracing ? _svg.mainCallId : _svg.mainCallGroupId;
-      stateManager.focus([{type: elementType, id: id}]);
+      // stateManager.focus([{type: elementType, id: id}]);
+      focus(id);
     }
 
     // spot selected calls/callgroups
@@ -432,7 +439,8 @@ function render(d3, po, pd, pv, ps) {
             // zoom in or out of element
             name: _svg.currentTop.id === d.id ? 'Zoom out' : 'Zoom in',
             callback: function() {
-              stateManager.focus([{type: elementType, id: d.id, data:_svg}]);
+              // stateManager.focus([{type: elementType, id: d.id, data:_svg}]);
+              focus(d.id);
             }
           };
 

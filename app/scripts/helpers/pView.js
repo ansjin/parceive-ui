@@ -340,9 +340,9 @@ function pView(d3, size) {
   }
 
   function updateDurationSlider(_svg) {
-    var value = $('#profiler-thresh').val();
-    _svg.thresholdFactor = value;
-    $('#thresh-lbl').attr('title', 'Showing calls with >= ' + value + '% duration of ' + _svg.currentTop.name); 
-    $('#thresh-lbl').text(value + '%');   
+    // var value = $('#profiler-thresh').val();
+    // _svg.thresholdFactor = value;
+    // $('#thresh-lbl').attr('title', 'Showing calls with >= ' + value + '% duration of ' + _svg.currentTop.name); 
+    // $('#thresh-lbl').text(value + '%');   
   }
 }
