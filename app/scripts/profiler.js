@@ -48,7 +48,7 @@ function markedCb(stateManager, data) {
   
   var svg = stateManager.getData().unsaved.svg;
   var pv = stateManager.getData().unsaved.pv;
-  var viewData = stateManager.getData().unsaved.viewData;
+  var mark = stateManager.getData().unsaved.mark;
   
   for (var i = 0, len = data.length; i < len; i++) {
     var obj = data[i];
@@ -56,36 +56,13 @@ function markedCb(stateManager, data) {
     var type = obj.type;
     var isMarked = obj.isMarked;
     var isNeighbour = obj.neighbour;
-    var _svg = obj.data || viewData;
+    var noShow = obj.noShow || false;
 
-    if (isNeighbour) {
+    if (isNeighbour || noShow) {
       continue;
     }
 
-    // check if marked type is Thread
-    if (type === 'Thread') {
-      console.log(pv.findDeepThread(_svg, id));
-      continue;
-    }
-
-    var d = pv.findDeep(_svg.viewData, id);
-
-    // item not loaded in the profiler viewData
-    // probably a child node with duration too small
-    // or is in viewData but not on svg
-    if (!d.hasOwnProperty('id') && pv.isVisible(d, type, _svg, svg)) { 
-      continue; 
-    }
-
-    if (_svg.selectedNodes.indexOf(id) < 0) {
-      // select node
-      _svg.selectedNodes.push(id);
-      pv.setSelectedNodes(_svg, svg);
-    } else {
-      // deselect node
-      _svg.selectedNodes.splice(_svg.selectedNodes.indexOf(id), 1);
-      pv.resetSelectedNode(id, _svg, svg);
-    }
+    mark(id)
   }
 }
 
@@ -95,18 +72,20 @@ function hoverCb(stateManager, data) {
 
   var svg = stateManager.getData().unsaved.svg;
   var pv = stateManager.getData().unsaved.pv;
+  var hover = stateManager.getData().unsaved.hover;
 
   for (var i = 0, len = data.length; i < len; i++) {
     var obj = data[i];
     var id = obj.id;
     var type = obj.type;
     var isNeighbour = obj.neighbour;
+    var noShow = obj.noShow || false;
 
-    // if (isNeighbour) {
-    //   continue;
-    // }
+    if (isNeighbour || noShow) {
+      continue;
+    }
 
-    // var _svg = obj.data || {};
+    hover(id, type)
     
   }
 }
@@ -211,8 +190,9 @@ function render(d3, po, pd, pv, ps) {
                   // handle single click
                   if (data === 'single') {
                     // broadcast mark
-                    var isSelected = pv.isSelected(d, svg);
-                    stateManager.mark([{type: elementType, id: d.id, isMarked: isSelected, data:_svg}]);
+                    // var isSelected = pv.isSelected(d, svg);
+                    stateManager.mark([{type: elementType, id: d.id, noShow:true}]);
+                    mark(d.id);
                   }
 
                   // handle double click
@@ -225,12 +205,12 @@ function render(d3, po, pd, pv, ps) {
               })
               .on('mouseenter', function(d) {
                 // broadcast hover
-                // stateManager.hover([{type: elementType, id: d.id, data:_svg}]);
+                stateManager.hover([{type: elementType, id: d.id, noShow:true}]);
                 hover(d.id, elementType);
               })
               .on('mouseleave', function(d) {
                 // broadcast hover
-                // stateManager.hover([{type: elementType, id: d.id, data:_svg}]);
+                stateManager.hover([{type: elementType, id: d.id, noShow:true}]);
                 hover(d.id, elementType);
               });
 
@@ -238,12 +218,12 @@ function render(d3, po, pd, pv, ps) {
             svg.selectAll('line.loop, circle.loop, circle.small, text.line')
               .on('mouseenter', function(d) {
                 // broadcast hover
-                // stateManager.hover([{type: 'Loop', id: d.id, data:_svg}]); 
+                stateManager.hover([{type: 'Loop', id: d.id, noShow:true}]); 
                 hover(d.id, 'Loop');
               })
               .on('mouseleave', function(d) {
                 // broadcast hover
-                // stateManager.hover([{type: 'Loop', id: d.id, data:_svg}]); 
+                stateManager.hover([{type: 'Loop', id: d.id, noShow:true}]); 
                 hover(d.id, 'Loop');
               });
 
@@ -261,6 +241,10 @@ function render(d3, po, pd, pv, ps) {
           stateManager.getData().unsaved.po = po;
           stateManager.getData().unsaved.initDisplay = initDisplay;
           stateManager.getData().unsaved.viewData = _svg.viewData;
+          stateManager.getData().unsaved.mark = mark;
+          stateManager.getData().unsaved.hover = hover;
+          stateManager.getData().unsaved.spot = spot;
+          stateManager.getData().unsaved.focus = focus;
 
           resolve(true);
         });
@@ -272,29 +256,6 @@ function render(d3, po, pd, pv, ps) {
     // set a 1 second delay before attaching the event handlers
     function setEventHandlers() {
       window.setTimeout(function() {
-        // add click handler to zoom view to top
-        // document.getElementById('profiler-reset')
-        // .addEventListener('click', function() {
-        //   resetZoom();
-        // });
-
-        // // add click handler to toggle view modes
-        // document.getElementById('profiler-view-toggle')
-        // .addEventListener('click', function() {
-        //   toggleViewMode();
-        // });
-
-        // // add on-change handler to update duration slider
-        // document.getElementById('profiler-thresh')
-        // .addEventListener('change', function() {
-        //   updateDuration();
-        // });
-
-        // // add click handler to show/hide loops
-        // document.getElementById('profiler-loop')
-        // .addEventListener('click', function() {
-        //   showHideLoops();
-        // });
 
         // add click handler to re-render view on window resize
         window.addEventListener('resize', function() {
@@ -303,8 +264,34 @@ function render(d3, po, pd, pv, ps) {
       }, 1000);
     }
 
+    function spot() {
+
+    }
+
+    function mark(id) {
+      var d = pv.findDeep(_svg.viewData, id);
+
+      if (Object.keys(d).length === 0) {
+        return;
+      }
+
+      if (_svg.selectedNodes.indexOf(id) < 0) {
+        // select node
+        _svg.selectedNodes.push(id);
+        pv.setSelectedNodes(_svg, svg);
+      } else {
+        // deselect node
+        _svg.selectedNodes.splice(_svg.selectedNodes.indexOf(id), 1);
+        pv.resetSelectedNode(id, _svg, svg);
+      }
+    }
+
     function hover(id, type) {
       var d = pv.findDeep(_svg.viewData, id);
+
+      if (Object.keys(d).length === 0) {
+        return;
+      }
 
       if (type === 'Loop') {
         // hover for loops
@@ -329,6 +316,11 @@ function render(d3, po, pd, pv, ps) {
 
     function focus(id) {
       var d = pv.findDeep(_svg.viewData, id);
+
+      if (Object.keys(d).length === 0) {
+        return;
+      }
+
       if (id === _svg.currentTop.id) {
         // zoom out
         if ((id === _svg.mainCallId && type === 'Call') ||
@@ -385,8 +377,8 @@ function render(d3, po, pd, pv, ps) {
 
     // spot selected calls/callgroups
     function spotData(d) {
-       var elementType = _svg.isTracing ? 'Call' : 'CallGroup';
-       stateManager.spot([{type: elementType, id: d.id, data:_svg.selectedNodes}]);
+      // var elementType = _svg.isTracing ? 'Call' : 'CallGroup';
+      // stateManager.spot([{type: elementType, id: d.id, data:_svg.selectedNodes}]);
     }
 
     // setup the context menu
@@ -422,7 +414,8 @@ function render(d3, po, pd, pv, ps) {
               'mark_unmark': {
                 name: isSelected ? 'UnMark' : 'Mark',
                 callback: function() {
-                  stateManager.mark([{type: elementType, id: d.id, isMarked: isSelected, data:_svg}]);
+                  stateManager.mark([{type: elementType, id: d.id, noShow:true}]);
+                  mark(d.id);
                 }
               },
 
@@ -466,6 +459,7 @@ function render(d3, po, pd, pv, ps) {
             name: (_svg.isTracing) ? 'Spot Calls' : 'Spot Callgroups',
             callback: function() {
               spotData(d);
+              stateManager.spot([{type: elementType, id: d.id, noShow:true}]);
             }
           };
 
@@ -489,9 +483,10 @@ function render(d3, po, pd, pv, ps) {
 
           // enable call/callgroup spotting if there is more than 
           // 1 selected item
-          if (_svg.selectedNodes.length > 1) {
-            contextMenu.items.spot_data = spotting;
-          }
+          // if (_svg.selectedNodes.length > 1) {
+          //   contextMenu.items.spot_data = spotting;
+          // }
+          contextMenu.items.spot_data = spotting;
 
           return contextMenu;
         }
