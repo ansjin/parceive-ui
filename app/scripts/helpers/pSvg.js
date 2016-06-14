@@ -70,7 +70,7 @@ function pSvg(d3, size, pv) {
   function drawHeader(svg, _svg, d) {
     var selection = svg.selectAll('rect_header');
     var y = newY(_svg);
-    var thread = Number(d.threadName.substr(d.threadName.length - 1));
+    var thread = Number(d.threadName.split(' ')[1]);
     var createdBy = _.result(_.find(_svg.threadCaller, 'id', thread), 'createdBy');
 
     selection
@@ -136,23 +136,16 @@ function pSvg(d3, size, pv) {
     if (d.threadID !== _svg.currentTop.threadID) {
       minus = 1;
     }
+
     var multiplier = d.level - minus;
-    // if (_svg.showLoop && _svg.isTracing) {
-    //   console.log('seen', d.name, d.threadID)
-    //   multiplier += (d.loopAdjust - _svg.currentTop.loopAdjust);
-    // }
     var value = _svg.rectHeight * multiplier;
-    // if (isLoop) {
-    //   value = value + 44;
-    //   // console.log(d, _svg.viewLevels);
-    //   // value = value + (_svg.viewLevels[d.level + 1] * _svg.rectHeight);
-    // }
+
     if (_svg.showLoop && _svg.isTracing) {
-      // multiplier += (d.loopAdjust - _svg.currentTop.loopAdjust);
       var adjust = d.threadID !== _svg.currentTop.threadID 
         ? d.loopAdjust : d.loopAdjust - _svg.viewLevels[_svg.currentTop.level];
       value = value + (adjust * _svg.rectHeight);
     }
+
     return value;
   }
 
@@ -184,7 +177,7 @@ function pSvg(d3, size, pv) {
       .domain([currentTop.start, currentTop.end])
       .range([0, _svg.svgWidth]);
 
-    var loopLevel, diff = 0;
+    var loopLevel, diff = 0, hasLoops = [];
     var nodeData, viewData = _svg.isTracing ? d.traceData : d.profileData;
     if (threadTop.threadID === currentTop.threadID) {
       nodeData = pv.findDeep(viewData, currentTop.id);
@@ -195,7 +188,6 @@ function pSvg(d3, size, pv) {
       // adjust the xscale and widthscale
     }
     var nodes = _svg.partition.nodes(nodeData);
-    nodes = _.sortBy(nodes, 'level');
 
     var count = 0, levels = 0;
     var rects = svg.selectAll(rectClass)
@@ -230,6 +222,10 @@ function pSvg(d3, size, pv) {
           levels = d.level; count++;
         }
 
+        if (d.hasLoops && hasLoops.indexOf(d.level) < 0) {
+          hasLoops.push(d.level);
+        }
+
         var val = getYValue(_svg, d) + newY(_svg);
         
         // count loops encountered so far
@@ -255,6 +251,9 @@ function pSvg(d3, size, pv) {
 
     if (_svg.showLoop && _svg.isTracing) {
       diff = _svg.viewLevels[levels] - _svg.viewLevels[loopLevel];
+      if (hasLoops.indexOf(levels) > -1) {
+        diff++;
+      }
       console.log(diff);
     }
     
@@ -289,9 +288,9 @@ function pSvg(d3, size, pv) {
       .attr('fill', 'white')
       .text(function(d) { return d.name; })
       .attr('x', function(d) {
-        if (d.start < _svg.currentTop.start) {
-          d = _svg.currentTop;
-        }
+        // if (d.start < _svg.currentTop.start) {
+        //   d = _svg.currentTop;
+        // }
         var sliced = Number(getXValue(_svg, d, xScale).slice(0, -1));
         return Number(sliced + _svg.textPadX) + '%';
       })

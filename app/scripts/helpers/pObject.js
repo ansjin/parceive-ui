@@ -104,6 +104,7 @@ function pObject(d3, pd, grad, ld) {
         return getThreadCaller(_t, _p);
       })
       .then(function(data) {
+        console.log('loaded thread caller')
         resolve(true);
       });
     });
