@@ -377,8 +377,14 @@ function render(d3, po, pd, pv, ps) {
 
     // spot selected calls/callgroups
     function spotData(d) {
-      // var elementType = _svg.isTracing ? 'Call' : 'CallGroup';
-      // stateManager.spot([{type: elementType, id: d.id, data:_svg.selectedNodes}]);
+      var elementType = _svg.isTracing ? 'Call' : 'CallGroup';
+      var arr = [];
+
+      _.forEach(_svg.selectedNodes, function(d, i) {
+        arr.push({type: elementType, id: d, noShow:true});
+      });
+
+      stateManager.spot(arr);
     }
 
     // setup the context menu
@@ -459,7 +465,6 @@ function render(d3, po, pd, pv, ps) {
             name: (_svg.isTracing) ? 'Spot Calls' : 'Spot Callgroups',
             callback: function() {
               spotData(d);
-              stateManager.spot([{type: elementType, id: d.id, noShow:true}]);
             }
           };
 
