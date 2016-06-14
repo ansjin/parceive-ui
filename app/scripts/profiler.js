@@ -102,39 +102,12 @@ function hoverCb(stateManager, data) {
     var type = obj.type;
     var isNeighbour = obj.neighbour;
 
-    if (isNeighbour) {
-      continue;
-    }
+    // if (isNeighbour) {
+    //   continue;
+    // }
 
-    var _svg = obj.data || {};
-    var d = pv.findDeep(_svg.viewData, id);
-
-    // item not loaded in the profiler viewData
-    // probably a child node with duration too small
-    // or is in viewData but not on svg
-    if (!d.hasOwnProperty('id') && pv.isVisible(d, type, _svg, svg)) { 
-      continue; 
-    }
-
-    if (type === 'Loop') {
-      // hover for loops
-      if (pv.isHovered(d, 'Loop', _svg, svg)) {
-        pv.loopHighlightRemove(d, svg);
-        pv.removeTooltip();
-      } else {
-        pv.loopHighlight(d, svg);
-        pv.loopTooltip(d, _svg, svg);
-      }
-    } else {
-      // hover for calls and callgroups
-      if (pv.isHovered(d, 'Call', _svg, svg)) {
-        pv.callHighlightRemove(d, svg);
-        pv.removeTooltip();
-      } else {
-        pv.callHighlight(d, svg);
-        pv.callTooltip(d, _svg, svg);
-      }
-    }
+    // var _svg = obj.data || {};
+    
   }
 }
 
@@ -252,22 +225,26 @@ function render(d3, po, pd, pv, ps) {
               })
               .on('mouseenter', function(d) {
                 // broadcast hover
-                stateManager.hover([{type: elementType, id: d.id, data:_svg}]);
+                // stateManager.hover([{type: elementType, id: d.id, data:_svg}]);
+                hover(d.id, elementType);
               })
               .on('mouseleave', function(d) {
                 // broadcast hover
-                stateManager.hover([{type: elementType, id: d.id, data:_svg}]);
+                // stateManager.hover([{type: elementType, id: d.id, data:_svg}]);
+                hover(d.id, elementType);
               });
 
             // loop elements
             svg.selectAll('line.loop, circle.loop, circle.small, text.line')
               .on('mouseenter', function(d) {
                 // broadcast hover
-                stateManager.hover([{type: 'Loop', id: d.id, data:_svg}]); 
+                // stateManager.hover([{type: 'Loop', id: d.id, data:_svg}]); 
+                hover(d.id, 'Loop');
               })
               .on('mouseleave', function(d) {
                 // broadcast hover
-                stateManager.hover([{type: 'Loop', id: d.id, data:_svg}]); 
+                // stateManager.hover([{type: 'Loop', id: d.id, data:_svg}]); 
+                hover(d.id, 'Loop');
               });
 
             resolve(true);
@@ -324,6 +301,30 @@ function render(d3, po, pd, pv, ps) {
           initDisplay();
         });
       }, 1000);
+    }
+
+    function hover(id, type) {
+      var d = pv.findDeep(_svg.viewData, id);
+
+      if (type === 'Loop') {
+        // hover for loops
+        if (pv.isHovered(d, 'Loop', _svg, svg)) {
+          pv.loopHighlightRemove(d, svg);
+          pv.removeTooltip();
+        } else {
+          pv.loopHighlight(d, svg);
+          pv.loopTooltip(d, _svg, svg);
+        }
+      } else {
+        // hover for calls and callgroups
+        if (pv.isHovered(d, 'Call', _svg, svg)) {
+          pv.callHighlightRemove(d, svg);
+          pv.removeTooltip();
+        } else {
+          pv.callHighlight(d, svg);
+          pv.callTooltip(d, _svg, svg);
+        }
+      }
     }
 
     function focus(id) {
