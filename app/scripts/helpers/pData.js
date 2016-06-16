@@ -138,7 +138,7 @@ function pData(LoaderService) {
         return call.getFunction();
       })
       .then(function(func) {
-        temp.name = func.signature;
+        temp.name = func.name;
 
         return self.getDirectLoopExecutions();
       })
@@ -186,7 +186,7 @@ function pData(LoaderService) {
         return callGroup.getFunction();
       })
       .then(function(func) {
-        temp.name = func.signature;
+        temp.name = func.name;
 
         return new RSVP.resolve(temp);
       });

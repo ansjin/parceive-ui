@@ -18,7 +18,6 @@ var uglify = require('gulp-uglify');
 var minifyCSS = require('gulp-minify-css');
 var rimraf = require('gulp-rimraf');
 var bower = require('gulp-bower');
-var csslint = require('gulp-csslint');
 var livereload = require('gulp-livereload');
 var templateCache = require('gulp-angular-templatecache');
 var concat = require('gulp-concat');
@@ -33,6 +32,7 @@ var sass = require('gulp-sass');
 var merge = require('merge-stream');
 var express = require('express');
 var shell = require('gulp-shell');
+var open = require('gulp-open');
 
 var processDB = require('./server/process');
 
@@ -57,7 +57,7 @@ var opts = _.defaults(
 
 //tasks
 
-gulp.task('default', ['server']);
+gulp.task('default', ['server', 'op']);
 
 gulp.task('bower', function() {
   return bower();
@@ -83,14 +83,6 @@ gulp.task('jshint', function() {
       cb(null, file);
     }));
 });
-
-gulp.task('csslint', function() {
-  return gulp.src('client/styles/**/*.css')
-    .pipe(csslint())
-    .pipe(csslint.reporter());
-});
-
-gulp.task('lint', ['jshint', 'csslint']);
 
 gulp.task('clean', function() {
   return gulp.src(['./build/', './dist/*', './app/bower_components'])
@@ -181,7 +173,7 @@ gulp.task('db', function(cb) {
   });
 });
 
-gulp.task('build', ['bower', 'lint', 'minify-js', 'minify-js-deps',
+gulp.task('build', ['bower', 'minify-js', 'minify-js-deps',
                     'minify-css-deps', 'minify-css', 'minify-templates',
                     'html', 'db', 'doc']);
 
@@ -223,6 +215,15 @@ gulp.task('tests', ['build', 'test-build'], function(cb) {
   });
 });
 
+gulp.task('op', ['server'], function(){
+    var options = {
+        uri: 'http://localhost:8080',
+        app: 'chromium-browser'
+    };
+    gulp.src(__filename)
+        .pipe(open(options));
+});
+
 gulp.task('server', ['build', 'test-build'], function() {
   //server
   var entities = require('./server/entities');
@@ -235,8 +236,7 @@ gulp.task('server', ['build', 'test-build'], function() {
   gulp.watch('build.json', ['build']);
 
   gulp.watch(['app/scripts/**/*.js'], ['minify-js', 'jshint', 'doc']);
-  gulp.watch(['app/style/**/*.css', 'app/style/**/*.scss'], ['minify-css',
-                                                             'csslint']);
+  gulp.watch(['app/style/**/*.css', 'app/style/**/*.scss'], ['minify-css']);
   gulp.watch(['app/templates/**/*.html'], ['minify-templates']);
 
   gulp.watch(['app/tests/**/*.js'], ['test-build']);
