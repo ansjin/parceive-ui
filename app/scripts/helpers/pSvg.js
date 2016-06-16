@@ -135,48 +135,52 @@ function pSvg(d3, size) {
         return resolve(true);
       }
 
-      selection
-        .data(_svg.nodes.filter(function(d) {
-          // only show loop for calls with loopIterationCount greater than 0
-          // and loop duration >= current threshold and
-          // loop duration <= the duration of current top level object
-          return d.loopIterationCount > 0 
-          && d.loopDuration >= _svg.runtimeThreshold
-          && d.loopDuration <= _svg.currentTop.duration;
-        }))
-        .enter()
-        .append('line')
-        .attr('class', 'loop')
-        .attr('stroke', function(d) {
-          return _svg.gradient(d.loopDuration);
-        })
-        .attr('stroke-width', 4)
-        .attr('id', function(d) { return 'loopline_' + d.id; })
-        .attr('x1', function(d) {
-          return _svg.xScale(d.loopStart);
-        })
-        .attr('x2', function(d) {
-          return _svg.xScale(d.loopEnd);
-        })
-        .attr('y1', function(d) {
-          return getYValue(_svg, d, true) - _svg.rectHeight;
-        })
-        .attr('y2', function(d) {
-          return getYValue(_svg, d, true) - _svg.rectHeight;
-        })
-        .attr('fill-opacity', 0)
+      _.forEach(_svg.nodes, function(obj, i) {
+        if (obj.loopData.length > 0) {
+          selection
+          .data(obj.loopData.filter(function(d) {
+            // only show loop for calls with loopIterationCount greater than 0
+            // and loop duration >= current threshold and
+            // loop duration <= the duration of current top level object
+            return d.loopIterationCount > 0 
+            && d.loopDuration >= _svg.runtimeThreshold
+            && d.loopDuration <= _svg.currentTop.duration;
+          }))
+          .enter()
+          .append('line')
+          .attr('class', 'loop')
+          .attr('stroke', function(d) {
+            return _svg.gradient(d.loopDuration);
+          })
+          .attr('stroke-width', 4)
+          .attr('id', function(d) { return 'loopline_' + obj.id; })
+          .attr('x1', function(d) {
+            return _svg.xScale(d.loopStart);
+          })
+          .attr('x2', function(d) {
+            return _svg.xScale(d.loopEnd);
+          })
+          .attr('y1', function(d) {
+            return getYValue(_svg, obj, true) - _svg.rectHeight;
+          })
+          .attr('y2', function(d) {
+            return getYValue(_svg, obj, true) - _svg.rectHeight;
+          })
+          .attr('fill-opacity', 0)
 
-        // add animation effect
-        .transition()
-        .duration(_svg.transTime)
-        .ease(_svg.transType)
-        .attr('fill-opacity', 1)
-        .attr('y1', function(d) {
-          return (getYValue(_svg, d, true) - Math.floor(_svg.rectHeight / 2));
-        })
-        .attr('y2', function(d) {
-          return getYValue(_svg, d, true) - Math.floor(_svg.rectHeight / 2);
-        });
+          // add animation effect
+          .transition()
+          .duration(_svg.transTime)
+          .ease(_svg.transType)
+          .attr('fill-opacity', 1)
+          .attr('y1', function(d) {
+            return (getYValue(_svg, obj, true) - Math.floor(_svg.rectHeight / 2));
+          })
+          .attr('y2', function(d) {
+            return getYValue(_svg, obj, true) - Math.floor(_svg.rectHeight / 2);
+          });
+        }
+      });
 
       resolve(true);
     });
@@ -188,47 +192,51 @@ function pSvg(d3, size) {
         return resolve(true);
       }
 
-      selection
-        .data(_svg.nodes.filter(function(d) {
-          // only show loop text for calls with duration >= runtimethreshold
-          // and duration <= duration of current top level object
-          // and loop line widths big enough to contain the iteration count text
-          if (document.getElementById('loopline_' + d.id) == null) {
-            return false;
-          }
+      _.forEach(_svg.nodes, function(obj, i) {
+        if (obj.loopData.length > 0) {
+          selection
+          .data(obj.loopData.filter(function(d) {
+            // only show loop text for calls with duration >= runtimethreshold
+            // and duration <= duration of current top level object
+            // and loop line widths big enough to contain the iteration count text
+            if (document.getElementById('loopline_' + obj.id) == null) {
+              return false;
+            }
 
-          var loopWidth = size.svgSizeById('loopline_' + d.id).width;
-          var textPad = 20; // left and right padding
-          var textWidth = size.svgTextSize(d.loopIterationCount, 14).width + textPad;
-          return d.loopIterationCount > 0 
-          && d.duration >= _svg.runtimeThreshold 
-          && loopWidth > textWidth;
-        }))
-        .enter()
-        .append('text')
-        .attr('id', function(d) { return 'looptext_' + d.id; })
-        .attr('class', 'line')
-        .attr('font-family', 'Arial')
-        .attr('font-size', '14px')
-        .attr('fill', 'black')
-        .attr('fill-opacity', 0)
-        .text(function(d) { return d.loopIterationCount; })
-        .attr('x', function(d) {
-          var sliced = Number(_svg.xScale(Math.floor(d.loopStart + d.loopEnd) / 2).slice(0, -1));
-          return Number(sliced + _svg.textPadX) + '%';
-        })
-        .attr('y', function(d) {
-          return getYValue(_svg, d, true) - _svg.rectHeight;
-        })
+            var loopWidth = size.svgSizeById('loopline_' + obj.id).width;
+            var textPad = 20; // left and right padding
+            var textWidth = size.svgTextSize(d.loopIterationCount, 14).width + textPad;
+            return d.loopIterationCount > 0 
+            && d.loopDuration >= _svg.runtimeThreshold 
+            && loopWidth > textWidth;
+          }))
+          .enter()
+          .append('text')
+          .attr('id', function(d) { return 'looptext_' + obj.id; })
+          .attr('class', 'line')
+          .attr('font-family', 'Arial')
+          .attr('font-size', '14px')
+          .attr('fill', 'black')
+          .attr('fill-opacity', 0)
+          .text(function(d) { return d.loopIterationCount; })
+          .attr('x', function(d) {
+            var sliced = Number(_svg.xScale(Math.floor(d.loopStart + d.loopEnd) / 2).slice(0, -1));
+            return Number(sliced + _svg.textPadX) + '%';
+          })
+          .attr('y', function(d) {
+            return getYValue(_svg, obj, true) - _svg.rectHeight;
+          })
 
-        // add animation effect
-        .transition()
-        .duration(_svg.transTime)
-        .ease(_svg.transType)
-        .attr('fill-opacity', 1)
-        .attr('y', function(d) {
-          return getYValue(_svg, d, true) - _svg.rectHeight + _svg.textPadY;
-        });
+          // add animation effect
+          .transition()
+          .duration(_svg.transTime)
+          .ease(_svg.transType)
+          .attr('fill-opacity', 1)
+          .attr('y', function(d) {
+            return getYValue(_svg, obj, true) - _svg.rectHeight + _svg.textPadY;
+          });
+        }
+      });
 
       resolve(true);
     });
@@ -240,68 +248,72 @@ function pSvg(d3, size) {
         return resolve(true);
       }
 
-      // add circle to left end of the loop
-      selection
-        .data(_svg.nodes.filter(function(d) {
-          // only show loop for calls with loopIterationCount greater than 0
-          // and loop duration >= current threshold and
-          // loop duration <= the duration of current top level object
-          return d.loopIterationCount > 0 
-          && d.loopDuration >= _svg.runtimeThreshold
-          && d.loopDuration <= _svg.currentTop.duration;
-        }))
-        .enter()
-        .append('circle')
-        .attr('class', 'loop')
-        .attr('id', function(d) { return 'loopendleft_' + d.id; })
-        .attr('fill', function(d) { return _svg.gradient(d.loopDuration); })
-        .attr('fill-opacity', 0)
-        .attr('cx', function(d) { return _svg.xScale(d.loopStart); })
-        .attr('cy', function(d) { 
-          return getYValue(_svg, d, true) - _svg.rectHeight;
-        })
-        .attr('r', 4)
+      _.forEach(_svg.nodes, function(obj, i) {
+        if (obj.loopData.length > 0) {
+          // add circle to left end of the loop
+          selection
+            .data(obj.loopData.filter(function(d) {
+              // only show loop for calls with loopIterationCount greater than 0
+              // and loop duration >= current threshold and
+              // loop duration <= the duration of current top level object
+              return d.loopIterationCount > 0 
+              && d.loopDuration >= _svg.runtimeThreshold
+              && d.loopDuration <= _svg.currentTop.duration;
+            }))
+            .enter()
+            .append('circle')
+            .attr('class', 'loop')
+            .attr('id', function(d) { return 'loopendleft_' + obj.id; })
+            .attr('fill', function(d) { return _svg.gradient(d.loopDuration); })
+            .attr('fill-opacity', 0)
+            .attr('cx', function(d) { return _svg.xScale(d.loopStart); })
+            .attr('cy', function(d) { 
+              return getYValue(_svg, obj, true) - _svg.rectHeight;
+            })
+            .attr('r', 4)
 
-        // add animation effect
-        .transition()
-        .duration(_svg.transTime)
-        .ease(_svg.transType)
-        .attr('fill-opacity', 1)
-        .attr('cy', function(d) {
-          return getYValue(_svg, d, true) - Math.floor(_svg.rectHeight / 2);
-        });
+            // add animation effect
+            .transition()
+            .duration(_svg.transTime)
+            .ease(_svg.transType)
+            .attr('fill-opacity', 1)
+            .attr('cy', function(d) {
+              return getYValue(_svg, obj, true) - Math.floor(_svg.rectHeight / 2);
+            });
 
-      // add circle to right end of the loop
-      selection
-        .data(_svg.nodes.filter(function(d) {
-          // only show loop for calls with loopIterationCount greater than 0
-          // and loop duration >= current threshold and
-          // loop duration <= the duration of current top level object
-          return d.loopIterationCount > 0 
-          && d.loopDuration >= _svg.runtimeThreshold
-          && d.loopDuration <= _svg.currentTop.duration;
-        }))
-        .enter()
-        .append('circle')
-        .attr('class', 'loop')
-        .attr('id', function(d) { return 'loopendright_' + d.id; })
-        .attr('fill', function(d) { return _svg.gradient(d.loopDuration); })
-        .attr('fill-opacity', 0)
-        .attr('cx', function(d) { return _svg.xScale(d.loopEnd); })
-        .attr('cy', function(d) { 
-          return getYValue(_svg, d, true) - _svg.rectHeight;
-        })
-        .attr('r', 4)
+          // add circle to right end of the loop
+          selection
+            .data(obj.loopData.filter(function(d) {
+              // only show loop for calls with loopIterationCount greater than 0
+              // and loop duration >= current threshold and
+              // loop duration <= the duration of current top level object
+              return d.loopIterationCount > 0 
+              && d.loopDuration >= _svg.runtimeThreshold
+              && d.loopDuration <= _svg.currentTop.duration;
+            }))
+            .enter()
+            .append('circle')
+            .attr('class', 'loop')
+            .attr('id', function(d) { return 'loopendright_' + obj.id; })
+            .attr('fill', function(d) { return _svg.gradient(d.loopDuration); })
+            .attr('fill-opacity', 0)
+            .attr('cx', function(d) { return _svg.xScale(d.loopEnd); })
+            .attr('cy', function(d) { 
+              return getYValue(_svg, obj, true) - _svg.rectHeight;
+            })
+            .attr('r', 4)
 
-        // add animation effect
-        .transition()
-        .duration(_svg.transTime)
-        .ease(_svg.transType)
-        .attr('fill-opacity', 1)
-        .attr('cy', function(d) {
-          return getYValue(_svg, d, true) - Math.floor(_svg.rectHeight / 2);
-        });
-
+            // add animation effect
+            .transition()
+            .duration(_svg.transTime)
+            .ease(_svg.transType)
+            .attr('fill-opacity', 1)
+            .attr('cy', function(d) {
+              return getYValue(_svg, obj, true) - Math.floor(_svg.rectHeight / 2);
+            });
+        }
+      });
+      
       resolve(true);
     });
   }
@@ -312,39 +324,43 @@ function pSvg(d3, size) {
         return resolve(true);
       }
 
-      selection
-        .data(_svg.nodes.filter(function(d) {
-          // only show loop for calls with loopIterationCount greater than 0
-          // and loop duration < current threshold
-          if (document.getElementById('rect_' + d.id) == null) {
-            return false;
+      _.forEach(_svg.nodes, function(obj, i) {
+        if (obj.loopData.length > 0) {
+          selection
+            .data(obj.loopData.filter(function(d) {
+              // only show loop for calls with loopIterationCount greater than 0
+              // and loop duration < current threshold
+              if (document.getElementById('rect_' + obj.id) == null) {
+                return false;
+              }
+
+              return d.loopIterationCount > 0 
+              && d.loopDuration < _svg.runtimeThreshold;
+            }))
+            .enter()
+            .append('circle')
+            .attr('class', 'small')
+            .attr('id', function(d) { return 'loopsmall_' + obj.id; })
+            .attr('fill', function(d) { return _svg.gradient(d.loopDuration); })
+            .attr('fill-opacity', 0)
+            .attr('cx', function(d) { 
+              return _svg.xScale(Math.floor((d.loopStart + d.loopEnd) / 2)); 
+            })
+            .attr('cy', function(d) { 
+              return getYValue(_svg, obj, true) + _svg.rectHeight;
+            })
+            .attr('r', 4)
+
+            // add animation effect
+            .transition()
+            .duration(_svg.transTime)
+            .ease(_svg.transType)
+            .attr('fill-opacity', 1)
+            .attr('cy', function(d) {
+              return getYValue(_svg, obj, true) + (_svg.rectHeight + Math.floor(_svg.rectHeight / 2));
+            });
           }
-
-          return d.loopIterationCount > 0 
-          && d.loopDuration < _svg.runtimeThreshold;
-        }))
-        .enter()
-        .append('circle')
-        .attr('class', 'small')
-        .attr('id', function(d) { return 'loopsmall_' + d.id; })
-        .attr('fill', function(d) { return _svg.gradient(d.loopDuration); })
-        .attr('fill-opacity', 0)
-        .attr('cx', function(d) { 
-          return _svg.xScale(Math.floor((d.loopStart + d.loopEnd) / 2)); 
-        })
-        .attr('cy', function(d) { 
-          return getYValue(_svg, d, true) + _svg.rectHeight;
-        })
-        .attr('r', 4)
-
-        // add animation effect
-        .transition()
-        .duration(_svg.transTime)
-        .ease(_svg.transType)
-        .attr('fill-opacity', 1)
-        .attr('cy', function(d) {
-          return getYValue(_svg, d, true) + (_svg.rectHeight + Math.floor(_svg.rectHeight / 2));
-        });
+      });
 
       resolve(true);
     });
