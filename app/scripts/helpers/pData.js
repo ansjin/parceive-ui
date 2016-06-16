@@ -128,11 +128,7 @@ function pData(LoaderService) {
         temp.id = call.id;
         temp.hasLoops = call.loopCount > 0 ? true : false;
         temp.loopAdjust = 0;
-        temp.loopIterationCount = 0;
-        temp.loopDuration = 0;
-        temp.loopStart = undefined;
-        temp.loopEnd = undefined;
-        temp.loopIterationCalls = [];
+        temp.loopData = [];
         temp.threadID = call.threadID;
 
         return call.getFunction();
@@ -144,29 +140,18 @@ function pData(LoaderService) {
       })
       .then(function(execution) {
         if (execution.length > 0) {
-          temp.loopIterationCount = execution[0].iterationsCount;
-          temp.loopDuration = execution[0].duration;
-          temp.loopStart = execution[0].start;
-          temp.loopEnd = execution[0].end;
-          return execution[0].getLoopIterations();
-        }        
-      })
-      .then(function(iteration) {
-        if (iteration !== undefined) {
-          var promises = iteration.map(function(i){ 
-            return i.getCalls(); 
+          _.forEach(execution, function(d, i) {
+            var loopObj = {};
+ 
+            loopObj.loopIterationCount = d.iterationsCount;
+            loopObj.loopDuration = d.duration;
+            loopObj.loopStart = d.start;
+            loopObj.loopEnd = d.end;
+            temp.loopData.push(loopObj);
           });
-          return RSVP.all(promises);
-        }
-      })
-      .then(function(calls) {
-        _.forEach(calls, function(c) {
-          // some calls being pushed here are empty objects
-          // because the iteration did not make any call
-          temp.loopIterationCalls.push(c[0]);
-        });
+        }   
 
-        return new RSVP.resolve(temp);
+        return new RSVP.resolve(temp);     
       });
     return promise;
   }
