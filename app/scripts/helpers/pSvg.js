@@ -337,7 +337,7 @@ function pSvg(d3, size) {
               }
 
               return d.loopIterationCount > 0
-              && d.loopDuration < _svg.runtimeThreshold;
+              && d.loopDuration < _svg.runtimeThreshold;;
             }))
             .enter()
             .append('circle')
@@ -349,7 +349,7 @@ function pSvg(d3, size) {
               return _svg.xScale(Math.floor((d.loopStart + d.loopEnd) / 2));
             })
             .attr('cy', function(d) {
-              return getYValue(_svg, obj, true) + _svg.rectHeight;
+              return getYValue(_svg, obj, true) - _svg.rectHeight;
             })
             .attr('r', 4)
 
@@ -359,7 +359,7 @@ function pSvg(d3, size) {
             .ease(_svg.transType)
             .attr('fill-opacity', 1)
             .attr('cy', function(d) {
-              return getYValue(_svg, obj, true) + (_svg.rectHeight + Math.floor(_svg.rectHeight / 2));
+              return getYValue(_svg, obj, true) - Math.floor(_svg.rectHeight / 2);
             });
           }
       });
