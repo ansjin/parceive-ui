@@ -221,7 +221,8 @@ function pSvg(d3, size) {
           .text(function(d) { return d.loopIterationCount; })
           .attr('x', function(d) {
             var sliced = Number(_svg.xScale(Math.floor(d.loopStart + d.loopEnd) / 2).slice(0, -1));
-            return Number(sliced + _svg.textPadX) + '%';
+            var pad = _svg.textPadX * d.loopIterationCount.toString().length;
+            return Number(sliced - pad) + '%';
           })
           .attr('y', function(d) {
             return getYValue(_svg, obj, true) - _svg.rectHeight;
