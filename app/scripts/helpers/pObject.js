@@ -27,7 +27,7 @@ function pObject(d3, pd, grad) {
       mainCallGroupId: null, // callGroup ID of main
       currentTop: null, // call that is at the top level of the view
       runtimeThreshold: null, // minimum runtime required for children to load
-      thresholdFactor: 1, // % of top level duration children must have to be shown
+      thresholdFactor: 0.5, // % of top level duration children must have to be shown
       viewData: {}, // store the current data used to display profiler
       viewLevels: {}, // the loop adjustment values for each level
       nodes: null, // nodes to use in the d3 partition view layout
@@ -70,7 +70,7 @@ function pObject(d3, pd, grad) {
 
         var profileId = Date.now();
         _t.profileId = _p.profileId = profileId;
-        
+
         resolve(true);
       });
     });
@@ -112,7 +112,7 @@ function pObject(d3, pd, grad) {
     });
   }
 
-  // load children of the call or callgroup with the specified id, and 
+  // load children of the call or callgroup with the specified id, and
   // append the them to the viewData
   function loadChildren(obj, id, level) {
     return new Promise(function(resolve, reject) {
@@ -133,7 +133,7 @@ function pObject(d3, pd, grad) {
 
         // if this is tracing data object, add values for the loop adjustments
         if (obj.isTracing) {
-          obj.viewLevels = addLoopAdjustment(obj.viewData); 
+          obj.viewLevels = addLoopAdjustment(obj.viewData);
         }
 
         resolve(true);
@@ -197,7 +197,7 @@ function pObject(d3, pd, grad) {
 
       if (levels.hasOwnProperty(item.level) === false) {
         levels[item.level] = loops.length;
-      } 
+      }
 
       item.loopAdjust = levels[item.level];
 
