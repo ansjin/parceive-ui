@@ -50,7 +50,7 @@ function pSvg(d3, size) {
           return 'rect_' + d.id;
         })
         .attr('fill', function(d) {
-          return _svg.gradient(d.duration);
+          return _svg.gradientBright(d.duration);
         })
         .attr('x', function(d) {
           return _svg.xScale(d.start);
@@ -64,6 +64,8 @@ function pSvg(d3, size) {
         .attr('y', function(d) {
           return getYValue(_svg, d) - _svg.rectHeight;
         })
+        .attr('rx', 5)
+        .attr('ry', 5)
         .attr('fill-opacity', 0)
 
         // add animation effect
@@ -105,7 +107,9 @@ function pSvg(d3, size) {
         .attr('class', 'rect')
         .attr('font-family', 'Arial')
         .attr('font-size', '14px')
-        .attr('fill', 'white')
+        .attr('fill', function(d) {
+          return _svg.gradient(d.duration);
+        })
         .attr('fill-opacity', 0)
         .text(function(d) { return d.name; })
         .attr('x', function(d) {
@@ -150,7 +154,7 @@ function pSvg(d3, size) {
           .append('line')
           .attr('class', 'loop')
           .attr('stroke', function(d) {
-            return _svg.gradient(d.loopDuration);
+            return _svg.gradientBright(d.loopDuration);
           })
           .attr('stroke-width', 2)
           .attr('id', function(d) { return 'loopline_' + obj.id; })
@@ -265,7 +269,7 @@ function pSvg(d3, size) {
             .append('circle')
             .attr('class', 'loop')
             .attr('id', function(d) { return 'loopendleft_' + obj.id; })
-            .attr('fill', function(d) { return _svg.gradient(d.loopDuration); })
+            .attr('fill', function(d) { return _svg.gradientBright(d.loopDuration); })
             .attr('fill-opacity', 0)
             .attr('cx', function(d) { return _svg.xScale(d.loopStart); })
             .attr('cy', function(d) {
@@ -296,7 +300,7 @@ function pSvg(d3, size) {
             .append('circle')
             .attr('class', 'loop')
             .attr('id', function(d) { return 'loopendright_' + obj.id; })
-            .attr('stroke', function(d) { return _svg.gradient(d.loopDuration); })
+            .attr('stroke', function(d) { return _svg.gradientBright(d.loopDuration); })
             .attr('stroke-width', 1)
             .attr('fill', 'white')
             .attr('fill-opacity', 0)
@@ -344,7 +348,7 @@ function pSvg(d3, size) {
             .append('circle')
             .attr('class', 'small')
             .attr('id', function(d) { return 'loopsmall_' + obj.id; })
-            .attr('fill', function(d) { return _svg.gradient(d.loopDuration); })
+            .attr('fill', function(d) { return _svg.gradientBright(d.loopDuration); })
             .attr('fill-opacity', 0)
             .attr('cx', function(d) {
               return _svg.xScale(Math.floor((d.loopStart + d.loopEnd) / 2));

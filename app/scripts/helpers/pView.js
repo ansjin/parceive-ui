@@ -39,7 +39,7 @@ function pView(d3, size) {
 
       // partition view data using d3's parition layout function
       _svg.nodes = _svg.partition.nodes(findDeep(_svg.viewData, _svg.currentTop.id));
-      
+
       // define scale for width values
       _svg.widthScale = d3.scale.linear()
         .domain([0, _svg.nodes[0].duration])
@@ -129,7 +129,7 @@ function pView(d3, size) {
 
       if (item.hasOwnProperty('children')) {
         addChildren(item);
-      }   
+      }
     }
 
     threads.unshift(parent);
@@ -195,7 +195,7 @@ function pView(d3, size) {
     callHighlightRemove(d, svg);
 
     svg.select('#rect_' + d.id).attr('fill-opacity', 0.5);
-    svg.select('#text_' + d.id).attr('fill-opacity', 0.5);    
+    svg.select('#text_' + d.id).attr('fill-opacity', 0.5);
   }
 
   function callHighlightRemove(d, svg) {
@@ -290,7 +290,7 @@ function pView(d3, size) {
     return new Promise(function(resolve, reject) {
       // evaluate click count after defined time
       window.setTimeout(function() {
-        var type = null; 
+        var type = null;
 
         if (_svg.clickCount === 2) {
           type = 'double';
@@ -314,7 +314,7 @@ function pView(d3, size) {
 
   function resetSelectedNode(id, _svg, svg) {
     var d = svg.select('#rect_' + id)[0][0].__data__;
-    svg.select('#rect_' + id).attr('fill', _svg.gradient(d.duration));
+    svg.select('#rect_' + id).attr('fill', _svg.gradientBright(d.duration));
   }
 
   function toggleLoop(_svg) {
@@ -342,7 +342,7 @@ function pView(d3, size) {
   function updateDurationSlider(_svg) {
     // var value = $('#profiler-thresh').val();
     // _svg.thresholdFactor = value;
-    // $('#thresh-lbl').attr('title', 'Showing calls with >= ' + value + '% duration of ' + _svg.currentTop.name); 
-    // $('#thresh-lbl').text(value + '%');   
+    // $('#thresh-lbl').attr('title', 'Showing calls with >= ' + value + '% duration of ' + _svg.currentTop.name);
+    // $('#thresh-lbl').text(value + '%');
   }
 }

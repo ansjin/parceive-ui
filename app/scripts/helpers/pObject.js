@@ -49,6 +49,7 @@ function pObject(d3, pd, grad) {
       selectedNodes: [], // stores selected nodes
       minTooltipWidth: 150, // minimun width of the tooltip
       gradient: null, // holds gradient function
+      gradientBright: null, // holds gradientBright function
       widthScale: null, // holds function to calculate width of call
       xScale: null, // holds function to calculate x position of call
       clickCount: 0, // click counter for determining double or single click
@@ -103,6 +104,7 @@ function pObject(d3, pd, grad) {
         setRuntimeThreshold(_p);
 
         _t.gradient = _p.gradient = grad.gradient(0, _t.mainDuration);
+        _t.gradientBright = _p.gradientBright = grad.gradientBright(0, _t.mainDuration);
         _t.partition = _p.partition = d3.layout.partition().value(function(d) {
           return d.duration;
         });

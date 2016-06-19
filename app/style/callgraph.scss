@@ -4,16 +4,22 @@ g.callgraph {
   g.node {
     cursor: default;
     rect.call-bg {
-      stroke-width: 1;
+      stroke-width: 0;
+    }
+
+    text.call-bg {
+      font-weight: 100;
+      font-family: Arial;
     }
 
     rect.count-bg {
+      stroke-width: 1;
       fill: white;
     }
 
-    text.count {
-      fill: black;
-    }
+//    text.count {
+//      fill: black;
+//    }
   }
 
   g.edge {

@@ -16,18 +16,18 @@ function applyMarked(state, nodes, changes) {
   state.unsaved.callGroup.selectAll('g.node > rect.call-bg')
     .attr('fill', function(d) {
       if (d.isMarked) {
-        return d3.rgb(state.unsaved.gradient(d.data.duration));
+        return gradient(d.data.duration);
       } else {
-        return d3.rgb(state.unsaved.gradient(d.data.duration)).brighter(2);
+        return gradientBright(d.data.duration);
       }
     });
 
-  state.unsaved.callGroup.selectAll('g.node > text')
+  state.unsaved.callGroup.selectAll('g.node > text.call-bg')
     .attr('fill', function(d) {
       if (d.isMarked) {
         return 'white';
       } else {
-        return 'black';
+        return 'white';
       }
     });
 }
@@ -382,7 +382,11 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $,
     var edges = callgraph.getEdges();
 
     var gradient = GradientService.gradient(0, state.unsaved.mainDuration);
+    var gradientBright = GradientService.gradientBright(0, state.unsaved.mainDuration);
+    var gradientDark = GradientService.gradientDark(0, state.unsaved.mainDuaration);
     state.unsaved.gradient = gradient;
+    state.unsaved.gradientBright = gradientBright;
+    state.unsaved.gradientDark = gradientDark;
 
     var allnodes = calls.concat(refs);
 
@@ -494,8 +498,8 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $,
       .classed('call-bg', true)
       .attr('x', 0)
       .attr('y', 0)
-      .attr('rx', 5)
-      .attr('ry', 5)
+      .attr('rx', 7)
+      .attr('ry', 7)
       .attr('width', function(d) {
         return d.width + 10;
       })
@@ -527,13 +531,13 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $,
       .append('text')
       .classed('count', true)
       .attr('x', function(d) {
-        return d.width + 4 + 2;
+        return d.width + 4 + 1;
       })
       .attr('y', function(d) {
-        return d.height - 13;
+        return d.height - 13.5;
       })
-      .attr('rx', 2)
-      .attr('ry', 2)
+      .attr('rx', 1)
+      .attr('ry', 1)
       .text(function(d) {
         return d.data.count;
       });
@@ -541,6 +545,7 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $,
     /* Label */
     restNodesEnter
       .append('text')
+      .classed('call-bg', true)
       .attr('x', 5)
       .attr('y', function(d) {
         return d.height - 1;
@@ -598,14 +603,29 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $,
     /* Set colors */
 
     callNodes.selectAll('g.node > rect.call-bg')
+      .attr('stroke', function(d) {
+        return gradient(d.data.duration);
+      })
       .attr('fill', function(d) {
-        return d3.rgb(gradient(d.data.duration)).brighter(2);
-      }).attr('stroke', function(d) {
+        if (d.isMarked) {
+          return gradient(d.data.duration);
+        } else {
+          return gradientBright(d.data.duration);
+        }
+      });
+
+    callNodes.selectAll('g.node > text.call-bg')
+      .attr('fill', function(d) {
         return gradient(d.data.duration);
       });
 
     callNodes.selectAll('g.callgroup > rect.count-bg')
       .attr('stroke', function(d) {
+        return gradientBright(d.data.duration);
+      });
+
+    callNodes.selectAll('g.node > text.count')
+      .attr('fill', function(d) {
         return gradient(d.data.duration);
       });
 
