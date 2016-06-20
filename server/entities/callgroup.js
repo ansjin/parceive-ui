@@ -61,7 +61,7 @@ router.get('/:id/recursivecallgroups', function(req, res) {
   var duration = req.query.duration ? req.query.duration : 0;
   util.handleRelationshipQuery(req.db, treeMapping, res,
     'SELECT * FROM CallGroup, CallGroupTree WHERE Descendant=Id AND ' +
-    'Ancestor=? AND Duration > ?', req.params.id, duration);
+    'Ancestor=? AND Duration > ? AND Depth > 0', req.params.id, duration);
 });
 
 router.get('/:id/recursivecallgroupreferences', function(req, res) {
