@@ -26,7 +26,7 @@ router.get('/', function(req, res) {
 
 router.get('/many/:ids/accesses', function(req, res) {
   util.handleManyQuery(req.db, accesses.mapping, res, req.params.ids,
-    'Access WHERE Id');
+    'Access WHERE Reference');
 });
 
 router.get('/many/:ids', function(req, res) {
