@@ -16,7 +16,7 @@ WITH Tree AS
     JOIN Tree AS t
         ON c.Parent = t.Descendant
 )
-INSERT INTO CallGroupTree SELECT * FROM Tree WHERE Depth > 0;
+INSERT INTO CallGroupTree SELECT * FROM Tree;
 
 CREATE INDEX IF NOT EXISTS CALL_GROUP_TREE_TABLE_DESCENDANT ON CallGroupTree(Descendant);
 CREATE INDEX IF NOT EXISTS CALL_GROUP_TREE_TABLE_ANCESTOR ON CallGroupTree(Ancestor);
