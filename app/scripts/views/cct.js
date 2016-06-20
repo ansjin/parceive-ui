@@ -16,9 +16,9 @@ function applyMarked(state, nodes, changes) {
   state.unsaved.callGroup.selectAll('g.node > rect.call-bg')
     .attr('fill', function(d) {
       if (d.isMarked) {
-        return gradient(d.data.duration);
+        return state.unsaved.gradient(d.data.duration);
       } else {
-        return gradientBright(d.data.duration);
+        return state.unsaved.gradientBright(d.data.duration);
       }
     });
 
