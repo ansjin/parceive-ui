@@ -27,7 +27,7 @@ function applyMarked(state, nodes, changes) {
       if (d.isMarked) {
         return 'white';
       } else {
-        return 'white';
+        return state.unsaved.gradient(d.data.duration);
       }
     });
 }

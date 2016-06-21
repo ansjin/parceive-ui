@@ -1,5 +1,5 @@
-var colors = ['#005500', '#6A5800', '#6A0000'];
-var colorsBright = ['#6FBA6F', '#E8D88B', '#E88B8B'];
+var colors = ['#006000', '#786300', '#780000'];
+var colorsBright = ['#52B652', '#E3CE66', '#E36666'];
 var colorsDark = ['#95DA95', '#FFF1AF', '#FFAFAF'];
 
 
