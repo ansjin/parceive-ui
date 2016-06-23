@@ -30,6 +30,39 @@ function initCb(loader, highlight, jump) {
       });
     }
 
+    var accessLines = RSVP.all(_.chain(data)
+        .filter(function (d){
+          return d.type === 'Reference';
+        }).map(function(d) {
+          return loader.getReference(d.id).then(function(ref) {
+            return ref.getAccesses().then(function(accesses) {
+              return RSVP.all(_.map(accesses, function(access) {
+                return access.getInstruction().then(function(instr) {
+                  return instr.getCall().then(function(call) {
+                    return call.getFunction();
+                  }).then(function(fct) {
+                    return [fct.fileID, instr.lineNumber];
+                  });
+                });
+              }));
+            });
+          });
+        }).value()).then(function(accesses) {
+          return _.chain(accesses).map(function(el) {
+            return _.filter(el, function(access) {
+              return access[0] === state.file;
+            });
+          }).filter(function(el) {
+            return el.length > 0;
+          }).flatten().map(function(access) {
+            return {
+              'line': access[1],
+              'column': 0,
+              'type': 'Reference'
+            };
+          }).value();
+        });
+
     var functionLines = RSVP.all(_.chain(data)
         .filter(function (d){
           return d.type === 'Function' || d.type === 'Call';
@@ -87,7 +120,7 @@ function initCb(loader, highlight, jump) {
         });
       });
 
-    var linesPromise = RSVP.all([functionLines, callLines])
+    var linesPromise = RSVP.all([functionLines, callLines, accessLines])
       .then(function(arr) {
         return _.flatten(arr);
       });
@@ -236,7 +269,9 @@ function(highlight, loader, $, d3) {
 
           if (location.type === 'Call') {
             line.style('background-color', '#88FFFF');
-          } else {
+          } else if (location.type === 'Reference') {
+            line.style('background-color', '#FF88FF');
+          } else if (location.type === 'Function') {
             line.style('background-color', '#FFFF88');
           }
         });
