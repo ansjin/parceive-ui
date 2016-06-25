@@ -95,6 +95,7 @@ function pObject(d3, pd, grad, ld) {
 
         var profileId = Date.now();
         _t.profileId = _p.profileId = profileId;
+        console.log('set profile ID', profileId)
 
         _t.gradient = _p.gradient = grad.gradient(0, _t.mainDuration);
         _t.partition = _p.partition = d3.layout.partition().value(function(d) {

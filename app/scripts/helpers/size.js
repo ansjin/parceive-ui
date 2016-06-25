@@ -49,6 +49,7 @@ angular.module('app')
 
     svgSizeById: function(id) {
       var doc = document.getElementById(id);
+      // console.log('size', id, doc)
       var bbox = doc.getBBox();
       return {
         height: bbox.height,
