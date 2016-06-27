@@ -1130,6 +1130,7 @@ function(CallGraphDataService, loader, d3, keyService, GradientService, $,
         return state.unsaved.callgraph.addCallRoot(calls[0]);
       }).then(function() {
         render(svg, stateManager);
+        svg.focus([0, 0]);
       });
     } else {
       render(svg, stateManager);
