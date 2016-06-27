@@ -61,6 +61,7 @@ function pView(d3, size) {
       for (var i = children.length - 1; i >= 0; i--) {
         if (children[i].id === id) {
           val = children[i];
+          break;
         }
         if (children[i].hasOwnProperty('children') === true) {
           recurse(children[i].children, id);
@@ -192,20 +193,14 @@ function pView(d3, size) {
   }
 
   function callHighlight(d, svg) {
-    callHighlightRemove(d, svg);
-
-    svg.select('#rect_' + d.id).attr('fill-opacity', 0.5);
-    svg.select('#text_' + d.id).attr('fill-opacity', 0.5);
+    //svg.select('#rect_' + d.id).attr('', 'grey');
+    //svg.select('#text_' + d.id).attr('fill', 'white');
   }
 
-  function callHighlightRemove(d, svg) {
-    svg.selectAll('rect.rect').each(function(d, i) {
-      d3.select(this).attr('fill-opacity', 1);
-    });
-
-    svg.selectAll('text.rect').each(function(d, i) {
-      d3.select(this).attr('fill-opacity', 1);
-    });
+  function callHighlightRemove(_svg, svg) {
+    /*svg.selectAll('text.rect').each(function(d) {
+      d3.select(this).attr('fill', _svg.gradient(d.duration));
+    });*/
   }
 
   function callTooltip(d, _svg, svg) {
@@ -267,8 +262,8 @@ function pView(d3, size) {
     }
   }
 
-  function isSelected(d, svg) {
-    return svg.select('#rect_' + d.id).attr('fill') == 'grey';
+  function isSelected(d, _svg, svg) {
+    return svg.select('#rect_' + d.id).attr('fill') == _svg.gradient(d.duration);
   }
 
   function isVisible(d, type, _svg, svg) {
@@ -308,7 +303,9 @@ function pView(d3, size) {
 
   function setSelectedNodes(_svg, svg) {
     _.forEach(_svg.selectedNodes, function(id) {
-      svg.select('#rect_' + id).attr('fill', 'grey');
+      var d = svg.select('#rect_' + id)[0][0].__data__;
+      svg.select('#rect_' + id).attr('fill', _svg.gradient(d.duration));
+      svg.select('#text_' + id).attr('fill', 'white');
     });
   }
 

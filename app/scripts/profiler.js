@@ -13,12 +13,12 @@ angular
 // handle focus event
 function focusCb(stateManager, data) {
   if (data.length < 1) { return; }
-  
+
   var svg = stateManager.getData().unsaved.svg;
   var pv = stateManager.getData().unsaved.pv;
   var po = stateManager.getData().unsaved.po;
   var initDisplay = stateManager.getData().unsaved.initDisplay;
-  
+
   for (var i = 0, len = data.length; i < len; i++) {
     // var obj = data[i];
     // var id = obj.id;
@@ -34,22 +34,22 @@ function focusCb(stateManager, data) {
     // // item not loaded in the profiler viewData
     // // probably a child node with duration too small
     // // or is in viewData but not on svg
-    // if (!d.hasOwnProperty('id') && pv.isVisible(d, type, _svg, svg)) { 
-    //   continue; 
+    // if (!d.hasOwnProperty('id') && pv.isVisible(d, type, _svg, svg)) {
+    //   continue;
     // }
 
-    
+
   }
 }
 
 // handle marked event
 function markedCb(stateManager, data) {
   if (data.length < 1) { return; }
-  
+
   var svg = stateManager.getData().unsaved.svg;
   var pv = stateManager.getData().unsaved.pv;
   var mark = stateManager.getData().unsaved.mark;
-  
+
   for (var i = 0, len = data.length; i < len; i++) {
     var obj = data[i];
     var id = obj.id;
@@ -68,6 +68,15 @@ function markedCb(stateManager, data) {
 
 // handle hover event
 function hoverCb(stateManager, data) {
+  var hoverOut = stateManager.getData().unsaved.hoverOut;
+
+  if (data.length === 0) {
+    var svg = stateManager.getData().unsaved.svg;
+    var pv = stateManager.getData().unsaved.pv;
+    hoverOut();
+    pv.removeTooltip();
+  }
+
   if (data.length < 1) { return; }
 
   var svg = stateManager.getData().unsaved.svg;
@@ -86,13 +95,13 @@ function hoverCb(stateManager, data) {
     }
 
     hover(id, type)
-    
+
   }
 }
 
 // handle spot event
 function spotCb(stateManager, data) {
-  
+
 }
 
 // inject view dependencies
@@ -113,7 +122,7 @@ function render(d3, po, pd, pv, ps) {
     var _p = po.getObject(false);
 
     // start view in trace mode. this var basically just switches between
-    // pointing to the _trace object and the _profile object depending on the 
+    // pointing to the _trace object and the _profile object depending on the
     // current view mode
     var _svg = _t;
 
@@ -144,11 +153,11 @@ function render(d3, po, pd, pv, ps) {
 
     function initDisplay() {
       return new Promise(function(resolve, reject) {
-        
+
         // if (_svg.isTracing) {
         //   _svg.viewData = pv.findDeepThread(_svg.viewData, 0);
         // }
-        
+
         // partition the viewData so it can be used by D3 partition layout
         // and set the scale function for x and width
         pv.setNodes(_svg, svg.selectAll('*'))
@@ -185,7 +194,7 @@ function render(d3, po, pd, pv, ps) {
 
             // call elements
             svg.selectAll('rect.rect, text.rect')
-              .on('click', function(d) { 
+              .on('click', function(d) {
                  pv.clickType(_svg).then(function(data) {
                   // handle single click
                   if (data === 'single') {
@@ -203,14 +212,14 @@ function render(d3, po, pd, pv, ps) {
                   }
                  });
               })
-              .on('mouseenter', function(d) {
+              .on('mouseover', function(d) {
                 // broadcast hover
                 stateManager.hover([{type: elementType, id: d.id, noShow:true}]);
                 hover(d.id, elementType);
               })
-              .on('mouseleave', function(d) {
+              .on('mouseout', function(d) {
                 // broadcast hover
-                stateManager.hover([{type: elementType, id: d.id, noShow:true}]);
+                stateManager.hover([]);
                 hover(d.id, elementType);
               });
 
@@ -218,13 +227,12 @@ function render(d3, po, pd, pv, ps) {
             svg.selectAll('line.loop, circle.loop, circle.small, text.line')
               .on('mouseenter', function(d) {
                 // broadcast hover
-                stateManager.hover([{type: 'Loop', id: d.id, noShow:true}]); 
+                stateManager.hover([{type: 'Loop', id: d.id, noShow:true}]);
                 hover(d.id, 'Loop');
               })
               .on('mouseleave', function(d) {
                 // broadcast hover
-                stateManager.hover([{type: 'Loop', id: d.id, noShow:true}]); 
-                hover(d.id, 'Loop');
+                stateManager.hover([]);
               });
 
             resolve(true);
@@ -234,8 +242,8 @@ function render(d3, po, pd, pv, ps) {
           pv.updateDurationSlider(_svg);
           pv.setSelectedNodes(_svg, svg);
 
-          // save data objects to stateManager so external functions like hoverCb, 
-          // markCb can access the same object (its data and functions). 
+          // save data objects to stateManager so external functions like hoverCb,
+          // markCb can access the same object (its data and functions).
           stateManager.getData().unsaved.svg = svg;
           stateManager.getData().unsaved.pv = pv;
           stateManager.getData().unsaved.po = po;
@@ -243,6 +251,7 @@ function render(d3, po, pd, pv, ps) {
           stateManager.getData().unsaved.viewData = _svg.viewData;
           stateManager.getData().unsaved.mark = mark;
           stateManager.getData().unsaved.hover = hover;
+          stateManager.getData().unsaved.hoverOut = hoverOut;
           stateManager.getData().unsaved.spot = spot;
           stateManager.getData().unsaved.focus = focus;
 
@@ -286,10 +295,15 @@ function render(d3, po, pd, pv, ps) {
       }
     }
 
+    function hoverOut() {
+      pv.callHighlightRemove(_svg, svg);
+    }
+
     function hover(id, type) {
       var d = pv.findDeep(_svg.viewData, id);
 
       if (Object.keys(d).length === 0) {
+        pv.callHighlightRemove(_svg, svg);
         return;
       }
 
@@ -305,7 +319,7 @@ function render(d3, po, pd, pv, ps) {
       } else {
         // hover for calls and callgroups
         if (pv.isHovered(d, 'Call', _svg, svg)) {
-          pv.callHighlightRemove(d, svg);
+          pv.callHighlightRemove(_svg, svg);
           pv.removeTooltip();
         } else {
           pv.callHighlight(d, svg);
@@ -394,7 +408,7 @@ function render(d3, po, pd, pv, ps) {
         build: function(menu, e) {
           var elementType = _svg.isTracing ? 'Call' : 'CallGroup';
           var d = menu[0].__data__;
-          var isSelected = pv.isSelected(d, svg);
+          var isSelected = pv.isSelected(d, _svg, svg);
           var menuWidth = 200;
           var svgWidthPixels = pv.getSvgWidth(_svg);
 
@@ -486,7 +500,7 @@ function render(d3, po, pd, pv, ps) {
             contextMenu.items.show_hide_loops = showLoops;
           }
 
-          // enable call/callgroup spotting if there is more than 
+          // enable call/callgroup spotting if there is more than
           // 1 selected item
           // if (_svg.selectedNodes.length > 1) {
           //   contextMenu.items.spot_data = spotting;

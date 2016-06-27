@@ -126,9 +126,9 @@ angular.module('cct-view', ['app'])
         if (d.isHovered) {
           return 1;
         } else if (d.isNeighbourHovered) {
-          return (d.normalOpacity ? d.normalOpacity : 1) - 0.3;
-        } else {
           return (d.normalOpacity ? d.normalOpacity : 1) - 0.5;
+        } else {
+          return (d.normalOpacity ? d.normalOpacity : 1) - 0.6;
         }
       });
   }

@@ -270,7 +270,7 @@ function(highlight, loader, $, d3) {
           if (location.type === 'Call') {
             line.style('background-color', '#88FFFF');
           } else if (location.type === 'Reference') {
-            line.style('background-color', '#FF88FF');
+            line.style('background-color', '#66FF66');
           } else if (location.type === 'Function') {
             line.style('background-color', '#FFFF88');
           }

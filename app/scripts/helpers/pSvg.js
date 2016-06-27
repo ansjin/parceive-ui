@@ -105,6 +105,7 @@ function pSvg(d3, size) {
           return 'text_' + d.id;
         })
         .attr('class', 'rect')
+        .attr('cursor', 'default')
         .attr('font-family', 'Arial')
         .attr('font-size', '14px')
         .attr('fill', function(d) {
