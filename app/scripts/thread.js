@@ -3,7 +3,7 @@
 angular
   .module('thread-view', ['app'])
   .value('name', 'Thread view')
-  .value('group', 'Profile views')
+  .value('group', 'Performance views')
   .value('focusCb', focusCb)
   .value('markedCb', markedCb)
   .value('hoverCb', hoverCb)

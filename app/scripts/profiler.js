@@ -3,7 +3,7 @@
 angular
   .module('profile-view', ['app'])
   .value('name', 'Performance view')
-  .value('group', 'Profile views')
+  .value('group', 'Performance views')
   .value('focusCb', focusCb)
   .value('markedCb', markedCb)
   .value('hoverCb', hoverCb)
