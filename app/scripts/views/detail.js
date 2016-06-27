@@ -72,6 +72,14 @@ angular.module('detail-view', ['app'])
             });
           }).then(function(accesses) {
             return ref.getAllocator().then(function(allocator) {
+              if (_.isNull(allocator)) {
+                return {
+                  'Name': ref.name,
+                  'Reference Type': ref.type,
+                  'accesses': accesses
+                };
+              }
+
               return allocator.getCall().then(function(call) {
                 return call.getFunction();
               }).then(function(fct) {
