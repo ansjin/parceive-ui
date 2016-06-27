@@ -483,7 +483,9 @@ function render(d3, po, pd, pv, ps, ld) {
           }
 
           // enable call/callgroup spotting
-          contextMenu.items.spot_data = spotting;
+          if (_svg.selectedNodes.length > 0) {
+            contextMenu.items.spot_data = spotting;
+          }
 
           return contextMenu;
         }
