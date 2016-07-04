@@ -446,10 +446,10 @@ function render(d3, po, pd, pv, ps, ld) {
 
           var zoomInOut = {
             // zoom in or out of element
-            name: _svg.currentTop.id === d.id ? 'Remove Focus' : 'Focus',
+            name: _svg.currentTop.id === d.id ? 'Zoom out' : 'Zoom in',
             callback: function() {
               handleZooming(d);
-              stateManager.focus([{type: elementType, id: d.id, noShow:true}]);
+              // stateManager.focus([{type: elementType, id: d.id, noShow:true}]);
             }
           };
 
