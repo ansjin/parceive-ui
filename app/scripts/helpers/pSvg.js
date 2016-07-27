@@ -26,6 +26,7 @@ function pSvg(d3, size, pv) {
 
   function doProfile(svg, _svg, d, index) {
     return new Promise(function(resolve, reject) {
+      console.log(d)
       drawHeader(svg, _svg, d);
       drawCalls(svg, _svg, d, index);
       updateViewHeight(svg, _svg);

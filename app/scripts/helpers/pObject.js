@@ -14,7 +14,8 @@ function pObject(d3, pd, grad, ld) {
     setMainData: setMainData,
     loadChildren: loadChildren,
     setRuntimeThreshold: setRuntimeThreshold,
-    getThreadData: getThreadData
+    getThreadData: getThreadData,
+    appendDeep: appendDeep
   };
 
   return factory;

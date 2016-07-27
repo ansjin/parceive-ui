@@ -195,6 +195,69 @@ function render(d3, po, pd, pv, ps, ld) {
       return RSVP.all(promises);
     }
 
+    function compress(arr) {
+      var r = [];
+      var data = {};
+
+      _.forEach(arr, function(d, i) {
+        if (data[d.name]) {
+          data[d.name].push(d);
+        } else {
+          data[d.name] = [d];
+        }
+      });
+
+      _.forEach(Object.keys(data), function(d, i) {
+        var tt = data[d];
+        var t = tt[0];
+        for (var i = 1, len = tt.length; i < len; i++) {
+          t.duration = Number(t.duration) + Number(tt[i].duration);
+          t.end = tt[i].end;
+        }
+        r.push(t);
+      });
+
+      r = _.sortByOrder(r, ['duration'], [false]);
+      console.log(r)
+
+      return r;
+    }
+
+    function mergeData(data) {
+      var d = _.cloneDeep(data.profileData);
+      console.log(d)
+
+      var queue = [d];
+      var finalObj = null;
+
+      while (queue.length > 0) {
+        var temp = queue.shift();
+        var children = null;
+
+        if (temp.hasOwnProperty('children')) {
+          children = _.cloneDeep(temp.children);
+          delete temp.children;
+        }
+
+        if (finalObj === null) {
+          finalObj = temp;
+        } else {
+          po.appendDeep(finalObj, temp, false)
+        }
+
+        if (children === null) continue;
+
+        children = compress(children);
+
+        for (var i = 0, len = children.length; i < len; i++) {
+          queue.push(children[i]);
+        }
+      }
+      console.log(finalObj)
+
+      return finalObj;
+    }
+
     function initDisplay() {
       return new Promise(function(resolve, reject){
         svg.selectAll('*').remove();
@@ -213,6 +276,8 @@ function render(d3, po, pd, pv, ps, ld) {
           if (isTracing) {
             promises.push(ps.doTrace(svg, _svg, d, i));
           } else {
+            var pd = mergeData(d)
+            d.profileData = _.cloneDeep(pd);
             promises.push(ps.doProfile(svg, _svg, d, i));
           }
         });
